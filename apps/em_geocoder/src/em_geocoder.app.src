@@ -1,0 +1,52 @@
+%%%-------------------------------------------------------------------
+%%% @author Sergey Penkovsky
+%%% @copyright (C) 2015, Sergey Penkovsky <sergey.penkovsky@gmail.com>
+%%% @doc
+%%%    Erlymon is an open source GPS tracking system for various GPS tracking devices.
+%%%
+%%%    Copyright (C) 2015, Sergey Penkovsky <sergey.penkovsky@gmail.com>.
+%%%
+%%%    This file is part of Erlymon.
+%%%
+%%%    Erlymon is free software: you can redistribute it and/or  modify
+%%%    it under the terms of the GNU Affero General Public License, version 3,
+%%%    as published by the Free Software Foundation.
+%%%
+%%%    Erlymon is distributed in the hope that it will be useful,
+%%%    but WITHOUT ANY WARRANTY; without even the implied warranty of
+%%%    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%%%    GNU Affero General Public License for more details.
+%%%
+%%%    You should have received a copy of the GNU Affero General Public License
+%%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%% @end
+%%%-------------------------------------------------------------------
+
+{application, em_geocoder,
+ [{description, "An OTP application"}
+ ,{vsn, "0.1.0"}
+ ,{registered, []}
+ ,{mod, {'em_geocoder_app', []}}
+ ,{applications,
+   [kernel
+   ,stdlib
+   ,poolboy
+   ,ibrowse
+   ,em_json
+   ,em_logger
+   ]}
+ ,{env,[
+ {pools, [
+        {google,
+          [
+            {size, 10},
+            {max_overflow, 20}
+          ],
+          [
+            {key, <<"you-google-key">>}
+          ]
+        }
+      ]}
+ ]}
+ ,{modules, []}
+ ]}.
