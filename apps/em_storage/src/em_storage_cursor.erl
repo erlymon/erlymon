@@ -29,12 +29,16 @@
 
 -spec next(mongo:cursor()) -> map().
 next(Cursor) ->
-    Item = mc_cursor:next(Cursor),
-    case (maps:size(Item) =/= 0) of
-      true ->
-	Item;
-      false ->
-	null
+    case mc_cursor:next(Cursor) of
+      {} ->
+	null;
+      {Item} ->
+	case (maps:size(Item) =/= 0) of
+	  true ->
+	    Item;
+	  false ->
+	    null
+	end
     end.
 
 -spec close(mongo:cursor()) -> ok.
