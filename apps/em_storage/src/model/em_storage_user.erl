@@ -84,16 +84,40 @@ delete(Id) ->
   em_storage:delete_one(users, #{id => Id}).
 
 get_by_name(Name) ->
-    em_storage:find_one(users, #{name => Name}).
+    Item = em_storage:find_one(users, #{name => Name}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.
 
 get_by_email(Email) ->
-    em_storage:find_one(users, #{email => Email}).
+    Item = em_storage:find_one(users, #{email => Email}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.
 
 get_by_id(UserId) ->
-    em_storage:find_one(users, #{id => UserId}).
+    Item = em_storage:find_one(users, #{id => UserId}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.
 
 get(Email, HashPassword) ->
-    em_storage:find_one(users, #{email => Email, hashPassword => HashPassword}).
+    Item = em_storage:find_one(users, #{email => Email, hashPassword => HashPassword}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.
 
 
 get_all() ->
