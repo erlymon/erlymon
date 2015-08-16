@@ -60,5 +60,5 @@ get_session(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
         {User, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove('_id', User)}), Req2)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove(<<"_id">>, User)}), Req2)
     end.

@@ -103,7 +103,7 @@ create_message(DeviceId, Protocol, MessageParams) ->
 
 get_messages(DeviceId, TimeFrom, TimeTo) ->
     GetMessage = fun(Message, Acc) ->
-                      [maps:remove('_id', Message)|Acc]
+                      [maps:remove(<<"_id">>, Message)|Acc]
           end,
     Cursor = em_storage_message:get(DeviceId, TimeFrom, TimeTo),
     Messages = load_objects(GetMessage, Cursor, em_storage_cursor:next(Cursor), []),
@@ -146,7 +146,7 @@ check_user(Email, Password) ->
 
 get_users() ->
     GetUser = fun(User, Acc) ->
-                      [maps:remove('_id', User)|Acc]
+                      [maps:remove(<<"_id">>, User)|Acc]
           end,
     Cursor = em_storage_user:get_all(),
     Users = load_objects(GetUser, Cursor, em_storage_cursor:next(Cursor), []),
@@ -194,12 +194,12 @@ delete_device(UserId, DeviceId) ->
     end.
 
 get_devices(UserId) ->
-    GetDeviceById = fun(#{deviceId := DeviceId}, Acc) ->
+    GetDeviceById = fun(#{<<"deviceId">> := DeviceId}, Acc) ->
                   case em_storage_device:get_by_id(DeviceId) of
                       null ->
                           Acc;
                       Device ->
-                          [maps:remove('_id', Device)|Acc]
+                          [maps:remove(<<"_id">>, Device)|Acc]
                   end
           end,
     Cursor = em_storage_permission:get(UserId),

@@ -56,5 +56,5 @@ get_server(Req) ->
         null ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req);
         Server ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true,  data => maps:remove('_id', Server)}), Req)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true,  data => maps:remove(<<"_id">>, Server)}), Req)
     end.

@@ -75,7 +75,19 @@ delete(Id) ->
     em_storage:delete_one(devices, #{id => Id}).
 
 get_by_id(Id) ->
-    em_storage:find_one(devices, #{id => Id}).
+    Item = em_storage:find_one(devices, #{<<"id">> => Id}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.
 
 get_by_uid(UniqueId) ->
-    em_storage:find_one(devices, #{uniqueId => UniqueId}).
+    Item = em_storage:find_one(devices, #{<<"uniqueId">> => UniqueId}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.

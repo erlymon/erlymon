@@ -30,10 +30,15 @@
 -spec next(mongo:cursor()) -> map().
 next(Cursor) ->
     case mc_cursor:next(Cursor) of
-        {} ->
-            null;
-        {Doc} ->
-            bson_to_map(Doc)
+      {} ->
+	null;
+      {Item} ->
+	case (maps:size(Item) =/= 0) of
+	  true ->
+	    Item;
+	  false ->
+	    null
+	end
     end.
 
 -spec close(mongo:cursor()) -> ok.

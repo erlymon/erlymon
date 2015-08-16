@@ -50,8 +50,8 @@ get_users(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
         {User, Req2} ->
-            em_logger:info("User: ~w", [maps:get(id,User)]),
-            case em_permissions_manager:check_admin(maps:get(id, User)) of
+            em_logger:info("User: ~w", [maps:get(<<"id">>,User)]),
+            case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
                 false ->
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
                 _ ->

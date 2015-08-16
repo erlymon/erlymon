@@ -74,94 +74,97 @@ ok() ->
 
 -spec insert(mongo:collection(), map() | list()) -> ok.
 insert(Coll, Doc) when is_map(Doc) ->
-  bson_to_map(poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {insert, Coll, bson:map_to_bson(Doc)})
-  end));
+  Callback = fun(Worker) ->
+    gen_server:call(Worker, {insert, Coll, Doc})
+  end,
+  poolboy:transaction(?POOL_NAME, Callback);
 insert(Coll, Docs) when is_list(Docs) ->
-  poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {insert, Coll, lists:foldl(fun(Doc, Acc) -> [bson:map_to_bson(Doc)|Acc]  end, [], Docs)})
-  end).
+  Callback = fun(Worker) ->
+    gen_server:call(Worker, {insert, Coll, Docs})
+  end,
+  poolboy:transaction(?POOL_NAME, Callback).
 
 
 -spec update(mongo:collection(), map(), map()) -> ok.
 update(Coll, Selector, Doc) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {update, Coll, bson:map_to_bson(Selector), {'$set', bson:map_to_bson(Doc)}})
+    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => Doc}})
   end).
 
 -spec update(mongo:collection(), map(), map(), boolean()) -> ok.
 update(Coll, Selector, Doc, Upsert) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {update, Coll, bson:map_to_bson(Selector), {'$set', bson:map_to_bson(Doc)}, Upsert})
+    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => Doc}, Upsert})
   end).
 
 -spec update(mongo:collection(), map(), map(), boolean(), boolean()) -> ok.
 update(Coll, Selector, Doc, Upsert, MultiUpdate) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {update, Coll, bson:map_to_bson(Selector), {'$set', bson:map_to_bson(Doc)}, Upsert, MultiUpdate})
+    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => Doc}, Upsert, MultiUpdate})
   end).
 
 
 -spec delete(bson:collection(), map()) -> ok.
 delete(Coll, Selector) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {delete, Coll, bson:map_to_bson(Selector)})
+    gen_server:call(Worker, {delete, Coll, Selector})
   end).
 
 -spec delete_one(bson:collection(), map()) -> ok.
 delete_one(Coll, Selector) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {delete_one, Coll, bson:map_to_bson(Selector)})
+    gen_server:call(Worker, {delete_one, Coll, Selector})
   end).
 
 
 -spec find_one(mongo:collection(), map()) -> map().
 find_one(Coll, Selector) ->
     Callback = fun(Worker) ->
-      gen_server:call(Worker, {find_one, Coll, bson:map_to_bson(Selector)})
+      gen_server:call(Worker, {find_one, Coll, Selector})
     end,
-    case poolboy:transaction(?POOL_NAME, Callback) of
-        {} ->
-            null;
-        {Doc} ->
-            bson_to_map(Doc)
-    end.
+    poolboy:transaction(?POOL_NAME, Callback).
+    %case poolboy:transaction(?POOL_NAME, Callback) of
+    %    #{} ->
+    %        null;
+    %    Doc ->
+    %        Doc
+    %end.
 
 -spec find_one(mongo:collection(), map(), map()) -> map().
 find_one(Coll, Selector, Projector) ->
   bson_to_map(poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {find_one, Coll, bson:map_to_bson(Selector), bson:map_to_bson(Projector)})
+    gen_server:call(Worker, {find_one, Coll, Selector, Projector})
   end)).
 
 -spec find_one(mongo:collection(), map(), map(), mongo:skip()) -> map().
 find_one(Coll, Selector, Projector, Skip) ->
   bson_to_map(poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {find_one, Coll, bson:map_to_bson(Selector), bson:map_to_bson(Projector), Skip})
+    gen_server:call(Worker, {find_one, Coll, Selector, Projector, Skip})
   end)).
 
 
 -spec find(mongo:collection(), map()) -> mongo:cursor().
 find(Coll, Selector) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {find, Coll, bson:map_to_bson(Selector)})
+    gen_server:call(Worker, {find, Coll, Selector})
   end).
 
 -spec find(mongo:collection(), map(), map()) -> mongo:cursor().
 find(Coll, Selector, Projector) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {find, Coll, bson:map_to_bson(Selector), bson:map_to_bson(Projector)})
+    gen_server:call(Worker, {find, Coll, Selector, Projector})
   end).
 
 -spec find(mongo:collection(), map(), map(), mongo:skip()) -> mongo:cursor().
 find(Coll, Selector, Projector, Skip) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {find, Coll, bson:map_to_bson(Selector), bson:map_to_bson(Projector), Skip})
+    gen_server:call(Worker, {find, Coll, Selector, Projector, Skip})
   end).
 
 -spec find(mongo:collection(), map(), map(), mongo:skip(), mongo:batchsize()) -> mongo:cursor().
 find(Coll, Selector, Projector, Skip, BatchSize) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {find, Coll, bson:map_to_bson(Selector), bson:map_to_bson(Projector), Skip, BatchSize})
+    gen_server:call(Worker, {find, Coll, Selector, Projector, Skip, BatchSize})
   end).
 
 
@@ -169,7 +172,7 @@ find(Coll, Selector, Projector, Skip, BatchSize) ->
 -spec count(mongo:collection(), map()) -> integer().
 count(Coll, Selector) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {count, Coll, bson:map_to_bson(Selector)})
+    gen_server:call(Worker, {count, Coll, Selector})
   end).
 
 %@doc Count selected documents up to given max number; 0 means no max.
@@ -177,11 +180,12 @@ count(Coll, Selector) ->
 -spec count(mongo:collection(), map(), integer()) -> integer().
 count(Coll, Selector, Limit) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {count, Coll, bson:map_to_bson(Selector), Limit})
+    gen_server:call(Worker, {count, Coll, Selector, Limit})
   end).
 
 
 bson_to_map(Doc) ->
+    em_logger:info("bson_to_map(Doc): ~w", [Doc]),
     bson:doc_foldl(fun(Label, Value, Acc) -> 
                            maps:put(Label, Value, Acc)  
                    end, #{}, Doc).

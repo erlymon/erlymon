@@ -52,7 +52,7 @@ add_user(Req) ->
         {User, Req2} ->
             {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
             UserModel = em_json:decode(JsonBin),
-            case em_permissions_manager:check_admin(maps:get(id, User)) of
+            case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
                 false ->
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req3);
                 _ ->

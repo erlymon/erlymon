@@ -50,13 +50,13 @@ remove(Req) ->
         {User, Req2} ->
             {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
             Device = em_json:decode(JsonBin),
-            case em_permissions_manager:check_device(maps:get(id, User), maps:get(id, Device)) of
+            case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(id, Device)) of
                 false ->
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req3);
                 true ->
                     em_data_manager:delete_device(Device),
                     em_data_manager:unlink_device(maps:get(id, Device)),
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove('_id', Device)}), Req3)
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove(<<"_id">>, Device)}), Req3)
             end
     end.
 

@@ -50,8 +50,9 @@ get_devices(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
         {User, Req2} ->
+	    em_logger:info("http_req:get_devices => user = ~w", [User]),
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{
                                                                   success => true, 
-                                                                  data => em_data_manager:get_devices(maps:get(id, User))
+                                                                  data => em_data_manager:get_devices(maps:get(<<"id">>, User))
                                                                 }), Req2)
     end.

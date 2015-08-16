@@ -55,4 +55,10 @@ update(ServerId, ServerModel) ->
     em_storage:update(servers, #{id => ServerId}, ServerModel).
 
 get() ->
-    em_storage:find_one(servers, #{}).
+    Item = em_storage:find_one(servers, #{}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.

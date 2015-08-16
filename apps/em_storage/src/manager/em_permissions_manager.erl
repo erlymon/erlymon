@@ -36,7 +36,7 @@ check_admin(UserId) ->
             false;
         User ->
             em_logger:info("check_admin user: ~w", [User]),
-            maps:get(admin, User)
+            maps:get(<<"admin">>, User)
     end.
 
 check_user(UserId, OtherUserId) when UserId == OtherUserId ->

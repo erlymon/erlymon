@@ -51,7 +51,7 @@ create(Req) ->
             {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
             DeviceModel = em_json:decode(JsonBin),
             Device = em_data_manager:create_device(DeviceModel),
-            em_data_manager:link_device(maps:get(id, User), maps:get(id, Device)),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove('_id', Device)}), Req3)
+            em_data_manager:link_device(maps:get(<<"id">>, User), maps:get(id, Device)),
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove(<<"_id">>, Device)}), Req3)
     end.
 

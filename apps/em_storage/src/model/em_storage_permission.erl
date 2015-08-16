@@ -41,7 +41,8 @@
 %%}
 
 create(UserId, DeviceId) ->
-    em_storage:insert(permissions, #{userId => UserId, deviceId => DeviceId}).
+    PermissionModel = #{userId => UserId, deviceId => DeviceId},
+    em_storage:insert(permissions, PermissionModel).
 
 update(UserId, DeviceId) -> ok.
 
@@ -49,7 +50,13 @@ delete(DeviceId) ->
     em_storage:delete(permissions, #{deviceId => DeviceId}).
 
 get(UserId, DeviceId) ->
-    em_storage:find_one(permissions, #{userId => UserId, deviceId => DeviceId}).
+    Item = em_storage:find_one(permissions, #{<<"userId">> => UserId, <<"deviceId">> => DeviceId}),
+    case (maps:size(Item) =/= 0) of
+      true ->
+	Item;
+      false ->
+	null
+    end.
 
 get(UserId) ->
-    em_storage:find(permissions, #{userId => UserId}).
+    em_storage:find(permissions, #{<<"userId">> => UserId}).
