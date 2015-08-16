@@ -54,9 +54,9 @@ async(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
         {User, Req2} ->
-	    Devices = em_data_manager:get_devices(maps:get(id, User)),
+	    Devices = em_data_manager:get_devices(maps:get(<<"id">>, User)),
 	    LastMessages = lists:foldl(fun(Device, Acc) -> 
-	      case em_data_manager:get_last_message(maps:get(messageId, Device), maps:get(id, Device)) of
+	      case em_data_manager:get_last_message(maps:get(<<"messageId">>, Device), maps:get(<<"id">>, Device)) of
 		null ->
 		  Acc;
 		Message ->  

@@ -194,12 +194,12 @@ delete_device(UserId, DeviceId) ->
     end.
 
 get_devices(UserId) ->
-    GetDeviceById = fun(#{deviceId := DeviceId}, Acc) ->
+    GetDeviceById = fun(#{<<"deviceId">> := DeviceId}, Acc) ->
                   case em_storage_device:get_by_id(DeviceId) of
                       null ->
                           Acc;
                       Device ->
-                          [maps:remove('_id', Device)|Acc]
+                          [maps:remove(<<"_id">>, Device)|Acc]
                   end
           end,
     Cursor = em_storage_permission:get(UserId),

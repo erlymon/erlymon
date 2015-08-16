@@ -81,12 +81,13 @@ init(Args) ->
   _Host = (proplists:get_value(host, Args)),
   _Port = (proplists:get_value(port, Args)),
   Database = (proplists:get_value(database, Args)),
-  _Login = (proplists:get_value(login, Args)),
-  _Password = (proplists:get_value(password, Args)),
+  Login = (proplists:get_value(login, Args)),
+  Password = (proplists:get_value(password, Args)),
 
+  em_logger:info("init worker args: ~w ~s", [Database, Database]),
   %%em_logger:info("init worker host: ~s, port: ~w database: ~s username: ~s, password: ~s", [Host, Port, Database, Login, Password]),
 
-  {ok, Conn} = mongo:connect(Database),
+  {ok, Conn} = mongo:connect([{database, Database}, {w_mode, safe}]),
 
   {ok, #state{conn = Conn}}.
 
@@ -109,7 +110,7 @@ init(Args) ->
 %%  {reply, epgsql:squery(Conn, Sql), State};
 %%handle_call({equery, Stmt, Params}, _From, #state{conn = Conn} = State) ->
 %%  {reply, epgsql:equery(Conn, Stmt, Params), State};
-handle_call({insert, Coll, Doc}, _From, #state{conn = Conn} = State) when is_tuple(Doc) ->
+handle_call({insert, Coll, Doc}, _From, #state{conn = Conn} = State) when is_map(Doc) ->
   {reply, mongo:insert(Conn, Coll, Doc), State};
 handle_call({insert, Coll, Docs}, _From, #state{conn = Conn} = State) when is_list(Docs) ->
   {reply, mongo:insert(Conn, Coll, Docs), State};
@@ -154,7 +155,7 @@ handle_call({count, Coll, Selector, Limit}, _From, #state{conn = Conn} = State) 
 
 
 handle_call(_Request, _From, State) ->
-  {reply, ok, State}.
+  {reply, {error, <<"Invalid em_mongo_worker call">>}, State}.
 
 %%--------------------------------------------------------------------
 %% @private

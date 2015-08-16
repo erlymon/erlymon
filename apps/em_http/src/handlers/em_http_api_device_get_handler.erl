@@ -52,6 +52,6 @@ get_devices(Req) ->
         {User, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{
                                                                   success => true, 
-                                                                  data => em_data_manager:get_devices(maps:get(id, User))
+                                                                  data => em_data_manager:get_devices(maps:get(<<"id">>, User))
                                                                 }), Req2)
     end.
