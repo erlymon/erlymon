@@ -103,7 +103,9 @@ create_message(DeviceId, Protocol, MessageParams) ->
 
 get_messages(DeviceId, TimeFrom, TimeTo) ->
     GetMessage = fun(Message, Acc) ->
-                      [maps:remove(<<"_id">>, Message)|Acc]
+                         DeviceTime = maps:get(<<"fixTime">>, Message),
+                         NewMessage = maps:put(<<"fixTime">>, em_helper_time:utc_to_iso8601(DeviceTime), Message),
+                         [maps:remove(<<"_id">>, NewMessage)|Acc]
           end,
     Cursor = em_storage_message:get(DeviceId, TimeFrom, TimeTo),
     Messages = load_objects(GetMessage, Cursor, em_storage_cursor:next(Cursor), []),
@@ -111,10 +113,19 @@ get_messages(DeviceId, TimeFrom, TimeTo) ->
     Messages.
 
 get_last_message(MessageId, DeviceId) ->
-    em_storage_message:get(#{id => MessageId, deviceId => DeviceId}).
+    Message = em_storage_message:get(#{id => MessageId, deviceId => DeviceId}),
+    case (maps:size(Message) =:= 0) of
+        true ->
+            null;
+        false ->
+            DeviceTime = maps:get(<<"fixTime">>, Message),
+            NewMessage = maps:put(<<"fixTime">>, em_helper_time:utc_to_iso8601(DeviceTime), Message),
+            maps:remove(<<"_id">>, NewMessage)
+    end.
+
 
 create_user(User) ->
-  create_user(maps:get(name, User), maps:get(email, User), maps:get(password, User)).
+    create_user(maps:get(name, User), maps:get(email, User), maps:get(password, User)).
 
 create_user(Name, Email, Password) ->
     case em_storage_user:get_by_email(Email) of

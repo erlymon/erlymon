@@ -68,9 +68,4 @@ str_to_int(Str) ->
 
 
 str_to_utc(Str) ->
-    Date = iso8601:parse(Str),
-    datetime_to_utc(Date).
-
-datetime_to_utc({{Year, Month, Day}, Time}) ->
-    BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
-        (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate) * 1000.
+    em_helper_time:iso8601_to_utc(Str).
