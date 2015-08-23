@@ -36,6 +36,7 @@
  ,{env,[
       {servers, [
         {t55, [{port, 5005}], []},
+        {meitrack, [{port, 5020}], []},
         {echo, [{port, 5555}], []}
       ]}
  ]}
