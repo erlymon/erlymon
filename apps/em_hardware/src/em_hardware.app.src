@@ -31,13 +31,17 @@
    [kernel
    ,stdlib
    ,ranch
+   ,cowboy
    ,em_logger
    ]}
  ,{env,[
-      {servers, [
+      {tcp_servers, [
         {t55, [{port, 5005}], []},
         {meitrack, [{port, 5020}], []},
         {echo, [{port, 5555}], []}
+      ]},
+      {http_servers, [
+	{osmand, [{port, 5055}], [{'_', [{"/", em_osmand_protocol, []}]}]}
       ]}
  ]}
  ,{modules, []}

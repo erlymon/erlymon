@@ -37,19 +37,29 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-  {ok, Servers} = application:get_env(em_hardware, servers),
+  {ok, TcpServers} = application:get_env(em_hardware, tcp_servers),
   lists:foreach(fun({PoolName, Options, Args}) ->
-    em_logger:info("Start hardware ~w port: ~w",[PoolName, proplists:get_value(port, Options)]),
+    em_logger:info("Start tcp server  ~w port: ~w",[PoolName, proplists:get_value(port, Options)]),
     {ok, _} = ranch:start_listener(PoolName, ?ACCEPTORS, ranch_tcp, Options, make_module_name(PoolName), [{protocol, PoolName}, Args])
-  end, Servers),
+  end, TcpServers),
+  {ok, HttpServers} = application:get_env(em_hardware, http_servers),
+  lists:foreach(fun({Name, Options, Routes}) ->
+    em_logger:info("Start http server ~w port: ~w", [Name, proplists:get_value(port, Options)]),
+    Dispatch = cowboy_router:compile(Routes),
+    {ok, _} = cowboy:start_http(Name, 100, Options, [{env, [{dispatch, Dispatch}]}])
+  end, HttpServers),
   em_hardware_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
-  {ok, Servers} = application:get_env(em_hardware, servers),
+  {ok, TcpServers} = application:get_env(em_hardware, tcp_servers),
   lists:foreach(fun({PoolName, _, _}) ->
     ranch:stop_listener(PoolName)
-  end, Servers),
+  end, TcpServers),
+  {ok, HttpServers} = application:get_env(em_hardware, http_servers),
+  lists:foreach(fun({Name, _, _}) ->
+    cowboy:stop_listener(Name)
+  end, HttpServers),
   ok.
 
 %%====================================================================
