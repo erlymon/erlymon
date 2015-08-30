@@ -56,7 +56,8 @@
 
 -export([
   count/2,
-  count/3
+  count/3,
+  ensure_index/2
 ]).
 
 -export([test/0]).
@@ -181,6 +182,18 @@ count(Coll, Selector) ->
 count(Coll, Selector, Limit) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
     gen_server:call(Worker, {count, Coll, Selector, Limit})
+  end).
+
+%% @doc Create index on collection according to given spec.
+%%      The key specification is a bson documents with the following fields:
+%%      key      :: bson document, for e.g. {field, 1, other, -1, location, 2d}, <strong>required</strong>
+%%      name     :: bson:utf8()
+%%      unique   :: boolean()
+%%      dropDups :: boolean()
+-spec ensure_index(mongo:collection(), tuple()) -> any().
+ensure_index(Coll, Spec) ->
+  poolboy:transaction(?POOL_NAME, fun(Worker) ->
+    gen_server:call(Worker, {ensure_index, Coll, Spec})
   end).
 
 

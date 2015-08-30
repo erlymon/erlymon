@@ -63,7 +63,19 @@
   get_last_message/2
 ]).
 
+
+
 init() ->
+    em_storage:ensure_index(users, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}),
+    em_storage:ensure_index(users, #{<<"key">> => #{<<"email">> => 1}, <<"name">> => <<"email_1">>, <<"unique">> => true}),
+
+    em_storage:ensure_index(devices, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}),
+    em_storage:ensure_index(devices, #{<<"key">> => #{<<"uniqueId">> => 1}, <<"name">> => <<"uniqueId_1">>, <<"unique">> => true}),
+
+    em_storage:ensure_index(servers, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}),
+
+    em_storage:ensure_index(messages, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}),
+    em_storage:ensure_index(messages, #{<<"key">> => #{<<"deviceId">> => 1, <<"fixTime">> => 1, <<"imei">> => 1}, <<"name">> => <<"deviceId_1_fixTime_1_imei_1">>, <<"unique">> => true}),
     case em_storage_server:get() of
         null ->
             em_storage_server:create(true, 0, 0, 0),

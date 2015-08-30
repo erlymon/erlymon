@@ -152,7 +152,8 @@ handle_call({count, Coll, Selector}, _From, #state{conn = Conn} = State) ->
   {reply, mongo:count(Conn, Coll, Selector), State};
 handle_call({count, Coll, Selector, Limit}, _From, #state{conn = Conn} = State) ->
   {reply, mongo:count(Conn, Coll, Selector, Limit), State};
-
+handle_call({ensure_index, Coll, Spec}, _From, #state{conn = Conn} = State) ->
+  {reply, mongo:ensure_index(Conn, Coll, Spec), State};
 
 handle_call(_Request, _From, State) ->
   {reply, {error, <<"Invalid em_mongo_worker call">>}, State}.
