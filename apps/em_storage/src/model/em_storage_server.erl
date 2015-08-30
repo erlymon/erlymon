@@ -55,7 +55,7 @@ update(ServerId, ServerModel) ->
     em_storage:update(servers, #{id => ServerId}, ServerModel).
 
 get() ->
-    Item = em_storage:find_one(servers, #{}),
+    Item = em_storage:find_one(servers, #{}, [{projector, #{'_id' => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;

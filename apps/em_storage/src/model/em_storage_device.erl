@@ -84,7 +84,7 @@ get_by_id(Id) ->
     end.
 
 get_by_uid(UniqueId) ->
-    Item = em_storage:find_one(devices, #{<<"uniqueId">> => UniqueId}),
+    Item = em_storage:find_one(devices, #{<<"uniqueId">> => UniqueId}, [{projector, #{<<"_id">> => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;

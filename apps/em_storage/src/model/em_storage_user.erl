@@ -84,7 +84,7 @@ delete(Id) ->
   em_storage:delete_one(users, #{id => Id}).
 
 get_by_name(Name) ->
-    Item = em_storage:find_one(users, #{name => Name}),
+    Item = em_storage:find_one(users, #{name => Name}, [{projector, #{'_id' => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -93,7 +93,7 @@ get_by_name(Name) ->
     end.
 
 get_by_email(Email) ->
-    Item = em_storage:find_one(users, #{email => Email}),
+    Item = em_storage:find_one(users, #{email => Email}, [{projector, #{'_id' => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -102,7 +102,7 @@ get_by_email(Email) ->
     end.
 
 get_by_id(UserId) ->
-    Item = em_storage:find_one(users, #{id => UserId}),
+    Item = em_storage:find_one(users, #{id => UserId}, [{projector, #{'_id' => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -111,7 +111,7 @@ get_by_id(UserId) ->
     end.
 
 get(Email, HashPassword) ->
-    Item = em_storage:find_one(users, #{email => Email, hashPassword => HashPassword}),
+    Item = em_storage:find_one(users, #{email => Email, hashPassword => HashPassword}, [{projector, #{'_id' => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -121,4 +121,4 @@ get(Email, HashPassword) ->
 
 
 get_all() ->
-    em_storage:find(users, #{}).
+    em_storage:find(users, #{}, [{projector, #{'_id' => false}}]).

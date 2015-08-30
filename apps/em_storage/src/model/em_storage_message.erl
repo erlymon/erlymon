@@ -134,10 +134,10 @@ timestamp() ->
 
 
 get(SearchSpec) ->
-    em_storage:find_one(messages, SearchSpec).
+    em_storage:find_one(messages, SearchSpec, [{projector, #{'_id' => false}}]).
     
 get(DeviceId, DeviceTime) ->
-    em_storage:find_one(messages, #{deviceId => DeviceId, deviceTime => DeviceTime}).
+    em_storage:find_one(messages, #{deviceId => DeviceId, deviceTime => DeviceTime}, [{projector, #{'_id' => false}}]).
     
 get(DeviceId, TimeFrom, TimeTo) ->
-    em_storage:find(messages, #{deviceId => DeviceId, fixTime => {'$gte', TimeFrom, '$lte', TimeTo}}).
+    em_storage:find(messages, #{deviceId => DeviceId, fixTime => {'$gte', TimeFrom, '$lte', TimeTo}}, [{projector, #{'_id' => false}}]).
