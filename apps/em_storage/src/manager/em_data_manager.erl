@@ -171,7 +171,7 @@ check_user(Email, Password) ->
 
 get_users() ->
     GetUser = fun(User, Acc) ->
-                      [maps:remove(<<"_id">>, User)|Acc]
+                      [User|Acc]
           end,
     Cursor = em_storage_user:get_all(),
     Users = load_objects(GetUser, Cursor, em_storage_cursor:next(Cursor), []),
@@ -224,7 +224,7 @@ get_devices(UserId) ->
                       null ->
                           Acc;
                       Device ->
-                          [maps:remove(<<"_id">>, Device)|Acc]
+                          [Device|Acc]
                   end
           end,
     Cursor = em_storage_permission:get(UserId),
