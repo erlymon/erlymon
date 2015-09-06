@@ -54,6 +54,7 @@
   delete_device/1,
   delete_device/2,
   get_devices/1,
+  get_devices/2,
   get_device_by_uid/1
 ]).
 
@@ -219,8 +220,11 @@ delete_device(UserId, DeviceId) ->
     end.
 
 get_devices(UserId) ->
+    get_devices(UserId, #{'_id' => false, password => false, messageId => false, lastUpdate => false}).
+
+get_devices(UserId, Projector) ->
     GetDeviceById = fun(#{<<"deviceId">> := DeviceId}, Acc) ->
-                  case em_storage_device:get_by_id(DeviceId) of
+                  case em_storage_device:get_by_id(DeviceId, Projector) of
                       null ->
                           Acc;
                       Device ->

@@ -32,6 +32,7 @@
   update/3,
   delete/1,
   get_by_id/1,
+  get_by_id/2,
   get_by_uid/1
 ]).
 
@@ -75,16 +76,17 @@ delete(Id) ->
     em_storage:delete_one(devices, #{id => Id}).
 
 get_by_id(Id) ->
-    Item = em_storage:find_one(devices, #{id => Id}, [{projector, #{'_id' => false, password => false, messageId => false, lastUpdate => false}}]),
-    case (maps:size(Item) =/= 0) of
-      true ->
-	Item;
-      false ->
-	null
-    end.
+    get_by_id(Id, #{'_id' => false, password => false, messageId => false, lastUpdate => false}).
+
+get_by_id(Id, Projector) ->
+    get(#{id => Id}, Projector).
+
 
 get_by_uid(UniqueId) ->
-    Item = em_storage:find_one(devices, #{uniqueId => UniqueId}, [{projector, #{'_id' => false, password => false, messageId => false, lastUpdate => false}}]),
+    get(#{uniqueId => UniqueId}, #{'_id' => false, password => false, messageId => false, lastUpdate => false}).
+    
+get(Query, Projector) ->
+    Item = em_storage:find_one(devices, Query, [{projector, Projector}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
