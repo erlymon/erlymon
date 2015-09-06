@@ -46,7 +46,7 @@
 %% positionId: {type: integer},
 %% dataId: {type: integer}
 %%}
-
+%% {"uniqueId":"0101","name":"assa","id":628}
 create(Name, UniqueId, Password) ->
     DeviceModel = #{
       id => bson:unixtime_to_secs(bson:timenow()),
@@ -75,7 +75,7 @@ delete(Id) ->
     em_storage:delete_one(devices, #{id => Id}).
 
 get_by_id(Id) ->
-    Item = em_storage:find_one(devices, #{<<"id">> => Id}),
+    Item = em_storage:find_one(devices, #{id => Id}, [{projector, #{'_id' => false, password => false, messageId => false, lastUpdate => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -84,7 +84,7 @@ get_by_id(Id) ->
     end.
 
 get_by_uid(UniqueId) ->
-    Item = em_storage:find_one(devices, #{<<"uniqueId">> => UniqueId}, [{projector, #{<<"_id">> => false}}]),
+    Item = em_storage:find_one(devices, #{uniqueId => UniqueId}, [{projector, #{'_id' => false, password => false, messageId => false, lastUpdate => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
