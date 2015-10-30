@@ -22,7 +22,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 
--module(em_json_sup).
+-module(em_storage_sup).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(supervisor).
@@ -48,8 +48,19 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1}, []} }.
+    {ok, EmStorageEnv} = application:get_env(erlymon, em_storage),
+    Pools = proplists:get_value(pools, EmStorageEnv),
+    em_logger:info("Pools ~w", [Pools]),
+    PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
+        em_logger:info("Pool spec: ~s ~w ~w", [Name, SizeArgs, WorkerArgs]),
+        PoolArgs = [{name, {local, Name}},
+	    {worker_module, make_module_name(Name)}] ++ SizeArgs,
+        poolboy:child_spec(Name, PoolArgs, WorkerArgs)
+    end, Pools),
+    {ok, {{one_for_one, 10, 10}, PoolSpecs}}.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+make_module_name(Name) ->
+    list_to_atom("em_" ++ atom_to_list(Name) ++ "_worker").

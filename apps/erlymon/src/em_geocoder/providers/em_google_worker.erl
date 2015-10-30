@@ -180,7 +180,7 @@ geocode_address(Key, Address) ->
   case ibrowse:send_req(binary_to_list(UrlWithKeyAndAddress), [], get) of
     {ok, "200", _Headers, Body} ->
       %logger:debug("BODY: ~w", [list_to_binary(Body)]),
-      Res = json:decode(list_to_binary(Body)),
+      Res = em_json:decode(list_to_binary(Body)),
       {ok, Res};
     _ ->
       {error}
@@ -198,7 +198,7 @@ geocode_coords(Key, Latitude, Longitude) ->
   case ibrowse:send_req(binary_to_list(UrlWithKeyAndLatAndLon), [], get) of
     {ok, "200", _Headers, Body} ->
       %logger:debug("BODY: ~w", [list_to_binary(Body)]),
-      case json:decode(list_to_binary(Body)) of
+      case em_json:decode(list_to_binary(Body)) of
 
         #{<<"status">> := <<"OK">>, <<"results">> := Result} ->
           {ok, Result};

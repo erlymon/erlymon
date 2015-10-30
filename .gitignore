@@ -1,6 +1,9 @@
 .rebar3
 **/rebar.lock
+.rebar3/*
 
+rebar.lock
+_build
 _*
 .eunit
 *.o

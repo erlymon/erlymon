@@ -26,6 +26,8 @@
 
 -behaviour(application).
 
+-define(ACCEPTORS, 10).
+
 %% Application callbacks
 -export([start/2
         ,stop/1]).
@@ -35,12 +37,73 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
+    em_storage_sup:start_link(),
+    em_data_manager:init(),
+    em_geocoder_sup:start_link(),
+    start_hardware(_StartType, _StartArgs),
+    start_http(_StartType, _StartArgs),
     erlymon_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
-    ok.
+    stop_http(_State),
+    stop_hardware(_State).
 
+    
+start_hardware(_StartType, _StartArgs) ->
+  {ok, EmHardware} = application:get_env(erlymon, em_hardware),
+  
+  TcpServers = proplists:get_value(tcp_servers, EmHardware),
+  lists:foreach(fun({PoolName, Options, Args}) ->
+    em_logger:info("Start tcp server  ~w port: ~w",[PoolName, proplists:get_value(port, Options)]),
+    {ok, _} = ranch:start_listener(PoolName, ?ACCEPTORS, ranch_tcp, Options, make_module_name(PoolName), [{protocol, PoolName}, Args])
+  end, TcpServers),
+  
+  HttpServers = proplists:get_value(http_servers, EmHardware),
+  lists:foreach(fun({Name, Options, Routes}) ->
+    em_logger:info("Start http server ~w port: ~w", [Name, proplists:get_value(port, Options)]),
+    Dispatch = cowboy_router:compile(Routes),
+    {ok, _} = cowboy:start_http(Name, 100, Options, [{env, [{dispatch, Dispatch}]}])
+  end, HttpServers).
+
+%%--------------------------------------------------------------------
+stop_hardware(_State) ->
+  {ok, EmHardware} = application:get_env(erlymon, em_hardware),
+  
+  TcpServers = proplists:get_value(tcp_servers, EmHardware),
+  lists:foreach(fun({PoolName, _, _}) ->
+    ranch:stop_listener(PoolName)
+  end, TcpServers),
+  
+  HttpServers = proplists:get_value(http_servers, EmHardware),
+  lists:foreach(fun({Name, _, _}) ->
+    cowboy:stop_listener(Name)
+  end, HttpServers),
+  ok.
+
+  
+start_http(_StartType, _StartArgs) ->
+  {ok, EmHttp} = application:get_env(erlymon, em_http),
+  Servers = proplists:get_value(servers, EmHttp),
+  lists:foreach(fun({Name, Options, Routes}) ->
+    em_logger:info("Start http server ~w port: ~w", [Name, proplists:get_value(port, Options)]),
+    Dispatch = cowboy_router:compile(Routes),
+    {ok, _} = cowboy:start_http(Name, 100, Options, [{env, [{dispatch, Dispatch}]}])
+  end, Servers).
+
+%%--------------------------------------------------------------------
+stop_http(_State) ->
+  {ok, EmHttp} = application:get_env(erlymon, em_http),
+  Servers = proplists:get_value(servers, EmHttp),
+  lists:foreach(fun({Name, _, _}) ->
+    cowboy:stop_listener(Name)
+  end, Servers),
+  ok.
+%%====================================================================
+%% Internal functions
+%%====================================================================
+make_module_name(Name) ->
+  list_to_atom("em_" ++ atom_to_list(Name) ++ "_protocol").
 %%====================================================================
 %% Internal functions
 %%====================================================================

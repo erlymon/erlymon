@@ -21,26 +21,45 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_helper_app).
+-module(em_geocoder_sup).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
--behaviour(application).
+-behaviour(supervisor).
 
-%% Application callbacks
--export([start/2
-        ,stop/1]).
-
-%%====================================================================
 %% API
+-export([start_link/0]).
+
+%% Supervisor callbacks
+-export([init/1]).
+
+-define(SERVER, ?MODULE).
+
+%%====================================================================
+%% API functions
 %%====================================================================
 
-start(_StartType, _StartArgs) ->
-    em_helper_sup:start_link().
+start_link() ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
-%%--------------------------------------------------------------------
-stop(_State) ->
-    ok.
+%%====================================================================
+%% Supervisor callbacks
+%%====================================================================
+
+%% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
+init([]) ->
+    {ok, EmGeocoderEnv} = application:get_env(erlymon, em_geocoder),
+    Pools = proplists:get_value(pools, EmGeocoderEnv),
+    em_logger:debug("Pools ~w", [Pools]),
+    PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
+        em_logger:debug("Pool spec: ~s ~w ~w", [Name, SizeArgs, WorkerArgs]),
+        PoolArgs = [{name, {local, Name}},
+            {worker_module, make_module_name(Name)}] ++ SizeArgs,
+        poolboy:child_spec(Name, PoolArgs, WorkerArgs)
+    end, Pools),
+    {ok, {{one_for_one, 10, 10}, PoolSpecs}}.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
+make_module_name(Name) ->
+    list_to_atom("em_" ++ atom_to_list(Name) ++ "_worker").
