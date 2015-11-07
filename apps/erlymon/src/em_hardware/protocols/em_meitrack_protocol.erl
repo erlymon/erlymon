@@ -138,7 +138,7 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport}
 %% (echo -n -e "\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n";) | nc -v localhost 5020
 parse(Data) ->
   case em_regexp:match(Data, ?PATTERN) of
-    {match, [_, Imei, Event, Latitude, Longitude, Year, Month, Day, Hour, Minute, Second, Validity, Satellites, GsmSignal, Speed, Course, Hdop, Altitude, Odometer, Runtime, Cell, State, Adc1, Adc2, Adc3, Battery, Power|_]} ->
+    {match, [_, Imei, _Event, Latitude, Longitude, Year, Month, Day, Hour, Minute, Second, Validity, Satellites, _GsmSignal, Speed, Course, _Hdop, Altitude, _Odometer, _Runtime, _Cell, _State, _Adc1, _Adc2, _Adc3, _Battery, Power|_]} ->
       Message = #{
         deviceTime => parse_date(Year, Month, Day, Hour, Minute, Second),
         latitude => list_to_float(binary_to_list(Latitude)),
