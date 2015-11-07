@@ -44,7 +44,7 @@ create(UserId, DeviceId) ->
     PermissionModel = #{userId => UserId, deviceId => DeviceId},
     em_storage:insert(permissions, PermissionModel).
 
-update(UserId, DeviceId) -> ok.
+update(_UserId, _DeviceId) -> ok.
 
 delete(DeviceId) -> 
     em_storage:delete(permissions, #{deviceId => DeviceId}).
