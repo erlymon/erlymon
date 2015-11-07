@@ -104,7 +104,7 @@ update_server(Server) ->
 
 create_message(DeviceId, Protocol, MessageParams) ->
     case em_storage_message:get(DeviceId, maps:get(deviceTime, MessageParams)) of
-        null ->
+        #{} ->
             case em_storage_message:create(DeviceId, Protocol, MessageParams) of
 	      null ->
 		null;
