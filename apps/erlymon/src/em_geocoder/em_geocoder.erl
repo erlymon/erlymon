@@ -35,14 +35,14 @@
 
 %% API
 
-geocode(PoolName, Address) ->
-    poolboy:transaction(PoolName, fun(Worker) ->
-        gen_server:call(Worker, {geocode, Address})
+geocode(Address, Language) ->
+    poolboy:transaction(google, fun(Worker) ->
+        gen_server:call(Worker, {geocode, Address, Language})
     end).
 
-geocode(PoolName, Latitude, Longitude) ->
-    poolboy:transaction(PoolName, fun(Worker) ->
-        gen_server:call(Worker, {geocode, Latitude, Longitude})
+geocode(Latitude, Longitude, Language) ->
+    poolboy:transaction(google, fun(Worker) ->
+        gen_server:call(Worker, {geocode, Latitude, Longitude, Language})
     end).
 %% Internals
 

@@ -41,9 +41,9 @@
 -define(SERVER, ?MODULE).
 
 %% Url: https://maps.googleapis.com/maps/api/geocode/json?address=Moscow&key=API_KEY
--define(ADDRESS_URL, <<"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={key}">>).
+-define(ADDRESS_URL, <<"https://maps.googleapis.com/maps/api/geocode/json?address={address}&language={language}">>).
 %% Url: https://maps.googleapis.com/maps/api/geocode/json?latlng=40.714224,-73.961452&key=API_KEY
--define(COORDS_URL, <<"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lon}&key={key}">>).
+-define(COORDS_URL, <<"https://maps.googleapis.com/maps/api/geocode/json?latlng={lat},{lon}&language={language}">>).
 
 -record(state, {key}).
 
@@ -100,10 +100,10 @@ init(Args) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call({geocode, Address}, _From, #state{key = Key} = State) ->
-  {reply, geocode_address(Key, Address), State};
-handle_call({geocode, Latitude, Longitude}, _From, #state{key = Key} = State) ->
-  {reply, geocode_coords(Key, Latitude, Longitude), State};
+handle_call({geocode, Address, Language}, _From, #state{key = Key} = State) ->
+  {reply, geocode_address(Key, Address, Language), State};
+handle_call({geocode, Latitude, Longitude, Language}, _From, #state{key = Key} = State) ->
+  {reply, geocode_coords(Key, Latitude, Longitude, Language), State};
 %%handle_call({equery, Stmt, Params}, _From, #state{conn = Conn} = State) ->
 %%  {reply, epgsql:equery(Conn, Stmt, Params), State};
 handle_call(_Request, _From, State) ->
@@ -173,38 +173,40 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-geocode_address(Key, Address) ->
-  UrlWithKey =  binary:replace(?ADDRESS_URL, <<"{key}">>, Key),
-  UrlWithKeyAndAddress = binary:replace(UrlWithKey, <<"{address}">>, Address),
-  em_logger:info("URL: ~s", [UrlWithKeyAndAddress]),
-  case ibrowse:send_req(binary_to_list(UrlWithKeyAndAddress), [], get) of
+geocode_address(Key, Address, Language) ->
+  Url = create_url(?COORDS_URL, [
+    {<<"{key}">>, Key},
+    {<<"{address}">>, Address},
+    {<<"{language}">>, list_to_binary(atom_to_list(Language))}
+  ]),
+  em_logger:info("URL: ~s", [Url]),
+  case ibrowse:send_req(binary_to_list(Url), [], get) of
     {ok, "200", _Headers, Body} ->
       %logger:debug("BODY: ~w", [list_to_binary(Body)]),
-      Res = em_json:decode(list_to_binary(Body)),
+      Res = json:decode(list_to_binary(Body)),
       {ok, Res};
     _ ->
       {error}
   end.
 
-geocode_coords(Key, Latitude, Longitude) ->
-  UrlWithKey =  binary:replace(?COORDS_URL, <<"{key}">>, Key),
-  UrlWithKeyAndLat = binary:replace(UrlWithKey, <<"{lat}">>, float_to_string(Latitude)),
-  UrlWithKeyAndLatAndLon = binary:replace(UrlWithKeyAndLat, <<"{lon}">>, float_to_string(Longitude)),
-  em_logger:info("URL: ~s", [create_url(?COORDS_URL, [
+geocode_coords(Key, Latitude, Longitude, Language) ->
+  Url = create_url(?COORDS_URL, [
     {<<"{key}">>, Key},
     {<<"{lat}">>, float_to_string(Latitude)},
-    {<<"{lon}">>, float_to_string(Longitude)}
-  ])]),
-  case ibrowse:send_req(binary_to_list(UrlWithKeyAndLatAndLon), [], get) of
+    {<<"{lon}">>, float_to_string(Longitude)},
+    {<<"{language}">>, list_to_binary(atom_to_list(Language))}
+  ]),
+  em_logger:info("URL: ~s", [Url]),
+  case ibrowse:send_req(binary_to_list(Url), [], get) of
     {ok, "200", _Headers, Body} ->
       %logger:debug("BODY: ~w", [list_to_binary(Body)]),
       case em_json:decode(list_to_binary(Body)) of
 
-        #{<<"status">> := <<"OK">>, <<"results">> := Result} ->
+        #{status := <<"OK">>, results := [#{formatted_address := Result}|_]} ->
           {ok, Result};
-        #{<<"status">> := <<"ZERO_RESULTS">>, <<"results">> := Result} ->
+        #{status := <<"ZERO_RESULTS">>, results := Result} ->
           {ok, Result};
-        #{<<"error_message">> := Messages} ->
+        #{error_message := Messages} ->
           {error, Messages}
       end;
     _ ->
@@ -221,13 +223,3 @@ create_url(UrlTemplate, Params) ->
 
 float_to_string(Value) ->
   list_to_binary(io_lib:format("~f", [Value])).
-
-parse_result(List) ->
-  lists:foldr(fun(AddressComponents, Result) ->
-    [parse_address_components(AddressComponents)|Result]
-  end, [], List).
-
-parse_address_components(AddressComponents) ->
-  lists:foldr(fun(#{<<"types">> := Types, <<"long_name">> := LongName}, Result) ->
-    Result
-  end, #{}, AddressComponents).
