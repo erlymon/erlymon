@@ -174,7 +174,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%%===================================================================
 geocode_address(Key, Address, Language) ->
-  Url = create_url(?COORDS_URL, [
+  Url = create_url(?ADDRESS_URL, [
     {<<"{key}">>, Key},
     {<<"{address}">>, Address},
     {<<"{language}">>, list_to_binary(atom_to_list(Language))}
