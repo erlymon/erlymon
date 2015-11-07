@@ -34,11 +34,6 @@ hash(Password) ->
     Bin = crypto:hash(sha512, Password),
     list_to_binary(lists:flatten(list_to_hex(binary_to_list(Bin)))).
     
-
-md5_hex(S) ->
-    Md5_bin =  erlang:md5(S),
-    Md5_list = binary_to_list(Md5_bin),
-    lists:flatten(list_to_hex(Md5_list)).
  
 list_to_hex(L) ->
     lists:map(fun(X) ->
