@@ -81,8 +81,8 @@ init(Args) ->
   _Host = (proplists:get_value(host, Args)),
   _Port = (proplists:get_value(port, Args)),
   Database = (proplists:get_value(database, Args)),
-  Login = (proplists:get_value(login, Args)),
-  Password = (proplists:get_value(password, Args)),
+  _Login = (proplists:get_value(login, Args)),
+  _Password = (proplists:get_value(password, Args)),
 
   em_logger:info("init worker args: ~w ~s", [Database, Database]),
   %%em_logger:info("init worker host: ~s, port: ~w database: ~s username: ~s, password: ~s", [Host, Port, Database, Login, Password]),

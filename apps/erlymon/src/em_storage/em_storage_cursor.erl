@@ -44,10 +44,3 @@ next(Cursor) ->
 -spec close(mongo:cursor()) -> ok.
 close(Cursor) ->
     mc_cursor:close(Cursor).
-
-
-bson_to_map(Doc) ->
-    %%io:format("~w~n", [Doc]),
-    bson:doc_foldl(fun(Label, Value, Acc) -> 
-                           maps:put(Label, Value, Acc)  
-                   end, #{}, Doc).
