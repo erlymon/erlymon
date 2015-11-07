@@ -133,15 +133,15 @@ find_one(Coll, Selector) ->
 
 -spec find_one(mongo:collection(), map(), map()) -> map().
 find_one(Coll, Selector, Projector) ->
-  bson_to_map(poolboy:transaction(?POOL_NAME, fun(Worker) ->
+  poolboy:transaction(?POOL_NAME, fun(Worker) ->
     gen_server:call(Worker, {find_one, Coll, Selector, Projector})
-  end)).
+  end).
 
 -spec find_one(mongo:collection(), map(), map(), mongo:skip()) -> map().
 find_one(Coll, Selector, Projector, Skip) ->
-  bson_to_map(poolboy:transaction(?POOL_NAME, fun(Worker) ->
+  poolboy:transaction(?POOL_NAME, fun(Worker) ->
     gen_server:call(Worker, {find_one, Coll, Selector, Projector, Skip})
-  end)).
+  end).
 
 
 -spec find(mongo:collection(), map()) -> mongo:cursor().
@@ -195,13 +195,6 @@ ensure_index(Coll, Spec) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
     gen_server:call(Worker, {ensure_index, Coll, Spec})
   end).
-
-
-bson_to_map(Doc) ->
-    em_logger:info("bson_to_map(Doc): ~w", [Doc]),
-    bson:doc_foldl(fun(Label, Value, Acc) -> 
-                           maps:put(Label, Value, Acc)  
-                   end, #{}, Doc).
 
 test() ->
   insert(adf_test, {a,1,b,1}),
