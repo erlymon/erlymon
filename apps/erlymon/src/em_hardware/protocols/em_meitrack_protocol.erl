@@ -124,7 +124,8 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport}
                       em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
                       Transport:close(Socket);
                   Object ->
-                      em_data_manager:create_message(maps:get(id, Object), Protocol, maps:merge(#{imei => maps:get(uniqueId, Object)}, Message)),
+		      em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"id">>, Object), Imei, Message]),
+                      em_data_manager:create_message(maps:get(<<"id">>, Object), Protocol, maps:merge(#{imei => maps:get(<<"uniqueId">>, Object)}, Message)),
                       loop(State#state{device = Object})
               end;
           _ ->
