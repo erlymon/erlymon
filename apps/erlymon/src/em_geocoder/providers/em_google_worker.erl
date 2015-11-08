@@ -209,9 +209,9 @@ geocode_coords(Key, Latitude, Longitude, Language) ->
   end.
   
 parse_result(<<"OK">>, [#{<<"formatted_address">> := Result}|_]) ->
-  {ok, Result};
+  Result;
 parse_result(<<"ZERO_RESULTS">>, []) ->
-  {error, <<"ZERO_RESULTS">>}.
+  <<"">>.
 
 %% create_url(url, [{key, <<>>}, {address, <<>>}])
 %% create_url(url, [{key, <<>>}, {lat, 0.0}, {lon, 0.0}])
