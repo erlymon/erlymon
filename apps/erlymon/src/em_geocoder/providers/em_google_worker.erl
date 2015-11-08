@@ -200,18 +200,18 @@ geocode_coords(Key, Latitude, Longitude, Language) ->
   case ibrowse:send_req(binary_to_list(Url), [], get) of
     {ok, "200", _Headers, Body} ->
       %logger:debug("BODY: ~w", [list_to_binary(Body)]),
-      case em_json:decode(list_to_binary(Body)) of
-
-        #{status := <<"OK">>, results := [#{formatted_address := Result}|_]} ->
-          {ok, Result};
-        #{status := <<"ZERO_RESULTS">>, results := Result} ->
-          {ok, Result};
-        #{error_message := Messages} ->
-          {error, Messages}
-      end;
+      Object = em_json:decode(list_to_binary(Body)),
+      Status = maps:get(<<"status">>, Object),
+      Results = maps:get(<<"results">>, Object),
+      parse_result(Status, Results);
     _ ->
       {error}
   end.
+  
+parse_result(<<"OK">>, [#{<<"formatted_address">> := Result}|_]) ->
+  {ok, Result};
+parse_result(<<"ZERO_RESULTS">>, []) ->
+  {error, <<"ZERO_RESULTS">>}.
 
 %% create_url(url, [{key, <<>>}, {address, <<>>}])
 %% create_url(url, [{key, <<>>}, {lat, 0.0}, {lon, 0.0}])
