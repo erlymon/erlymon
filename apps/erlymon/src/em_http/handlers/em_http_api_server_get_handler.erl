@@ -54,7 +54,7 @@ get_server(Req) ->
     %%{"success":true,"data":{"zoom":0,"registration":true,"latitude":0.0,"longitude":0.0,"id":1}}
     case em_data_manager:get_server() of
         null ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req);
         Server ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true,  data => maps:remove(<<"_id">>, Server)}), Req)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true,  <<"data">> => maps:remove(<<"_id">>, Server)}), Req)
     end.

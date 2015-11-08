@@ -55,10 +55,10 @@ update_server(Req) ->
   em_logger:info("SESSION: ~w", [cowboy_session:get(user, Req)]),
   case cowboy_session:get(user, Req) of
     {undefined, Req2} ->
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
     {_User, Req2} ->
       {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
       Server = em_json:decode(JsonBin),
       em_data_manager:update_server(Server),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true}), Req3)
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true}), Req3)
   end.

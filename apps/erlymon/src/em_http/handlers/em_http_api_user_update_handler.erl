@@ -52,15 +52,15 @@ update_user(Req) ->
         {User, Req2} ->
             {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
             UserModel = em_json:decode(JsonBin),
-            case check_permission(maps:get(<<"id">>, User), maps:get(id, UserModel)) of
+            case check_permission(maps:get(<<"id">>, User), maps:get(<<"id">>, UserModel)) of
                 false ->
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req3);
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
                 _ ->
-                    case em_data_manager:update_user(maps:remove(o,UserModel)) of
+                    case em_data_manager:update_user(maps:remove(<<"o">>,UserModel)) of
                         null ->
-                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req3);
+                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
                         NewUser ->
-                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => NewUser}), Req3)
+                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => NewUser}), Req3)
                     end
             end
     end.

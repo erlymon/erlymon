@@ -46,16 +46,16 @@ request(_, Req) ->
 remove(Req) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
             case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
                 false ->
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
                 _ ->
                     {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
                     UserModel = em_json:decode(JsonBin),
                     em_data_manager:delete_user(UserModel),
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove(<<"_id">>, UserModel)}), Req3)
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => maps:remove(<<"_id">>, UserModel)}), Req3)
             end
     end.
 

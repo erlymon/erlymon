@@ -46,17 +46,17 @@ request(_, Req) ->
 update(Req) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
             %em_logger:info("QS: ~w", [cowboy_req:body_qs(Req)]),
             {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
             Device = em_json:decode(JsonBin),
-            case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(id, Device)) of
+            case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
                 false ->
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req3);
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
                 true ->
                     em_data_manager:update_device(Device),
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove(<<"_id">>, Device)}), Req3)
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => maps:remove(<<"_id">>, Device)}), Req3)
             end
     end.
 

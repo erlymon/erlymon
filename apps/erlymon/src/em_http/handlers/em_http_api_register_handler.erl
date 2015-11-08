@@ -57,4 +57,4 @@ register(Req) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
   User = em_json:decode(JsonBin),
   Res = em_data_manager:create_user(User),
-  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => Res}), Req2).
+  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => Res}), Req2).

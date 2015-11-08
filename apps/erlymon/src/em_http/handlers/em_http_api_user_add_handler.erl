@@ -54,13 +54,13 @@ add_user(Req) ->
             UserModel = em_json:decode(JsonBin),
             case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
                 false ->
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req3);
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
                 _ ->
                     case em_data_manager:create_user(UserModel) of
                         null ->
-                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req3);
+                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
                         NewUser ->
-                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => NewUser}), Req3)
+                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => NewUser}), Req3)
                     end
             end
     end.

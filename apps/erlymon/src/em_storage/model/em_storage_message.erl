@@ -105,14 +105,14 @@
 
 create(DeviceId, Protocol, MessageParams) ->
     ServerTime = timestamp(),
-    DeviceTime = maps:get(deviceTime, MessageParams),
+    DeviceTime = maps:get(<<"deviceTime">>, MessageParams),
     MessageModel = maps:merge(MessageParams, #{
-      id => bson:unixtime_to_secs(bson:timenow()),
-      serverTime => ServerTime,
-      fixTime => fix_time(ServerTime, DeviceTime),
-      deviceTime => DeviceTime,
-      deviceId => DeviceId,
-      protocol => Protocol
+      <<"id">> => bson:unixtime_to_secs(bson:timenow()),
+      <<"serverTime">> => ServerTime,
+      <<"fixTime">> => fix_time(ServerTime, DeviceTime),
+      <<"deviceTime">> => DeviceTime,
+      <<"deviceId">> => DeviceId,
+      <<"protocol">> => Protocol
      }),
     em_logger:info("Message: ~w", [MessageModel]),
     em_storage:insert(messages, MessageModel).
@@ -134,10 +134,10 @@ timestamp() ->
 
 
 get(SearchSpec) ->
-    em_storage:find_one(messages, SearchSpec, [{projector, #{'_id' => false}}]).
+    em_storage:find_one(messages, SearchSpec, [{projector, #{<<"_id">> => false}}]).
     
 get(DeviceId, DeviceTime) ->
-    em_storage:find_one(messages, #{deviceId => DeviceId, deviceTime => DeviceTime}, [{projector, #{'_id' => false}}]).
+    em_storage:find_one(messages, #{<<"deviceId">> => DeviceId, <<"deviceTime">> => DeviceTime}, [{projector, #{<<"_id">> => false}}]).
     
 get(DeviceId, TimeFrom, TimeTo) ->
-    em_storage:find(messages, #{deviceId => DeviceId, fixTime => {'$gte', TimeFrom, '$lte', TimeTo}}, [{projector, #{'_id' => false}}]).
+    em_storage:find(messages, #{<<"deviceId">> => DeviceId, <<"fixTime">> => {'$gte', TimeFrom, '$lte', TimeTo}}, [{projector, #{<<"_id">> => false}}]).

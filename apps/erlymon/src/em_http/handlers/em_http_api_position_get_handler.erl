@@ -49,17 +49,17 @@ request(_, Req) ->
 get_positions(Req) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
             #{deviceId := DeviceId, from := From, to := To} = cowboy_req:match_qs([deviceId, from, to], Req),
-            %em_logger:info("Device ID: ~d, From: ~w, To: ~w", [str_to_int(DeviceId), str_to_utc(From), str_to_utc(To)]),
+            %%em_logger:info("Device ID: ~d, From: ~w, To: ~w", [str_to_int(DeviceId), str_to_utc(From), str_to_utc(To)]),
             Id = str_to_int(DeviceId),
             case em_permissions_manager:check_device(maps:get(<<"id">>, User), Id) of
                 false ->
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
                 _ ->
                     Messages = em_data_manager:get_messages(Id, str_to_utc(From), str_to_utc(To)),
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => Messages}), Req2)
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => Messages}), Req2)
             end
     end.
 

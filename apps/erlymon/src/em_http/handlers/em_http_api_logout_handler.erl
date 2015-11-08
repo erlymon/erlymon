@@ -55,4 +55,4 @@ request(_, Req) ->
 -spec logout(Req::cowboy_req:req()) -> cowboy_req:req().
 logout(Req) ->
     {ok, Req2} = cowboy_session:expire(Req),
-    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true}), Req2).
+    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true}), Req2).

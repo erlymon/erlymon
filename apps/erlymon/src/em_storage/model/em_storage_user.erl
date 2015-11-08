@@ -65,13 +65,13 @@ create(Name, Email, Password) ->
 
 create(Name, Email, Password, Admin) ->
   UserModel = #{
-    id => bson:unixtime_to_secs(bson:timenow()),
-    name => Name,
-    password => Password,
-    hashPassword => em_password:hash(Password),
-    email => Email,
-    admin => Admin,
-    lastUpdate => bson:unixtime_to_secs(bson:timenow())
+    <<"id">> => bson:unixtime_to_secs(bson:timenow()),
+    <<"name">> => Name,
+    <<"password">> => Password,
+    <<"hashPassword">> => em_password:hash(Password),
+    <<"email">> => Email,
+    <<"admin">> => Admin,
+    <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
   },
   create(UserModel).
 
@@ -79,13 +79,13 @@ create(UserModel) ->
   em_storage:insert(users, UserModel).
 
 update(Id, UserModel) ->
-  em_storage:update(users, #{id => Id}, UserModel).
+  em_storage:update(users, #{<<"id">> => Id}, UserModel).
 
 delete(Id) ->
-  em_storage:delete_one(users, #{id => Id}).
+  em_storage:delete_one(users, #{<<"id">> => Id}).
 
 get_by_name(Name) ->
-    Item = em_storage:find_one(users, #{name => Name}, [{projector, #{'_id' => false, password => false, hashPassword => false, lastUpdate => false}}]),
+    Item = em_storage:find_one(users, #{<<"name">> => Name}, [{projector, #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -94,7 +94,7 @@ get_by_name(Name) ->
     end.
 
 get_by_email(Email) ->
-    Item = em_storage:find_one(users, #{email => Email}, [{projector, #{'_id' => false, password => false, hashPassword => false, lastUpdate => false}}]),
+    Item = em_storage:find_one(users, #{<<"email">> => Email}, [{projector, #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -103,7 +103,7 @@ get_by_email(Email) ->
     end.
 
 get_by_id(UserId) ->
-    Item = em_storage:find_one(users, #{id => UserId}, [{projector, #{'_id' => false, password => false, hashPassword => false, lastUpdate => false}}]),
+    Item = em_storage:find_one(users, #{<<"id">> => UserId}, [{projector, #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -112,7 +112,7 @@ get_by_id(UserId) ->
     end.
 
 get(Email, HashPassword) ->
-    Item = em_storage:find_one(users, #{email => Email, hashPassword => HashPassword}, [{projector, #{'_id' => false, password => false, hashPassword => false, lastUpdate => false}}]),
+    Item = em_storage:find_one(users, #{<<"email">> => Email, <<"hashPassword">> => HashPassword}, [{projector, #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -122,4 +122,4 @@ get(Email, HashPassword) ->
 
 
 get_all() ->
-    em_storage:find(users, #{}, [{projector, #{'_id' => false, password => false, hashPassword => false, lastUpdate => false}}]).
+    em_storage:find(users, #{}, [{projector, #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}]).

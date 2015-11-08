@@ -82,8 +82,8 @@ init() ->
             em_storage_server:create(true, 0, 0, 0),
             Admin = em_storage_user:create(<<"admin">>, <<"admin">>, <<"admin">>, true),
             Device = em_storage_device:create(<<"test1">>, <<"123456789012345">>, <<"">>),
-            link_device(maps:get(id, Admin), maps:get(id, Device)),
-            em_logger:info("Create account admin: username: ~s, password: ~s", [maps:get(email, Admin), maps:get(password, Admin)]);
+            link_device(maps:get(<<"id">>, Admin), maps:get(<<"id">>, Device)),
+            em_logger:info("Create account admin: username: ~s, password: ~s", [maps:get(<<"email">>, Admin), maps:get(<<"password">>, Admin)]);
         _ ->
             em_logger:info("Storage already init")
     end.
@@ -93,23 +93,23 @@ get_server() ->
     em_storage_server:get().
 
 update_server(Server) ->
-    ServerId = maps:get(id, Server),
+    ServerId = maps:get(<<"id">>, Server),
     ServerModel = #{
-      registration => maps:get(registration, Server),
-      latitude => maps:get(latitude, Server),
-      longitude => maps:get(longitude, Server),
-      zoom => maps:get(zoom, Server)
+      <<"registration">> => maps:get(<<"registration">>, Server),
+      <<"latitude">> => maps:get(<<"latitude">>, Server),
+      <<"longitude">> => maps:get(<<"longitude">>, Server),
+      <<"zoom">> => maps:get(<<"zoom">>, Server)
      },
     em_storage_server:update(ServerId, ServerModel).
 
 create_message(DeviceId, Protocol, MessageParams) ->
-    case em_storage_message:get(DeviceId, maps:get(deviceTime, MessageParams)) of
+    case em_storage_message:get(DeviceId, maps:get(<<"deviceTime">>, MessageParams)) of
         #{} ->
             case em_storage_message:create(DeviceId, Protocol, MessageParams) of
 	      null ->
 		null;
 	      Message ->
-		em_storage_device:update(DeviceId, #{messageId => maps:get(id, Message)}),
+		em_storage_device:update(DeviceId, #{<<"messageId">> => maps:get(<<"id">>, Message)}),
 		Message
 	    end;
         _ ->
@@ -128,7 +128,7 @@ get_messages(DeviceId, TimeFrom, TimeTo) ->
     Messages.
 
 get_last_message(MessageId, DeviceId) ->
-    Message = em_storage_message:get(#{id => MessageId, deviceId => DeviceId}),
+    Message = em_storage_message:get(#{<<"id">> => MessageId, <<"deviceId">> => DeviceId}),
     case (maps:size(Message) =:= 0) of
         true ->
             null;
@@ -140,7 +140,7 @@ get_last_message(MessageId, DeviceId) ->
 
 
 create_user(User) ->
-    create_user(maps:get(name, User), maps:get(email, User), maps:get(password, User)).
+    create_user(maps:get(<<"name">>, User), maps:get(<<"email">>, User), maps:get(<<"password">>, User)).
 
 create_user(Name, Email, Password) ->
     case em_storage_user:get_by_email(Email) of
@@ -156,8 +156,8 @@ create_user(Name, Email, Password) ->
     end.
 
 update_user(User) ->
-    UserId = maps:get(id, User),
-    em_storage_user:update(UserId, maps:remove(id, User)).
+    UserId = maps:get(<<"id">>, User),
+    em_storage_user:update(UserId, maps:remove(<<"id">>, User)).
 
 
 
@@ -165,7 +165,7 @@ update_user(UserId, Field, Value) ->
     em_storage_user:update(UserId, Field, Value).
 
 delete_user(User) ->
-    em_storage_user:delete(maps:get(id, User)).
+    em_storage_user:delete(maps:get(<<"id">>, User)).
 
 check_user(Email, Password) ->
     em_storage_user:get(Email, em_password:hash(Password)).
@@ -182,20 +182,20 @@ get_users() ->
 
 
 create_device(Device) ->
-    em_storage_device:create(maps:get(name, Device), maps:get(uniqueId, Device), <<"">>).
+    em_storage_device:create(maps:get(<<"name">>, Device), maps:get(<<"uniqueId">>, Device), <<"">>).
 
 create_device(UserId, DeviceName, DeviceUniqueId, DevicePassword) ->
     case em_storage_device:create(DeviceName, DeviceUniqueId, DevicePassword) of
         null ->
             null;
-        Device = #{id := DeviceId} ->
+        Device = #{<<"id">> := DeviceId} ->
             em_storage_permission:create(UserId, DeviceId),
             Device
     end.
 
 update_device(Device) ->
-    DeviceId = maps:get(id, Device),
-    em_storage_device:update(DeviceId, maps:remove(id, Device)).
+    DeviceId = maps:get(<<"id">>, Device),
+    em_storage_device:update(DeviceId, maps:remove(<<"id">>, Device)).
 
 update_device(UserId, DeviceId, Field, Value) ->
     case em_storage_permission:get(UserId, DeviceId) of
@@ -207,7 +207,7 @@ update_device(UserId, DeviceId, Field, Value) ->
     end.
 
 delete_device(Device) ->
-    em_storage_device:delete(maps:get(id, Device)).
+    em_storage_device:delete(maps:get(<<"id">>, Device)).
 
 delete_device(UserId, DeviceId) ->
     case em_storage_permission:get(UserId, DeviceId) of
@@ -220,7 +220,7 @@ delete_device(UserId, DeviceId) ->
     end.
 
 get_devices(UserId) ->
-    get_devices(UserId, #{'_id' => false, password => false, messageId => false, lastUpdate => false}).
+    get_devices(UserId, #{<<"_id">> => false, <<"password">> => false, <<"messageId">> => false, <<"lastUpdate">> => false}).
 
 get_devices(UserId, Projector) ->
     GetDeviceById = fun(#{<<"deviceId">> := DeviceId}, Acc) ->

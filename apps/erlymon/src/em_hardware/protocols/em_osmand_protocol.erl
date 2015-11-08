@@ -41,12 +41,12 @@ init(Req, Opts) ->
     Req2 = echo(Method, Map, Req),
     {ok, Req2, Opts}.
 
-echo(<<"GET">>, #{id := Imei, timestamp := Timestamp, lat := Lat, lon := Lon}, Req) ->
+echo(<<"GET">>, #{<<"id">> := Imei, <<"timestamp">> := Timestamp, <<"lat">> := Lat, <<"lon">> := Lon}, Req) ->
     BaseParams = #{
-      deviceTime => parse_time(Timestamp),
-      latitude => parse_coord(Lat),
-      longitude => parse_coord(Lon),
-      valid => true
+      <<"deviceTime">> => parse_time(Timestamp),
+      <<"latitude">> => parse_coord(Lat),
+      <<"longitude">> => parse_coord(Lon),
+      <<"valid">> => true
      },
 
 
@@ -58,7 +58,7 @@ echo(<<"GET">>, #{id := Imei, timestamp := Timestamp, lat := Lat, lon := Lon}, R
                                           error:_ ->
                                               Acc
                                       end
-                              end, #{}, [speed, bearing, heading, altitude, hdop, vacc, hacc, batt, desc]),
+                              end, #{}, [<<"speed">>, <<"bearing">>, <<"heading">>, <<"altitude">>, <<"hdop">>, <<"vacc">>, <<"hacc">>, <<"batt">>, <<"desc">>]),
 
     Message = maps:merge(BaseParams, OtherParams),
     em_logger:info("[packet] unit:  imei = '~s' message: ~w", [Imei, Message]),
@@ -77,42 +77,42 @@ echo(_, _, Req) ->
     cowboy_req:reply(405, Req).
 
 
-parse_param(Map, #{speed := undefined}) ->
+parse_param(Map, #{<<"speed">> := undefined}) ->
     Map;
-parse_param(Map, #{speed := Value}) ->
-    maps:put(speed, bin_to_num(Value), Map);
-parse_param(Map, #{bearing := undefined}) ->
+parse_param(Map, #{<<"speed">> := Value}) ->
+    maps:put(<<"speed">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"bearing">> := undefined}) ->
     Map;
-parse_param(Map, #{bearing := Value}) ->
-    maps:put(bearing, bin_to_num(Value), Map);
-parse_param(Map, #{heading := undefined}) ->
+parse_param(Map, #{<<"bearing">> := Value}) ->
+    maps:put(<<"bearing">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"heading">> := undefined}) ->
     Map;
-parse_param(Map, #{heading := Value}) ->
-    maps:put(heading, bin_to_num(Value), Map);
-parse_param(Map, #{altitude := undefined}) ->
+parse_param(Map, #{<<"heading">> := Value}) ->
+    maps:put(<<"heading">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"altitude">> := undefined}) ->
     Map;
-parse_param(Map, #{altitude := Value}) ->
-    maps:put(altitude, bin_to_num(Value), Map);
-parse_param(Map, #{hdop := undefined}) ->
+parse_param(Map, #{<<"altitude">> := Value}) ->
+    maps:put(<<"altitude">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"hdop">> := undefined}) ->
     Map;
-parse_param(Map, #{hdop := Value}) ->
-    maps:put(hdop, bin_to_num(Value), Map);
-parse_param(Map, #{vacc := undefined}) ->
+parse_param(Map, #{<<"hdop">> := Value}) ->
+    maps:put(<<"hdop">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"vacc">> := undefined}) ->
     Map;
-parse_param(Map, #{vacc := Value}) ->
-    maps:put(vacc, bin_to_num(Value), Map);
-parse_param(Map, #{hacc := undefined}) ->
+parse_param(Map, #{<<"vacc">> := Value}) ->
+    maps:put(<<"vacc">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"hacc">> := undefined}) ->
     Map;
-parse_param(Map, #{hacc := Value}) ->
-    maps:put(hacc, bin_to_num(Value), Map);
-parse_param(Map, #{batt := undefined}) ->
+parse_param(Map, #{<<"hacc">> := Value}) ->
+    maps:put(<<"hacc">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"batt">> := undefined}) ->
     Map;
-parse_param(Map, #{batt := Value}) ->
-    maps:put(batt, bin_to_num(Value), Map);
-parse_param(Map, #{desc := undefined}) ->
+parse_param(Map, #{<<"batt">> := Value}) ->
+    maps:put(<<"batt">>, bin_to_num(Value), Map);
+parse_param(Map, #{<<"desc">> := undefined}) ->
     Map;
-parse_param(Map, #{desc := Value}) ->
-    maps:put(desc, Value, Map);
+parse_param(Map, #{<<"desc">> := Value}) ->
+    maps:put(<<"desc">>, Value, Map);
 parse_param(Map, _) ->
     Map.
 

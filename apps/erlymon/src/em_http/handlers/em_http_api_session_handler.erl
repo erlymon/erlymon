@@ -58,7 +58,7 @@ get_session(Req) ->
     %% {"success":false}
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove(<<"_id">>, User)}), Req2)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => maps:remove(<<"_id">>, User)}), Req2)
     end.

@@ -64,8 +64,8 @@ login(Req) ->
     Password = proplists:get_value(<<"password">>, PostVals),
     case em_data_manager:check_user(Email, Password) of
         null ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         User ->
             {ok, Req3} = cowboy_session:set(user, User, Req2),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => maps:remove(<<"_id">>, User)}), Req3)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => maps:remove(<<"_id">>, User)}), Req3)
     end.

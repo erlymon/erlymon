@@ -42,7 +42,7 @@ init(Req, Opts) ->
     {ok, request(Method, Req), Opts}.
 
 -spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
-request(?POST, Req) ->
+request(?POST, Req) when (Req /= undefined) ->
     async(Req);
 request(_, Req) ->
   %% Method not allowed.
@@ -52,9 +52,9 @@ request(_, Req) ->
 async(Req) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
-	    Devices = em_data_manager:get_devices(maps:get(<<"id">>, User), #{'_id' => false, password => false, lastUpdate => false}),
+	    Devices = em_data_manager:get_devices(maps:get(<<"id">>, User), #{<<"_id">> => false, <<"password">> => false, <<"lastUpdate">> => false}),
 	    LastMessages = lists:foldl(fun(Device, Acc) -> 
 	      case em_data_manager:get_last_message(maps:get(<<"messageId">>, Device), maps:get(<<"id">>, Device)) of
 		null ->
@@ -63,5 +63,5 @@ async(Req) ->
 		  [Message | Acc]
 	      end
 	    end, [], Devices),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => true, data => LastMessages}), Req2)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => LastMessages}), Req2)
     end.

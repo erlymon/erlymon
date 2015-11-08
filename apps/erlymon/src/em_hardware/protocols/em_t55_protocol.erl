@@ -191,23 +191,23 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
                   loop(State#state{device = Object})
           end;
         {<<"GPRMC">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(uniqueId, Device), Message]),
-          em_data_manager:create_message(maps:get(id, Device), Protocol, maps:merge(#{imei => maps:get(uniqueId, Device)}, Message)),
+          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
+          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
           Transport:send(Socket, <<"OK1\r\n">>),
           loop(State);
         {<<"GPGGA">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(uniqueId, Device), Message]),
-          em_data_manager:create_message(maps:get(id, Device), Protocol, maps:merge(#{imei => maps:get(uniqueId, Device)}, Message)),
+          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
+          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
           Transport:send(Socket, <<"OK1\r\n">>),
           loop(State);
         {<<"GPRMA">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(uniqueId, Device), Message]),
-          em_data_manager:create_message(maps:get(id, Device), Protocol, maps:merge(#{imei => maps:get(uniqueId, Device)}, Message)),
+          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
+          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
           Transport:send(Socket, <<"OK1\r\n">>),
           loop(State);
         {<<"TRCCR">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(uniqueId, Device), Message]),
-          em_data_manager:create_message(maps:get(id, Device), Protocol, maps:merge(#{imei => maps:get(uniqueId, Device)}, Message)),
+          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
+          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
           Transport:send(Socket, <<"OK1\r\n">>),
           loop(State)
       end;
@@ -281,12 +281,12 @@ parse_gprmc(Data) ->
   case em_regexp:match(Data, ?GPRMC_PATTERN) of
     {match, [_, Hour, Minute, Second, Validity, LatDD, LatMM_MMMM, LatType, LonDD, LonMM_MMMM, LonType, Speed, Course, Day, Month, Year|_]} ->
       #{
-        deviceTime => parse_date(Year, Month, Day, Hour, Minute, Second),
-        latitude => parse_coord(LatDD, LatMM_MMMM, LatType),
-        longitude => parse_coord(LonDD, LonMM_MMMM, LonType),
-        speed => parse_speed(Speed),
-        course => parse_course(Course),
-        valid => parse_valid(Validity)
+        <<"deviceTime">> => parse_date(Year, Month, Day, Hour, Minute, Second),
+        <<"latitude">> => parse_coord(LatDD, LatMM_MMMM, LatType),
+        <<"longitude">> => parse_coord(LonDD, LonMM_MMMM, LonType),
+        <<"speed">> => parse_speed(Speed),
+        <<"course">> => parse_course(Course),
+        <<"valid">> => parse_valid(Validity)
       };
     _ ->
       null
@@ -298,8 +298,8 @@ parse_gpgga(Data) ->
     {match, [_, _Hour, _Minute, _Second, LatDD, LatMM_MMMM, LatType, LonDD, LonMM_MMMM, LonType|_]} ->
       #{
         %%time => parse_date(Year, Month, Day, Hour, Minute, Second),
-        latitude => parse_coord(LatDD, LatMM_MMMM, LatType),
-        longitude => parse_coord(LonDD, LonMM_MMMM, LonType)
+        <<"latitude">> => parse_coord(LatDD, LatMM_MMMM, LatType),
+        <<"longitude">> => parse_coord(LonDD, LonMM_MMMM, LonType)
       };
     _ ->
       null
@@ -310,11 +310,11 @@ parse_gprma(Data) ->
     {match, [_, Validity, LatDD, LatMM_MMMM, LatType, LonDD, LonMM_MMMM, LonType, Speed, Course|_]} ->
       #{
         %%time => parse_date(Year, Month, Day, Hour, Minute, Second),
-        latitude => parse_coord(LatDD, LatMM_MMMM, LatType),
-        longitude => parse_coord(LonDD, LonMM_MMMM, LonType),
-        speed => parse_speed(Speed),
-        course => parse_course(Course),
-        valid => parse_valid(Validity)
+        <<"latitude">> => parse_coord(LatDD, LatMM_MMMM, LatType),
+        <<"longitude">> => parse_coord(LonDD, LonMM_MMMM, LonType),
+        <<"speed">> => parse_speed(Speed),
+        <<"course">> => parse_course(Course),
+        <<"valid">> => parse_valid(Validity)
       };
     _ ->
       null
@@ -325,14 +325,14 @@ parse_trccr(Data) ->
   case em_regexp:match(Data, ?TRCCR_PATTERN) of
     {match, [_, Year, Month, Day, Hour, Minute, Second, Validity, Lat, Lon, Speed, Course, Altitude, Battery|_]} ->
       #{
-        deviceTime => trccr_parse_date(Year, Month, Day, Hour, Minute, Second),
-        latitude => list_to_float(binary_to_list(Lat)),
-        longitude => list_to_float(binary_to_list(Lon)),
-        speed => parse_speed(Speed),
-        course => parse_course(Course),
-        valid => parse_valid(Validity),
-        altitude => parse_altitude(Altitude),
-        battery => parse_battery(Battery)
+        <<"deviceTime">> => trccr_parse_date(Year, Month, Day, Hour, Minute, Second),
+        <<"latitude">> => list_to_float(binary_to_list(Lat)),
+        <<"longitude">> => list_to_float(binary_to_list(Lon)),
+        <<"speed">> => parse_speed(Speed),
+        <<"course">> => parse_course(Course),
+        <<"valid">> => parse_valid(Validity),
+        <<"altitude">> => parse_altitude(Altitude),
+        <<"battery">> => parse_battery(Battery)
       };
     _ ->
       null

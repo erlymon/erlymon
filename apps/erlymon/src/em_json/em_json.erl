@@ -37,4 +37,4 @@ encode(Object) ->
 
 
 decode(Binary) ->
-  jsx:decode(Binary, [{labels, atom}, return_maps]).
+  jsx:decode(Binary, [return_maps]).

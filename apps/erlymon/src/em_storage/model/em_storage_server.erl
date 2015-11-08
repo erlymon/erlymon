@@ -43,19 +43,19 @@
 
 create(Registration, Latitude, Longitude, Zoom) ->
     ServerModel = #{
-      id => bson:unixtime_to_secs(bson:timenow()),
-      registration => Registration,
-      latitude => Latitude,
-      longitude => Longitude,
-      zoom => Zoom
+      <<"id">> => bson:unixtime_to_secs(bson:timenow()),
+      <<"registration">> => Registration,
+      <<"latitude">> => Latitude,
+      <<"longitude">> => Longitude,
+      <<"zoom">> => Zoom
      },
     em_storage:insert(servers, ServerModel).
 
 update(ServerId, ServerModel) ->
-    em_storage:update(servers, #{id => ServerId}, ServerModel).
+    em_storage:update(servers, #{<<"id">> => ServerId}, ServerModel).
 
 get() ->
-    Item = em_storage:find_one(servers, #{}, [{projector, #{'_id' => false}}]),
+    Item = em_storage:find_one(servers, #{}, [{projector, #{<<"_id">> => false}}]),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;

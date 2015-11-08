@@ -141,15 +141,15 @@ parse(Data) ->
   case em_regexp:match(Data, ?PATTERN) of
     {match, [_, Imei, _Event, Latitude, Longitude, Year, Month, Day, Hour, Minute, Second, Validity, Satellites, _GsmSignal, Speed, Course, _Hdop, Altitude, _Odometer, _Runtime, _Cell, _State, _Adc1, _Adc2, _Adc3, _Battery, Power|_]} ->
       Message = #{
-        deviceTime => parse_date(Year, Month, Day, Hour, Minute, Second),
-        latitude => list_to_float(binary_to_list(Latitude)),
-        longitude => list_to_float(binary_to_list(Longitude)),
-        altitude => parse_altitude(Altitude),
-        speed => parse_speed(Speed),
-        course => parse_course(Course),
-        satellites => parse_satellites(Satellites),
-        valid => parse_valid(Validity),
-        power => parse_power(Power)
+        <<"deviceTime">> => parse_date(Year, Month, Day, Hour, Minute, Second),
+        <<"latitude">> => list_to_float(binary_to_list(Latitude)),
+        <<"longitude">> => list_to_float(binary_to_list(Longitude)),
+        <<"altitude">> => parse_altitude(Altitude),
+        <<"speed">> => parse_speed(Speed),
+        <<"course">> => parse_course(Course),
+        <<"satellites">> => parse_satellites(Satellites),
+        <<"valid">> => parse_valid(Validity),
+        <<"power">> => parse_power(Power)
       },
       {Imei, Message};
     _ ->
