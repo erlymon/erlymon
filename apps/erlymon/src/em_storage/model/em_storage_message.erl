@@ -106,13 +106,17 @@
 create(DeviceId, Protocol, MessageParams) ->
     ServerTime = timestamp(),
     DeviceTime = maps:get(<<"deviceTime">>, MessageParams),
+    Latitude = maps:get(<<"latitude">>, MessageParams),
+    Longitude = maps:get(<<"longitude">>, MessageParams),
+    Address = em_geocoder:geocode(Latitude, Longitude, en),
     MessageModel = maps:merge(MessageParams, #{
       <<"id">> => bson:unixtime_to_secs(bson:timenow()),
       <<"serverTime">> => ServerTime,
       <<"fixTime">> => fix_time(ServerTime, DeviceTime),
       <<"deviceTime">> => DeviceTime,
       <<"deviceId">> => DeviceId,
-      <<"protocol">> => Protocol
+      <<"protocol">> => Protocol,
+      <<"address">> => Address
      }),
     em_logger:info("Message: ~w", [MessageModel]),
     em_storage:insert(messages, MessageModel).
