@@ -42,15 +42,16 @@
 
 create(UserId, DeviceId) ->
     PermissionModel = #{<<"userId">> => UserId, <<"deviceId">> => DeviceId},
-    em_storage:insert(permissions, PermissionModel).
+    {_, Item} = em_storage:insert(<<"permissions">>, PermissionModel),
+    Item.
 
 update(_UserId, _DeviceId) -> ok.
 
 delete(DeviceId) -> 
-    em_storage:delete(permissions, #{<<"deviceId">> => DeviceId}).
+    em_storage:delete(<<"permissions">>, #{<<"deviceId">> => DeviceId}).
 
 get(UserId, DeviceId) ->
-    Item = em_storage:find_one(permissions, #{<<"userId">> => UserId, <<"deviceId">> => DeviceId}, [{projector, #{<<"_id">> => false}}]),
+    Item = em_storage:find_one(<<"permissions">>, #{<<"userId">> => UserId, <<"deviceId">> => DeviceId}, #{projector => #{<<"_id">> => false}}),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -59,4 +60,4 @@ get(UserId, DeviceId) ->
     end.
 
 get(UserId) ->
-    em_storage:find(permissions, #{<<"userId">> => UserId}, [{projector, #{<<"_id">> => false}}]).
+    em_storage:find(<<"permissions">>, #{<<"userId">> => UserId}, #{projector => #{<<"_id">> => false}}).

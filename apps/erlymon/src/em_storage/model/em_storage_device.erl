@@ -60,7 +60,8 @@ create(Name, UniqueId, Password) ->
     create(DeviceModel).
 
 create(DeviceModel) ->
-    em_storage:insert(devices, DeviceModel).
+    {_, Item} = em_storage:insert(<<"devices">>, DeviceModel),
+    Item.
 
 update(Id, <<"name">>, Value) ->
     update(Id,  #{<<"name">> => Value});
@@ -70,10 +71,10 @@ update(Id, <<"password">>, Value) ->
     update(Id,  #{<<"password">> => Value}).
 
 update(Id, DeviceModel) ->
-    em_storage:update(devices, #{<<"id">> => Id}, DeviceModel).
+    em_storage:update(<<"devices">>, #{<<"id">> => Id}, DeviceModel).
 
 delete(Id) ->
-    em_storage:delete_one(devices, #{<<"id">> => Id}).
+    em_storage:delete_one(<<"devices">>, #{<<"id">> => Id}).
 
 get_by_id(Id) ->
     get_by_id(Id, #{<<"_id">> => false, <<"password">> => false, <<"messageId">> => false, <<"lastUpdate">> => false}).
@@ -86,7 +87,7 @@ get_by_uid(UniqueId) ->
     get(#{<<"uniqueId">> => UniqueId}, #{<<"_id">> => false, <<"password">> => false, <<"messageId">> => false, <<"lastUpdate">> => false}).
     
 get(Query, Projector) ->
-    Item = em_storage:find_one(devices, Query, [{projector, Projector}]),
+    Item = em_storage:find_one(<<"devices">>, Query, #{projector => Projector}),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;

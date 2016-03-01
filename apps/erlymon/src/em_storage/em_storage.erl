@@ -89,19 +89,19 @@ insert(Coll, Docs) when is_list(Docs) ->
 -spec update(mongo:collection(), map(), map()) -> ok.
 update(Coll, Selector, Doc) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => Doc}})
+    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => bson:flatten_map(Doc)}})
   end).
 
 -spec update(mongo:collection(), map(), map(), boolean()) -> ok.
 update(Coll, Selector, Doc, Upsert) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => Doc}, Upsert})
+    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => bson:flatten_map(Doc)}, Upsert})
   end).
 
 -spec update(mongo:collection(), map(), map(), boolean(), boolean()) -> ok.
 update(Coll, Selector, Doc, Upsert, MultiUpdate) ->
   poolboy:transaction(?POOL_NAME, fun(Worker) ->
-    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => Doc}, Upsert, MultiUpdate})
+    gen_server:call(Worker, {update, Coll, Selector, #{<<"$set">> => bson:flatten_map(Doc)}, Upsert, MultiUpdate})
   end).
 
 

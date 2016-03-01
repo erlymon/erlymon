@@ -56,12 +56,8 @@ update_user(Req) ->
                 false ->
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
                 _ ->
-                    case em_data_manager:update_user(maps:remove(<<"o">>,UserModel)) of
-                        null ->
-                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
-                        NewUser ->
-                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => NewUser}), Req3)
-                    end
+                    em_data_manager:update_user(maps:remove(<<"o">>,UserModel)),
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => UserModel}), Req3)
             end
     end.
 

@@ -56,7 +56,7 @@ update(Req) ->
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
                 true ->
                     em_data_manager:update_device(Device),
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => maps:remove(<<"_id">>, Device)}), Req3)
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => Device}), Req3)
             end
     end.
 

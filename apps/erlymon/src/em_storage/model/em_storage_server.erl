@@ -49,13 +49,14 @@ create(Registration, Latitude, Longitude, Zoom) ->
       <<"longitude">> => Longitude,
       <<"zoom">> => Zoom
      },
-    em_storage:insert(servers, ServerModel).
+    {_, Item} = em_storage:insert(<<"servers">>, ServerModel),
+    Item.
 
 update(ServerId, ServerModel) ->
-    em_storage:update(servers, #{<<"id">> => ServerId}, ServerModel).
+    em_storage:update(<<"servers">>, #{<<"id">> => ServerId}, ServerModel).
 
 get() ->
-    Item = em_storage:find_one(servers, #{}, [{projector, #{<<"_id">> => false}}]),
+    Item = em_storage:find_one(<<"servers">>, #{}, #{projector => #{<<"_id">> => false}}),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;

@@ -87,7 +87,7 @@ init(Args) ->
   em_logger:info("init worker args: ~w ~s", [Database, Database]),
   %%em_logger:info("init worker host: ~s, port: ~w database: ~s username: ~s, password: ~s", [Host, Port, Database, Login, Password]),
 
-  {ok, Conn} = mongo:connect([{database, Database}, {w_mode, safe}]),
+  {ok, Conn} = mc_worker_api:connect([{database, Database}, {w_mode, safe}]),
 
   {ok, #state{conn = Conn}}.
 
@@ -111,49 +111,50 @@ init(Args) ->
 %%handle_call({equery, Stmt, Params}, _From, #state{conn = Conn} = State) ->
 %%  {reply, epgsql:equery(Conn, Stmt, Params), State};
 handle_call({insert, Coll, Doc}, _From, #state{conn = Conn} = State) when is_map(Doc) ->
-  {reply, mongo:insert(Conn, Coll, Doc), State};
+  {reply, mc_worker_api:insert(Conn, Coll, Doc), State};
 handle_call({insert, Coll, Docs}, _From, #state{conn = Conn} = State) when is_list(Docs) ->
-  {reply, mongo:insert(Conn, Coll, Docs), State};
+  {reply, mc_worker_api:insert(Conn, Coll, Docs), State};
 
 handle_call({update, Coll, Selector, Doc}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:update(Conn, Coll, Selector, Doc), State};
+  {reply, mc_worker_api:update(Conn, Coll, Selector, Doc), State};
 handle_call({update, Coll, Selector, Doc, Upsert}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:update(Conn, Coll, Selector, Doc, Upsert), State};
+  {reply, mc_worker_api:update(Conn, Coll, Selector, Doc, Upsert), State};
 handle_call({update, Coll, Selector, Doc, Upsert, MultiUpdate}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:update(Conn, Coll, Selector, Doc, Upsert, MultiUpdate), State};
+  {reply, mc_worker_api:update(Conn, Coll, Selector, Doc, Upsert, MultiUpdate), State};
 
 
 handle_call({delete, Coll, Selector}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:delete(Conn, Coll, Selector), State};
+  {reply, mc_worker_api:delete(Conn, Coll, Selector), State};
 
 handle_call({delete_one, Coll, Selector}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:delete_one(Conn, Coll, Selector), State};
+  {reply, mc_worker_api:delete_one(Conn, Coll, Selector), State};
 
 
 handle_call({find, Coll, Selector}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:find(Conn, Coll, Selector), State};
+  {reply, mc_worker_api:find(Conn, Coll, Selector), State};
 handle_call({find, Coll, Selector, Projector}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:find(Conn, Coll, Selector, Projector), State};
+  {reply, mc_worker_api:find(Conn, Coll, Selector, Projector), State};
 handle_call({find, Coll, Selector, Projector, Skip}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:find(Conn, Coll, Selector, Projector, Skip), State};
+  {reply, mc_worker_api:find(Conn, Coll, Selector, Projector, Skip), State};
 handle_call({find, Coll, Selector, Projector, Skip, BatchSize}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:find(Conn, Coll, Selector, Projector, Skip, BatchSize), State};
+  {reply, mc_worker_api:find(Conn, Coll, Selector, Projector, Skip, BatchSize), State};
 
 handle_call({find_one, Coll, Selector}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:find_one(Conn, Coll, Selector), State};
+  {reply, mc_worker_api:find_one(Conn, Coll, Selector), State};
 %%handle_call({find_one, Coll, Selector, Projector}, _From, #state{conn = Conn} = State) ->
-%%  {reply, mongo:find_one(Conn, Coll, Selector, Projector), State};
+%%  {reply, mc_worker_api:find_one(Conn, Coll, Selector, Projector), State};
 handle_call({find_one, Coll, Selector, Projector}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:find_one(Conn, Coll, Selector, Projector), State};
+  em_logger:debug("################### ~w", [{find_one, Coll, Selector, Projector}]),
+  {reply, mc_worker_api:find_one(Conn, Coll, Selector, Projector), State};
 handle_call({find_one, Coll, Selector, Projector, Skip}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:find_one(Conn, Coll, Selector, Projector, Skip), State};
+  {reply, mc_worker_api:find_one(Conn, Coll, Selector, Projector, Skip), State};
 
 handle_call({count, Coll, Selector}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:count(Conn, Coll, Selector), State};
+  {reply, mc_worker_api:count(Conn, Coll, Selector), State};
 handle_call({count, Coll, Selector, Limit}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:count(Conn, Coll, Selector, Limit), State};
+  {reply, mc_worker_api:count(Conn, Coll, Selector, Limit), State};
 handle_call({ensure_index, Coll, Spec}, _From, #state{conn = Conn} = State) ->
-  {reply, mongo:ensure_index(Conn, Coll, Spec), State};
+  {reply, mc_worker_api:ensure_index(Conn, Coll, Spec), State};
 
 handle_call(_Request, _From, State) ->
   {reply, {error, <<"Invalid em_mongo_worker call">>}, State}.
@@ -203,7 +204,7 @@ handle_info(_Info, State) ->
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
 terminate(_Reason, #state{conn = Conn}) ->
-  mongo:disconnect(Conn),
+  mc_worker_api:disconnect(Conn),
   ok.
 
 %%--------------------------------------------------------------------

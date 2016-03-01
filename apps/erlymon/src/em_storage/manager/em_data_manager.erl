@@ -123,7 +123,7 @@ get_messages(DeviceId, TimeFrom, TimeTo) ->
                          [maps:remove(<<"_id">>, NewMessage)|Acc]
           end,
     Cursor = em_storage_message:get(DeviceId, TimeFrom, TimeTo),
-    Messages = load_objects(GetMessage, Cursor, em_storage_cursor:next(Cursor), []),
+    Messages = em_storage_cursor:foldl(GetMessage, [], Cursor),
     em_storage_cursor:close(Cursor),
     Messages.
 
@@ -175,7 +175,7 @@ get_users() ->
                       [User|Acc]
           end,
     Cursor = em_storage_user:get_all(),
-    Users = load_objects(GetUser, Cursor, em_storage_cursor:next(Cursor), []),
+    Users = em_storage_cursor:foldl(GetUser, [], Cursor),
     em_storage_cursor:close(Cursor),
     Users.
 
@@ -232,19 +232,12 @@ get_devices(UserId, Projector) ->
                   end
           end,
     Cursor = em_storage_permission:get(UserId),
-    Devices = load_objects(GetDeviceById, Cursor, em_storage_cursor:next(Cursor), []),
+    Devices = em_storage_cursor:foldl(GetDeviceById, [], Cursor),
     em_storage_cursor:close(Cursor),
     Devices.
 
 get_device_by_uid(UniqueId) ->
     em_storage_device:get_by_uid(UniqueId).
-
-
-load_objects(_, _, null, Acc) ->
-    Acc;
-load_objects(Fun, Cursor, NextObject, Acc) ->
-    load_objects(Fun, Cursor, em_storage_cursor:next(Cursor), Fun(NextObject, Acc)).
-
 
 link_device(UserId, DeviceId) ->
     em_storage_permission:create(UserId, DeviceId).

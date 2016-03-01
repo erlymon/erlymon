@@ -25,10 +25,11 @@
 -module(em_storage_cursor).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
--export([next/1, close/1]).
+-export([next/1, close/1, map/2, foldl/3]).
 
 -spec next(mongo:cursor()) -> map().
 next(Cursor) ->
+    em_logger:info("CURSOR: ~w", [mc_cursor:next(Cursor)]),
     case mc_cursor:next(Cursor) of
       {} ->
 	null;
@@ -40,6 +41,13 @@ next(Cursor) ->
 	    null
 	end
     end.
+    
+   
+map(Fun, Cursor) ->
+  mc_cursor:map(Fun, Cursor, infinity).
+  
+foldl(Fun, Acc, Cursor) ->
+  mc_cursor:foldl(Fun, Acc, Cursor, infinity).
 
 -spec close(mongo:cursor()) -> ok.
 close(Cursor) ->

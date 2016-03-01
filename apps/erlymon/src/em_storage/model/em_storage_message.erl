@@ -119,7 +119,8 @@ create(DeviceId, Protocol, MessageParams) ->
       <<"address">> => Address
      }),
     em_logger:info("Message: ~w", [MessageModel]),
-    em_storage:insert(messages, MessageModel).
+    {_, Item} = em_storage:insert(<<"messages">>, MessageModel),
+    Item.
 
 
 
@@ -138,10 +139,10 @@ timestamp() ->
 
 
 get(SearchSpec) ->
-    em_storage:find_one(messages, SearchSpec, [{projector, #{<<"_id">> => false}}]).
+    em_storage:find_one(<<"messages">>, SearchSpec, #{projector => #{<<"_id">> => false}}).
     
 get(DeviceId, DeviceTime) ->
-    em_storage:find_one(messages, #{<<"deviceId">> => DeviceId, <<"deviceTime">> => DeviceTime}, [{projector, #{<<"_id">> => false}}]).
+    em_storage:find_one(<<"messages">>, #{<<"deviceId">> => DeviceId, <<"deviceTime">> => DeviceTime}, #{projector => #{<<"_id">> => false}}).
     
 get(DeviceId, TimeFrom, TimeTo) ->
-    em_storage:find(messages, #{<<"deviceId">> => DeviceId, <<"fixTime">> => {'$gte', TimeFrom, '$lte', TimeTo}}, [{projector, #{<<"_id">> => false}}]).
+    em_storage:find(<<"messages">>, #{<<"deviceId">> => DeviceId, <<"fixTime">> => {'$gte', TimeFrom, '$lte', TimeTo}}, #{projector => #{<<"_id">> => false}}).
