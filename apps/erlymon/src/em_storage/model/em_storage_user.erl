@@ -59,6 +59,7 @@
 %%  zoom: {type: float}
 %%}
 %% {"latitude":0.0,"longitude":0.0,"admin":false,"distanceUnit":"km","speedUnit":"kmh","zoom":0,"email":"assa@assa.com","name":"assa","language":"en","id":623,"map":"osm"}
+%% {"id":12371,"name":"asd","email":"asd@asd.con","readonly":false,"admin":false,"map":null,"language":null,"distanceUnit":null,"speedUnit":null,"latitude":0.0,"longitude":0.0,"zoom":0,"password":null}
 
 create(Name, Email, Password) ->
   create(Name, Email, Password, false).
@@ -67,11 +68,19 @@ create(Name, Email, Password, Admin) ->
   UserModel = #{
     <<"id">> => bson:unixtime_to_secs(bson:timenow()),
     <<"name">> => Name,
-    <<"password">> => Password,
-    <<"hashPassword">> => em_password:hash(Password),
     <<"email">> => Email,
     <<"admin">> => Admin,
-    <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
+    <<"readonly">> => false,
+    <<"map">> => null,
+    <<"language">> => null,
+    <<"distanceUnit">> => null,
+    <<"speedUnit">> => null,
+    <<"latitude">> => 0.0,
+    <<"longitude">> => 0.0,
+    <<"zoom">> => 0,
+    <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow()),
+    <<"password">> => Password,
+    <<"hashPassword">> => em_password:hash(Password)
   },
   create(UserModel).
 

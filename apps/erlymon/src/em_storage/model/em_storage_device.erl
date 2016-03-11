@@ -26,7 +26,7 @@
 
 %% API
 -export([
-  create/3,
+  create/2,
   create/1,
   update/2,
   update/3,
@@ -48,14 +48,15 @@
 %% dataId: {type: integer}
 %%}
 %% {"uniqueId":"0101","name":"assa","id":628}
-create(Name, UniqueId, Password) ->
+%% {"id":10995,"name":"sgdvdc","uniqueId":"cfgbh","status":null,"lastUpdate":"2016-01-24T11:52:15.000+0000","positionId":0}
+create(Name, UniqueId) ->
     DeviceModel = #{
       <<"id">> => bson:unixtime_to_secs(bson:timenow()),
       <<"name">> => Name,
       <<"uniqueId">> => UniqueId,
-      <<"password">> => Password,
-      <<"positionId">> => 0,
-      <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
+      <<"status">> => <<>>,
+      <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow()),
+      <<"positionId">> => 0
      },
     create(DeviceModel).
 
@@ -77,20 +78,23 @@ delete(Id) ->
     em_storage:delete_one(<<"devices">>, #{<<"id">> => Id}).
 
 get_by_id(Id) ->
-    get_by_id(Id, #{<<"_id">> => false, <<"password">> => false, <<"messageId">> => false, <<"lastUpdate">> => false}).
+    get_by_id(Id, #{<<"_id">> => false}).
 
 get_by_id(Id, Projector) ->
     get(#{id => Id}, Projector).
 
 
 get_by_uid(UniqueId) ->
-    get(#{<<"uniqueId">> => UniqueId}, #{<<"_id">> => false, <<"password">> => false, <<"messageId">> => false, <<"lastUpdate">> => false}).
+    get(#{<<"uniqueId">> => UniqueId}, #{<<"_id">> => false}).
+
+get_all() ->
+    get(#{}, #{<<"_id">> => false}).
     
 get(Query, Projector) ->
     Item = em_storage:find_one(<<"devices">>, Query, #{projector => Projector}),
     case (maps:size(Item) =/= 0) of
       true ->
-	Item;
+        Item;
       false ->
-	null
+        null
     end.

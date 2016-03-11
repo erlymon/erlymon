@@ -21,22 +21,40 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--ifndef(HTTP_HRL).
--define(HTTP_HRL, true).
+-module(em_http_api_register_v1_handler).
+-author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
--define(STATUS_OK, 200).
--define(STATUS_BAD_REQUEST, 400).
--define(STATUS_UNAUTHORIZED , 401).
--define(STATUS_NOT_FOUND , 404).
--define(STATUS_METHOD_NOT_ALLOWED, 405).
--define(STATUS_CONFLICT, 409).
+%% API
 
--define(GET, <<"GET">>).
--define(POST, <<"POST">>).
--define(PUT, <<"PUT">>).
--define(DELETE, <<"DELETE">>).
+-export([init/2]).
 
--define(HEADERS, [{<<"content-type">>, <<"application/json; charset=UTF-8">>}]).
+-include("em_http.hrl").
+
+%% POST http://demo.traccar.org/api/register
+%% REQUEST PAYLOAD:
+%% {name: "assa", email: "assa@assa.com", password: "assa"}
+
+%% ANSWER:
+%% {"success":false,"error":"Duplicate entry 'demo@demo.com' for key 'email'"}
+%% or
+%% {"success":true}
 
 
--endif. % HTTP_HRL
+-spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
+init(Req, Opts) ->
+  Method = cowboy_req:method(Req),
+  {ok, request(Method, Req), Opts}.
+
+-spec request(Method :: binary(), Opts :: any()) -> cowboy_req:req().
+request(?POST, Req) ->
+  register(Req);
+request(_, Req) ->
+  %% Method not allowed.
+  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
+
+-spec register(Req :: cowboy_req:req()) -> cowboy_req:req().
+register(Req) ->
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  User = em_json:decode(JsonBin),
+  Res = em_data_manager:create_user(User),
+  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => Res}), Req2).

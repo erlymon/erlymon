@@ -222,8 +222,9 @@ delete_device(UserId, DeviceId) ->
             true
     end.
 
+    
 get_devices(UserId) ->
-    get_devices(UserId, #{<<"_id">> => false, <<"password">> => false, <<"messageId">> => false, <<"lastUpdate">> => false}).
+    get_devices(UserId, #{<<"_id">> => false}).
 
 get_devices(UserId, Projector) ->
     GetDeviceById = fun(#{<<"deviceId">> := DeviceId}, Acc) ->
@@ -238,7 +239,7 @@ get_devices(UserId, Projector) ->
     Devices = em_storage_cursor:foldl(GetDeviceById, [], Cursor),
     em_storage_cursor:close(Cursor),
     Devices.
-
+    
 get_device_by_uid(UniqueId) ->
     em_storage_device:get_by_uid(UniqueId).
 

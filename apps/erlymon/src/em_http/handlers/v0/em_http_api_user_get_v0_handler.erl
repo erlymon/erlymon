@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_device_add_handler).
+-module(em_http_api_user_get_v0_handler).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
@@ -30,28 +30,32 @@
 
 -include("em_http.hrl").
 
--spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
+%% GET http://demo.traccar.org/api/user/get?_dc=1436251203853&page=1&start=0&limit=25
+%% {"success":true,"data":[]}
+-spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
   Method = cowboy_req:method(Req),
-  {ok, request(Method, Req), Opts}.
+      {ok, request(Method, Req), Opts}.
 
--spec request(Method :: binary(), Opts :: any()) -> cowboy_req:req().
-request(?POST, Req) ->
-  create(Req);
+-spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
+request(?GET, Req) ->
+    get_users(Req);
 request(_, Req) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
--spec create(Req :: cowboy_req:req()) -> cowboy_req:req().
-create(Req) ->
+-spec get_users(Req::cowboy_req:req()) -> cowboy_req:req().
+get_users(Req) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
-            {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
-            DeviceModel = em_json:decode(JsonBin),
-            Device = em_data_manager:create_device(DeviceModel),
-            em_data_manager:link_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => maps:remove(<<"_id">>, Device)}), Req3)
+            em_logger:info("User: ~w", [maps:get(<<"id">>,User)]),
+            case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+                false ->
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
+                _ ->
+                    Users = em_data_manager:get_users(),
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => Users}), Req2)
+            end
     end.
-

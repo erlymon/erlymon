@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_async_handler).
+-module(em_http_api_device_update_v0_handler).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
@@ -30,38 +30,33 @@
 
 -include("em_http.hrl").
 
-%% POST http://demo.traccar.org/api/async
-%% FORM DATA:
-%% first:true
-%%
-%% ANSWER:
-%% {"success":true,"data":[]}
--spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
+-spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
-    Method = cowboy_req:method(Req),
-    {ok, request(Method, Req), Opts}.
+  Method = cowboy_req:method(Req),
+  {ok, request(Method, Req), Opts}.
 
--spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
-request(?POST, Req) when (Req /= undefined) ->
-    async(Req);
+-spec request(Method :: binary(), Opts :: any()) -> cowboy_req:req().
+request(?POST, Req) ->
+  update(Req);
 request(_, Req) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
--spec async(Req::cowboy_req:req()) -> cowboy_req:req().
-async(Req) ->
+-spec update(Req :: cowboy_req:req()) -> cowboy_req:req().
+update(Req) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
-	    Devices = em_data_manager:get_devices(maps:get(<<"id">>, User), #{<<"_id">> => false, <<"password">> => false, <<"lastUpdate">> => false}),
-	    LastMessages = lists:foldl(fun(Device, Acc) -> 
-	      case em_data_manager:get_last_message(maps:get(<<"messageId">>, Device), maps:get(<<"id">>, Device)) of
-		null ->
-		  Acc;
-		Message ->  
-		  [Message | Acc]
-	      end
-	    end, [], Devices),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => LastMessages}), Req2)
+            %em_logger:info("QS: ~w", [cowboy_req:body_qs(Req)]),
+            {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
+            Device = em_json:decode(JsonBin),
+            case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
+                false ->
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
+                true ->
+                    em_data_manager:update_device(Device),
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => Device}), Req3)
+            end
     end.
+

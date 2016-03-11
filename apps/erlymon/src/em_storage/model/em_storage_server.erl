@@ -41,10 +41,19 @@
 %%  zoom : {type: integer}
 %%}
 
+%% %% {"id":1,"registration":true,"readonly":false,"map":null,"bingKey":null,"mapUrl":null,"language":null,"distanceUnit":null,"speedUnit":null,"latitude":0.0,"longitude":0.0,"zoom":0}
+
 create(Registration, Latitude, Longitude, Zoom) ->
     ServerModel = #{
       <<"id">> => bson:unixtime_to_secs(bson:timenow()),
       <<"registration">> => Registration,
+      <<"readonly">> => false,
+      <<"map">> => null,
+      <<"bingKey">> => null,
+      <<"mapUrl">> => null,
+      <<"language">> => null,
+      <<"distanceUnit">> => null,
+      <<"speedUnit">> => null,
       <<"latitude">> => Latitude,
       <<"longitude">> => Longitude,
       <<"zoom">> => Zoom

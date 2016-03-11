@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_device_get_handler).
+-module(em_http_api_user_update_v0_handler).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
@@ -30,7 +30,7 @@
 
 -include("em_http.hrl").
 
-%% GET http://demo.traccar.org/api/device/get?_dc=1436251203853&page=1&start=0&limit=25
+%% GET http://demo.traccar.org/api/user/get?_dc=1436251203853&page=1&start=0&limit=25
 %% {"success":true,"data":[]}
 -spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
@@ -38,21 +38,34 @@ init(Req, Opts) ->
       {ok, request(Method, Req), Opts}.
 
 -spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
-request(?GET, Req) ->
-    get_devices(Req);
+request(?POST, Req) ->
+    update_user(Req);
 request(_, Req) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
--spec get_devices(Req::cowboy_req:req()) -> cowboy_req:req().
-get_devices(Req) ->
+-spec update_user(Req::cowboy_req:req()) -> cowboy_req:req().
+update_user(Req) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
         {User, Req2} ->
-	    em_logger:info("http_req:get_devices => user = ~w", [User]),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{
-                                                                  <<"success">> => true, 
-                                                                  <<"data">> => em_data_manager:get_devices(maps:get(<<"id">>, User))
-                                                                }), Req2)
+            {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
+            UserModel = em_json:decode(JsonBin),
+            case check_permission(maps:get(<<"id">>, User), maps:get(<<"id">>, UserModel)) of
+                false ->
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
+                _ ->
+                    em_data_manager:update_user(maps:remove(<<"o">>,UserModel)),
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => UserModel}), Req3)
+            end
     end.
+
+
+
+check_permission(CurrUserId, UpdateUserId) when CurrUserId == UpdateUserId ->
+    true;
+check_permission(CurrUserId, _) ->
+    em_permissions_manager:check_admin(CurrUserId).
+
+    

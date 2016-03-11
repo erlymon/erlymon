@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_server_get_handler).
+-module(em_http_api_user_add_v0_handler).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
@@ -30,31 +30,37 @@
 
 -include("em_http.hrl").
 
-%% GET http://demo.traccar.org/api/server/get?_dc=1436250979884
-%% QUERY STRING PARAM:
-%% _dc:1436250979884
-
-%% ANSWER:
-%% {"success":true,"data":{"zoom":0,"registration":true,"latitude":0.0,"longitude":0.0,"id":1}}
-
+%% GET http://demo.traccar.org/api/user/get?_dc=1436251203853&page=1&start=0&limit=25
+%% {"success":true,"data":[]}
 -spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
   Method = cowboy_req:method(Req),
       {ok, request(Method, Req), Opts}.
 
 -spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
-request(?GET, Req) ->
-    get_server(Req);
+request(?POST, Req) ->
+    add_user(Req);
 request(_, Req) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
--spec get_server(Req::cowboy_req:req()) -> cowboy_req:req().
-get_server(Req) ->
-    %%{"success":true,"data":{"zoom":0,"registration":true,"latitude":0.0,"longitude":0.0,"id":1}}
-    case em_data_manager:get_server() of
-        null ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req);
-        Server ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true,  <<"data">> => maps:remove(<<"_id">>, Server)}), Req)
+-spec add_user(Req::cowboy_req:req()) -> cowboy_req:req().
+add_user(Req) ->
+    case cowboy_session:get(user, Req) of
+        {undefined, Req2} ->
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{success => false}), Req2);
+        {User, Req2} ->
+            {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
+            UserModel = em_json:decode(JsonBin),
+            case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+                false ->
+                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
+                _ ->
+                    case em_data_manager:create_user(UserModel) of
+                        null ->
+                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req3);
+                        NewUser ->
+                            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => NewUser}), Req3)
+                    end
+            end
     end.
