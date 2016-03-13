@@ -21,40 +21,27 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_register_v1_handler).
+-module(em_http_api_socket_v1_handler).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
-
--export([init/2]).
-
 -include("em_http.hrl").
 
-%% POST http://demo.traccar.org/api/register
-%% REQUEST PAYLOAD:
-%% {name: "assa", email: "assa@assa.com", password: "assa"}
+-export([init/2]).
+-export([websocket_handle/3]).
+-export([websocket_info/3]).
 
-%% ANSWER:
-%% {"success":false,"error":"Duplicate entry 'demo@demo.com' for key 'email'"}
-%% or
-%% {"success":true}
-
-
--spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
-  Method = cowboy_req:method(Req),
-  {ok, request(Method, Req), Opts}.
+	erlang:start_timer(1000, self(), <<"Hello!">>),
+	{cowboy_websocket, Req, Opts}.
 
--spec request(Method :: binary(), Opts :: any()) -> cowboy_req:req().
-request(?POST, Req) ->
-  register(Req);
-request(_, Req) ->
-  %% Method not allowed.
-  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
+websocket_handle({text, Msg}, Req, State) ->
+	{reply, {text, << "That's what she said! ", Msg/binary >>}, Req, State};
+websocket_handle(_Data, Req, State) ->
+	{ok, Req, State}.
 
--spec register(Req :: cowboy_req:req()) -> cowboy_req:req().
-register(Req) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  User = em_json:decode(JsonBin),
-  Res = em_data_manager:create_user(User),
-  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => Res}), Req2).
+websocket_info({timeout, _Ref, Msg}, Req, State) ->
+	erlang:start_timer(1000, self(), <<"How' you doin'?">>),
+	{reply, {text, Msg}, Req, State};
+websocket_info(_Info, Req, State) ->
+	{ok, Req, State}.
