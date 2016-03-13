@@ -48,14 +48,15 @@
   link_device/2,
   unlink_device/1,
   create_device/1,
-  create_device/4,
+  create_device/3,
   update_device/1,
   update_device/4,
   delete_device/1,
   delete_device/2,
   get_devices/1,
   get_devices/2,
-  get_device_by_uid/1
+  get_device_by_uid/1,
+  get_all_devices/0
 ]).
 
 -export([
@@ -185,10 +186,10 @@ get_users() ->
 
 
 create_device(Device) ->
-    em_storage_device:create(maps:get(<<"name">>, Device), maps:get(<<"uniqueId">>, Device), <<"">>).
+    em_storage_device:create(maps:get(<<"name">>, Device), maps:get(<<"uniqueId">>, Device)).
 
-create_device(UserId, DeviceName, DeviceUniqueId, DevicePassword) ->
-    case em_storage_device:create(DeviceName, DeviceUniqueId, DevicePassword) of
+create_device(UserId, DeviceName, DeviceUniqueId) ->
+    case em_storage_device:create(DeviceName, DeviceUniqueId) of
         null ->
             null;
         Device = #{<<"id">> := DeviceId} ->
@@ -242,6 +243,10 @@ get_devices(UserId, Projector) ->
     
 get_device_by_uid(UniqueId) ->
     em_storage_device:get_by_uid(UniqueId).
+
+    
+get_all_devices() ->
+    [].
 
 link_device(UserId, DeviceId) ->
     em_storage_permission:create(UserId, DeviceId).
