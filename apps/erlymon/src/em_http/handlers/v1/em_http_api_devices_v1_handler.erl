@@ -68,7 +68,7 @@ get_devices(Req) ->
                         cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req2)
                 end;
              false ->
-                case em_permissions_manager:check_user(get_user_id(UserId, User), UserId) of
+                case em_permissions_manager:check_user(maps:get(<<"id">>, User), get_user_id(UserId, User)) of
                     false ->
                         cowboy_req:reply(?STATUS_FORBIDDEN, Req2);
                     _ ->

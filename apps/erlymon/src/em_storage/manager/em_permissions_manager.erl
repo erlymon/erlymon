@@ -42,7 +42,7 @@ check_admin(UserId) ->
     end.
 
 check_user(UserId, OtherUserId) when UserId == OtherUserId ->
-    false;
+    true;
 check_user(UserId, _) ->
     check_admin(UserId).
 
