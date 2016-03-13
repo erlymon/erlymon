@@ -95,13 +95,7 @@ get_server() ->
 
 update_server(Server) ->
     ServerId = maps:get(<<"id">>, Server),
-    ServerModel = #{
-      <<"registration">> => maps:get(<<"registration">>, Server),
-      <<"latitude">> => maps:get(<<"latitude">>, Server),
-      <<"longitude">> => maps:get(<<"longitude">>, Server),
-      <<"zoom">> => maps:get(<<"zoom">>, Server)
-     },
-    em_storage_server:update(ServerId, ServerModel).
+    em_storage_server:update(ServerId, maps:remove(<<"id">>, Server)).
 
 create_message(DeviceId, Protocol, MessageParams) ->
     case em_storage_message:get(DeviceId, maps:get(<<"deviceTime">>, MessageParams)) of

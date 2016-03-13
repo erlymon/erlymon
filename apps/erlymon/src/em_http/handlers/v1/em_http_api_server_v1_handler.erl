@@ -53,19 +53,12 @@ request(_, Req) ->
 
 -spec get_server(Req::cowboy_req:req()) -> cowboy_req:req().
 get_server(Req) ->
-    %%{"success":true,"data":{"zoom":0,"registration":true,"latitude":0.0,"longitude":0.0,"id":1}}
-    case em_data_manager:get_server() of
-        null ->
-            cowboy_req:reply(?STATUS_BAD_REQUEST, Req);
-        Server ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Server), Req)
-    end.
+    Server = em_data_manager:get_server(),
+    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Server), Req).
 
     
 -spec update_server(Req :: cowboy_req:req()) -> cowboy_req:req().
 update_server(Req) ->
-  %%{"success":true,"data":{"zoom":0,"registration":true,"latitude":0.0,"longitude":0.0,"id":1}}
-  em_logger:info("SESSION: ~w", [cowboy_session:get(user, Req)]),
   case cowboy_session:get(user, Req) of
     {undefined, Req2} ->
       cowboy_req:reply(?STATUS_BAD_REQUEST, Req2);
@@ -73,11 +66,11 @@ update_server(Req) ->
       em_logger:info("User: ~w", [maps:get(<<"id">>,User)]),
       case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
            false ->
-              cowboy_req:reply(?STATUS_BAD_REQUEST, Req2);
+              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
            _ ->
               {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
               Server = em_json:decode(JsonBin),
               em_data_manager:update_server(Server),
-              cowboy_req:reply(?STATUS_OK, Req3)
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Server), Req3)
       end
   end.
