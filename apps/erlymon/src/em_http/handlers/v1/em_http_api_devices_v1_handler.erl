@@ -58,7 +58,7 @@ get_devices(Req) ->
         {User, Req2} ->
             Qs = cowboy_req:parse_qs(Req2),
             All = binary_to_atom(proplists:get_value(<<"all">>, Qs, <<"false">>), utf8),
-            UserId = proplists:get_value(<<"userId">>, Qs, 0),
+            UserId = list_to_integer(binary_to_list(proplists:get_value(<<"userId">>, Qs, <<"0">>))),
 	    case All of
 	     true ->
                 case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
