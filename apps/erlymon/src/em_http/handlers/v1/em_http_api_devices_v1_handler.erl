@@ -57,7 +57,7 @@ get_devices(Req) ->
             cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
         {User, Req2} ->
             Qs = cowboy_req:parse_qs(Req2),
-            All = proplists:get_value(<<"all">>, Qs, false),
+            All = binary_to_atom(proplists:get_value(<<"all">>, Qs, <<"false">>), utf8),
             UserId = proplists:get_value(<<"userId">>, Qs, 0),
 	    case All of
 	     true ->

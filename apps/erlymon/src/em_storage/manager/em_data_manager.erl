@@ -240,7 +240,12 @@ get_device_by_uid(UniqueId) ->
 
     
 get_all_devices() ->
-    [].
+    Cursor = em_storage_device:get_all(),
+    Devices = em_storage_cursor:map(fun(Doc) ->
+        Doc
+    end, Cursor),
+    em_storage_cursor:close(Cursor),
+    Devices.
 
 link_device(UserId, DeviceId) ->
     em_storage_permission:create(UserId, DeviceId).

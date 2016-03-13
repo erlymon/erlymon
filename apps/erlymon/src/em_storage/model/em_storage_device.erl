@@ -33,7 +33,8 @@
   delete/1,
   get_by_id/1,
   get_by_id/2,
-  get_by_uid/1
+  get_by_uid/1,
+  get_all/0
 ]).
 
 %%//device
@@ -86,9 +87,6 @@ get_by_id(Id, Projector) ->
 
 get_by_uid(UniqueId) ->
     get(#{<<"uniqueId">> => UniqueId}, #{<<"_id">> => false}).
-
-get_all() ->
-    get(#{}, #{<<"_id">> => false}).
     
 get(Query, Projector) ->
     Item = em_storage:find_one(<<"devices">>, Query, #{projector => Projector}),
@@ -98,3 +96,6 @@ get(Query, Projector) ->
       false ->
         null
     end.
+
+get_all() ->
+    em_storage:find(<<"devices">>, #{}, #{projector => #{<<"_id">> => false}}).
