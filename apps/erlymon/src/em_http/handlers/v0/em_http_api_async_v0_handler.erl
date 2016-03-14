@@ -56,7 +56,7 @@ async(Req) ->
         {User, Req2} ->
 	    Devices = em_data_manager:get_devices(maps:get(<<"id">>, User), #{<<"_id">> => false, <<"password">> => false, <<"lastUpdate">> => false}),
 	    LastMessages = lists:foldl(fun(Device, Acc) -> 
-	      case em_data_manager:get_last_message(maps:get(<<"messageId">>, Device), maps:get(<<"id">>, Device)) of
+	      case em_data_manager:get_last_message(maps:get(<<"positionId">>, Device), maps:get(<<"id">>, Device)) of
 		null ->
 		  Acc;
 		Message ->  
