@@ -45,7 +45,7 @@ request(?POST, Req, User) ->
     add_permission(Req, User);    
 request(?DELETE, Req, User) ->
     remove_permission(Req, User);
-request(_, Req) ->
+request(_, Req, _) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
@@ -53,16 +53,16 @@ request(_, Req) ->
 add_permission(Req, User) ->
     case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
         false ->
-              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
         _ ->
-              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req2)
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req)
     end.
     
 -spec remove_permission(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().    
 remove_permission(Req, User) ->
     case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
         false ->
-              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
         _ ->
-              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req2)
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req)
     end.
