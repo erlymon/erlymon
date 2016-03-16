@@ -78,13 +78,13 @@ start_link(Args) ->
   {stop, Reason :: term()} | ignore).
 init(Args) ->
   process_flag(trap_exit, true),
-  _Host = (proplists:get_value(host, Args)),
+  _Host = list_to_binary(proplists:get_value(host, Args)),
   _Port = (proplists:get_value(port, Args)),
-  Database = (proplists:get_value(database, Args)),
-  _Login = (proplists:get_value(login, Args)),
-  _Password = (proplists:get_value(password, Args)),
+  Database = list_to_binary(proplists:get_value(database, Args)),
+  _Login = list_to_binary(proplists:get_value(login, Args)),
+  _Password = list_to_binary(proplists:get_value(password, Args)),
 
-  em_logger:info("init worker args: ~w ~s", [Database, Database]),
+  %%em_logger:info("init worker args: ~w ~s", [Database, Database]),
   %%em_logger:info("init worker host: ~s, port: ~w database: ~s username: ~s, password: ~s", [Host, Port, Database, Login, Password]),
 
   {ok, Conn} = mc_worker_api:connect([{database, Database}, {w_mode, safe}]),
@@ -144,7 +144,7 @@ handle_call({find_one, Coll, Selector}, _From, #state{conn = Conn} = State) ->
 %%handle_call({find_one, Coll, Selector, Projector}, _From, #state{conn = Conn} = State) ->
 %%  {reply, mc_worker_api:find_one(Conn, Coll, Selector, Projector), State};
 handle_call({find_one, Coll, Selector, Projector}, _From, #state{conn = Conn} = State) ->
-  em_logger:debug("################### ~w", [{find_one, Coll, Selector, Projector}]),
+  %%em_logger:debug("################### ~w", [{find_one, Coll, Selector, Projector}]),
   {reply, mc_worker_api:find_one(Conn, Coll, Selector, Projector), State};
 handle_call({find_one, Coll, Selector, Projector, Skip}, _From, #state{conn = Conn} = State) ->
   {reply, mc_worker_api:find_one(Conn, Coll, Selector, Projector, Skip), State};

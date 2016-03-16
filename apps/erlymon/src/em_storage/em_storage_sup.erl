@@ -50,9 +50,9 @@ start_link() ->
 init([]) ->
     {ok, EmStorageEnv} = application:get_env(erlymon, em_storage),
     Pools = proplists:get_value(pools, EmStorageEnv),
-    em_logger:info("Pools ~w", [Pools]),
+    %%em_logger:info("Pools ~w", [Pools]),
     PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
-        em_logger:info("Pool spec: ~s ~w ~w", [Name, SizeArgs, WorkerArgs]),
+        %%em_logger:info("Pool spec: ~s ~w ~w", [Name, SizeArgs, WorkerArgs]),
         PoolArgs = [{name, {local, Name}},
 	    {worker_module, make_module_name(Name)}] ++ SizeArgs,
         poolboy:child_spec(Name, PoolArgs, WorkerArgs)
