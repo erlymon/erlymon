@@ -104,16 +104,19 @@ update_server(Server) ->
 
 create_message(DeviceId, Protocol, MessageParams) ->
     case em_storage_message:get(DeviceId, maps:get(<<"deviceTime">>, MessageParams)) of
-        #{} ->
-            case em_storage_message:create(DeviceId, Protocol, MessageParams) of
-	      null ->
-		null;
-	      Message ->
-		em_storage_device:update(DeviceId, #{<<"messageId">> => maps:get(<<"id">>, Message)}),
-		Message
-	    end;
-        _ ->
-            null
+      #{} ->
+        case em_storage_message:create(DeviceId, Protocol, MessageParams) of
+          null ->
+            null;
+          Message ->
+            em_storage_device:update(DeviceId, #{
+              <<"positionId">> => maps:get(<<"id">>, Message),
+              <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
+            }),
+            Message
+        end;
+      _ ->
+        null
     end.
 
 get_messages(DeviceId, TimeFrom, TimeTo) ->

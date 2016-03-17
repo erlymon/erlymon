@@ -54,7 +54,7 @@ create(Name, UniqueId, Password) ->
       <<"name">> => Name,
       <<"uniqueId">> => UniqueId,
       <<"password">> => Password,
-      <<"messageId">> => 0,
+      <<"positionId">> => 0,
       <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
      },
     create(DeviceModel).
