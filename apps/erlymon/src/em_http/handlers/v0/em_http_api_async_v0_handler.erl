@@ -36,32 +36,32 @@
 %%
 %% ANSWER:
 %% {"success":true,"data":[]}
--spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
+-spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
-    Method = cowboy_req:method(Req),
-    {ok, request(Method, Req), Opts}.
+  Method = cowboy_req:method(Req),
+  {ok, request(Method, Req), Opts}.
 
--spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
+-spec request(Method :: binary(), Opts :: any()) -> cowboy_req:req().
 request(?POST, Req) when (Req /= undefined) ->
-    async(Req);
+  async(Req);
 request(_, Req) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
--spec async(Req::cowboy_req:req()) -> cowboy_req:req().
+-spec async(Req :: cowboy_req:req()) -> cowboy_req:req().
 async(Req) ->
-    case cowboy_session:get(user, Req) of
-        {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
-        {User, Req2} ->
-	    Devices = em_data_manager:get_devices(maps:get(<<"id">>, User), #{<<"_id">> => false, <<"password">> => false, <<"lastUpdate">> => false}),
-	    LastMessages = lists:foldl(fun(Device, Acc) -> 
-	      case em_data_manager:get_last_message(maps:get(<<"positionId">>, Device), maps:get(<<"id">>, Device)) of
-		null ->
-		  Acc;
-		Message ->  
-		  [Message | Acc]
-	      end
-	    end, [], Devices),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => LastMessages}), Req2)
-    end.
+  case cowboy_session:get(user, Req) of
+    {undefined, Req2} ->
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
+    {User, Req2} ->
+      Devices = em_data_manager:get_devices(maps:get(<<"id">>, User), #{<<"_id">> => false, <<"password">> => false, <<"lastUpdate">> => false}),
+      LastMessages = lists:foldl(fun(Device, Acc) ->
+        case em_data_manager:get_last_message(maps:get(<<"positionId">>, Device), maps:get(<<"id">>, Device)) of
+          null ->
+            Acc;
+          Message ->
+            [Message | Acc]
+        end
+                                 end, [], Devices),
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => LastMessages}), Req2)
+  end.
