@@ -31,26 +31,25 @@
 
 %% http://localhost:5055/?id=123456&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}
 %% id=353490069161244&timestamp=1440085518&lat=53.944019&lon=27.6468195&speed=0.0&bearing=0.0&altitude=0.0&batt=53.0
-init(Req, Opts) ->    
+init(Req, Opts) ->
     io:format("OPTS: ~w", [Opts]),
     Method = cowboy_req:method(Req),
-    %em_logger:debug("URL: ~s", [cowboy_req:url(Req)]),
-    %%#{id := Id, lat := Lat, lon := Lon, timestamp := Timestamp, hdop := Hdop, altitude := Alt, speed := Speed, batt := Bat} = cowboy_req:match_qs([id,lat,lon,timestamp,hdop,altitude,speed,batt], Req),
-    Map = cowboy_req:match_qs([id,timestamp,lat,lon], Req),
-    em_logger:debug("QUERY: ~s", [em_json:encode(Map)]),
-    Req2 = echo(Method, Map, Req),
-    {ok, Req2, Opts}.
-
-echo(<<"GET">>, #{<<"id">> := Imei, <<"timestamp">> := Timestamp, <<"lat">> := Lat, <<"lon">> := Lon}, Req) ->
+    em_logger:info("URL: ~s", [cowboy_req:url(Req)]),
+    Qs = cowboy_req:parse_qs(Req),
+    Imei = proplists:get_value(<<"id">>, Qs, undefined),
+    Timestamp = proplists:get_value(<<"timestamp">>, Qs, undefined),
+    Lat = proplists:get_value(<<"lat">>, Qs, undefined),
+    Lon = proplists:get_value(<<"lon">>, Qs, undefined),
     BaseParams = #{
       <<"deviceTime">> => parse_time(Timestamp),
       <<"latitude">> => parse_coord(Lat),
       <<"longitude">> => parse_coord(Lon),
       <<"valid">> => true
      },
+    {ok, echo(Method, Imei, BaseParams, Req), Opts}.
 
-
-    OtherParams = lists:foldl(fun(Item, Acc) -> 
+echo(<<"GET">>, Imei, BaseParams, Req) ->
+    OtherParams = lists:foldl(fun(Item, Acc) ->
                                       try cowboy_req:match_qs([Item], Req) of
                                           Param ->
                                               parse_param(Acc, Param)
@@ -70,9 +69,9 @@ echo(<<"GET">>, #{<<"id">> := Imei, <<"timestamp">> := Timestamp, <<"lat">> := L
             em_data_manager:create_message(maps:get(<<"id">>, Object), protocol(), maps:merge(#{imei => maps:get(<<"uniqueId">>, Object)}, Message)),
             cowboy_req:reply(200, Req)
     end;
-echo(<<"GET">>, undefined, Req) ->
+echo(<<"GET">>, _, undefined, Req) ->
     cowboy_req:reply(400, [], <<"Missing echo parameter.">>, Req);
-echo(_, _, Req) ->
+echo(_, _, _, Req) ->
     %% Method not allowed.
     cowboy_req:reply(405, Req).
 
@@ -133,5 +132,5 @@ bin_to_num(Bin) ->
 
 protocol() ->
     Bin = atom_to_binary(?MODULE, utf8),
-    [_, Protocol| _] = binary:split(Bin, <<"_">>, [global]),
-      binary_to_atom(Protocol, utf8).
+    [_, Protocol | _] = binary:split(Bin, <<"_">>, [global]),
+    binary_to_atom(Protocol, utf8).
