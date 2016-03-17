@@ -26,9 +26,10 @@
 
 %% API
 -export([
-         check_admin/1,
-         check_user/2,
-         check_device/2
+  check_admin/1,
+  check_user/2,
+  check_device/2,
+  check_registration/0
 ]).
 
 check_admin(UserId) ->
@@ -55,4 +56,6 @@ check_device(UserId, DeviceId) ->
         _ ->
             true
     end.
+
+check_registration() -> true.
 

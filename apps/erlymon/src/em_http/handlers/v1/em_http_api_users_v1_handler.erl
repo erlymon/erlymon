@@ -34,11 +34,11 @@
 %% {"success":true,"data":[]}
 -spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
+  Method = cowboy_req:method(Req),
   case cowboy_session:get(user, Req) of
     {undefined, Req2} ->
-      {ok, cowboy_req:reply(?STATUS_NOT_FOUND, Req2), Opts};
+      {ok, request(Method, Req2), Opts};
     {User, Req2} ->
-      Method = cowboy_req:method(Req2),
       {ok, request(Method, Req2, User), Opts}
   end.
 
@@ -55,6 +55,14 @@ request(_, Req, _) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, [], <<"Allowed GET,POST,PUT,DELETE requests.">>, Req).
 
+
+-spec request(Method :: binary(), Req :: cowboy_req:req()) -> cowboy_req:req().
+request(?POST, Req) ->
+  add_user(Req);
+request(_, Req) ->
+  %% Method not allowed.
+  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, [], <<"Allowed POST request.">>, Req).
+
 -spec get_users(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 get_users(Req, User) ->
   em_logger:info("User: ~w", [maps:get(<<"id">>, User)]),
@@ -64,6 +72,18 @@ get_users(Req, User) ->
     _ ->
       Users = em_data_manager:get_users(),
       cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Users), Req)
+  end.
+
+-spec add_user(Req :: cowboy_req:req()) -> cowboy_req:req().
+add_user(Req) ->
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  UserModel = em_json:decode(JsonBin),
+  case em_permissions_manager:check_registration() of
+    false ->
+      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+    _ ->
+      NewUser = em_data_manager:create_user(UserModel),
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(NewUser), Req2)
   end.
 
 -spec add_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
