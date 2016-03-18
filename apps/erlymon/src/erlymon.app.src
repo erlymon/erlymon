@@ -40,6 +40,7 @@
    ,iso8601
    ,cowboy
    ,cowboy_session
+   ,tempo
    ]}
  ,{env,[
     {lager, [

@@ -82,7 +82,7 @@ init() ->
         null ->
             em_storage_server:create(true, 0, 0, 0),
             Admin = em_storage_user:create(<<"admin">>, <<"admin">>, <<"admin">>, true),
-            Device = em_storage_device:create(<<"test1">>, <<"123456789012345">>, <<"">>),
+            Device = em_storage_device:create(<<"test1">>, <<"123456789012345">>),
             link_device(maps:get(<<"id">>, Admin), maps:get(<<"id">>, Device)),
             em_logger:info("Create account admin: username: ~s, password: ~s", [maps:get(<<"email">>, Admin), maps:get(<<"password">>, Admin)]);
         _ ->
@@ -227,7 +227,10 @@ get_devices(UserId, Projector) ->
                       null ->
                           Acc;
                       Device ->
-                          [Device|Acc]
+			  %% format lastUpdate: 2016-01-09T15:31:11.000+0000
+			  em_logger:info("lastUpdate: ~w", [maps:get(<<"lastUpdate">>, Device)]),
+			  {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
+                          [maps:put(<<"lastUpdate">>, Date, Device)|Acc]
                   end
           end,
     Cursor = em_storage_permission:get(UserId),
@@ -241,8 +244,10 @@ get_device_by_uid(UniqueId) ->
     
 get_all_devices() ->
     Cursor = em_storage_device:get_all(),
-    Devices = em_storage_cursor:map(fun(Doc) ->
-        Doc
+    Devices = em_storage_cursor:map(fun(Device) ->
+	em_logger:info("lastUpdate: ~w", [maps:get(<<"lastUpdate">>, Device)]),
+	{ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
+        maps:put(<<"lastUpdate">>, Date, Device)
     end, Cursor),
     em_storage_cursor:close(Cursor),
     Devices.
