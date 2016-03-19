@@ -116,9 +116,16 @@ create_message(DeviceId, Protocol, MessageParams) ->
 
 get_messages(DeviceId, TimeFrom, TimeTo) ->
     GetMessage = fun(Message, Acc) ->
-                         DeviceTime = maps:get(<<"fixTime">>, Message),
-                         NewMessage = maps:put(<<"fixTime">>, em_helper_time:utc_to_iso8601(DeviceTime), Message),
-                         [maps:remove(<<"_id">>, NewMessage)|Acc]
+                        %% deviceTime: "2016-01-09T14:56:18.000+0000"
+                        %% fixTime: "2016-01-09T14:56:18.000+0000"
+                        %% serverTime: "2016-01-09T14:57:16.000+0000"
+                        {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message)),
+                        {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message)),
+                        {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message)),
+                        NewMessage0 = maps:put(<<"deviceTime">>, DeviceTime, Message),
+                        NewMessage1 = maps:put(<<"fixTime">>, FixTime, NewMessage0),
+                        NewMessage2 = maps:put(<<"serverTime">>, ServerTime, NewMessage1),
+                        [NewMessage2|Acc]
           end,
     Cursor = em_storage_message:get(DeviceId, TimeFrom, TimeTo),
     Messages = em_storage_cursor:foldl(GetMessage, [], Cursor),
@@ -131,9 +138,16 @@ get_last_message(MessageId, DeviceId) ->
         true ->
             null;
         false ->
-            DeviceTime = maps:get(<<"fixTime">>, Message),
-            NewMessage = maps:put(<<"fixTime">>, em_helper_time:utc_to_iso8601(DeviceTime), Message),
-            maps:remove(<<"_id">>, NewMessage)
+          %% deviceTime: "2016-01-09T14:56:18.000+0000"
+          %% fixTime: "2016-01-09T14:56:18.000+0000"
+          %% serverTime: "2016-01-09T14:57:16.000+0000"
+          {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message)),
+          {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message)),
+          {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message)),
+          NewMessage0 = maps:put(<<"deviceTime">>, DeviceTime, Message),
+          NewMessage1 = maps:put(<<"fixTime">>, FixTime, NewMessage0),
+          NewMessage2 = maps:put(<<"serverTime">>, ServerTime, NewMessage1),
+          NewMessage2
     end.
 
 
@@ -217,7 +231,7 @@ delete_device(UserId, DeviceId) ->
             true
     end.
 
-    
+
 get_devices(UserId) ->
     get_devices(UserId, #{<<"_id">> => false}).
 
@@ -237,11 +251,11 @@ get_devices(UserId, Projector) ->
     Devices = em_storage_cursor:foldl(GetDeviceById, [], Cursor),
     em_storage_cursor:close(Cursor),
     Devices.
-    
+
 get_device_by_uid(UniqueId) ->
     em_storage_device:get_by_uid(UniqueId).
 
-    
+
 get_all_devices() ->
     Cursor = em_storage_device:get_all(),
     Devices = em_storage_cursor:map(fun(Device) ->

@@ -29,11 +29,15 @@
 -export([
   iso8601_to_utc/1,
   utc_to_iso8601/1,
-  format/2
+  format/2,
+  parse/2
 ]).
 
 format(Format, Utc) ->
   tempo:format_unix(Format, Utc).
+
+parse(Format, Bin) ->
+  tempo:parse_unix(Format, Bin).
 
 iso8601_to_utc(BinStr) ->
   Date = iso8601:parse(BinStr),

@@ -58,14 +58,12 @@ get_positions(Req) ->
                 false ->
                     cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
                 _ ->
-                    Messages = em_data_manager:get_messages(Id, str_to_utc(From), str_to_utc(To)),
+                    {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, From),
+                    {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, To),
+                    Messages = em_data_manager:get_messages(Id, TimeFrom, TimeTo),
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Messages), Req2)
             end
     end.
 
 str_to_int(Str) ->
     list_to_integer(binary_to_list(Str)).
-
-
-str_to_utc(Str) ->
-    em_helper_time:iso8601_to_utc(Str).
