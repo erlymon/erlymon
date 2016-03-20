@@ -115,13 +115,14 @@ create_message(DeviceId, Protocol, MessageParams) ->
     end.
 
 get_messages(DeviceId, TimeFrom, TimeTo) ->
+    em_logger:info("get_messages => Device ID: ~w, From: ~w, To: ~w", [DeviceId, TimeFrom, TimeTo]),
     GetMessage = fun(Message, Acc) ->
                         %% deviceTime: "2016-01-09T14:56:18.000+0000"
                         %% fixTime: "2016-01-09T14:56:18.000+0000"
                         %% serverTime: "2016-01-09T14:57:16.000+0000"
-                        {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message)),
-                        {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message)),
-                        {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message)),
+                        {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message) / 1000),
+                        {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message) / 1000),
+                        {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message) / 1000),
                         NewMessage0 = maps:put(<<"deviceTime">>, DeviceTime, Message),
                         NewMessage1 = maps:put(<<"fixTime">>, FixTime, NewMessage0),
                         NewMessage2 = maps:put(<<"serverTime">>, ServerTime, NewMessage1),
@@ -141,9 +142,9 @@ get_last_message(MessageId, DeviceId) ->
           %% deviceTime: "2016-01-09T14:56:18.000+0000"
           %% fixTime: "2016-01-09T14:56:18.000+0000"
           %% serverTime: "2016-01-09T14:57:16.000+0000"
-          {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message)),
-          {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message)),
-          {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message)),
+          {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message) / 1000),
+          {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message) / 1000),
+          {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message) / 1000),
           NewMessage0 = maps:put(<<"deviceTime">>, DeviceTime, Message),
           NewMessage1 = maps:put(<<"fixTime">>, FixTime, NewMessage0),
           NewMessage2 = maps:put(<<"serverTime">>, ServerTime, NewMessage1),
@@ -241,9 +242,9 @@ get_devices(UserId, Projector) ->
                       null ->
                           Acc;
                       Device ->
-			  %% format lastUpdate: 2016-01-09T15:31:11.000+0000
-			  em_logger:info("lastUpdate: ~w", [maps:get(<<"lastUpdate">>, Device)]),
-			  {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
+                          %% format lastUpdate: 2016-01-09T15:31:11.000+0000
+			                    %%em_logger:info("lastUpdate: ~w", [maps:get(<<"lastUpdate">>, Device)]),
+			                    {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
                           [maps:put(<<"lastUpdate">>, Date, Device)|Acc]
                   end
           end,
@@ -259,8 +260,7 @@ get_device_by_uid(UniqueId) ->
 get_all_devices() ->
     Cursor = em_storage_device:get_all(),
     Devices = em_storage_cursor:map(fun(Device) ->
-	em_logger:info("lastUpdate: ~w", [maps:get(<<"lastUpdate">>, Device)]),
-	{ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
+	      {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
         maps:put(<<"lastUpdate">>, Date, Device)
     end, Cursor),
     em_storage_cursor:close(Cursor),

@@ -51,16 +51,20 @@ get_positions(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
         {User, Req2} ->
-            #{deviceId := DeviceId, from := From, to := To} = cowboy_req:match_qs([deviceId, from, to], Req),
-            %%em_logger:info("Device ID: ~d, From: ~w, To: ~w", [str_to_int(DeviceId), str_to_utc(From), str_to_utc(To)]),
-            Id = str_to_int(DeviceId),
-            case em_permissions_manager:check_device(maps:get(<<"id">>, User), Id) of
+            %%#{deviceId := DeviceId, from := From, to := To} = cowboy_req:match_qs([deviceId, from, to], Req),
+            Qs = cowboy_req:parse_qs(Req2),
+            DeviceId = list_to_integer(binary_to_list(proplists:get_value(<<"deviceId">>, Qs, <<"0">>))),
+            From = proplists:get_value(<<"from">>, Qs, <<"">>),
+            To = proplists:get_value(<<"to">>, Qs, <<"">>),
+            em_logger:info("Device ID: ~w, From: ~s, To: ~s", [DeviceId, From, To]),
+            %%Id = str_to_int(DeviceId),
+            case em_permissions_manager:check_device(maps:get(<<"id">>, User), DeviceId) of
                 false ->
                     cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
                 _ ->
                     {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, From),
                     {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, To),
-                    Messages = em_data_manager:get_messages(Id, TimeFrom, TimeTo),
+                    Messages = em_data_manager:get_messages(DeviceId, TimeFrom * 1000, TimeTo * 1000),
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Messages), Req2)
             end
     end.
