@@ -73,7 +73,7 @@ update(Id, <<"password">>, Value) ->
     update(Id,  #{<<"password">> => Value}).
 
 update(Id, DeviceModel) ->
-    em_storage:update(<<"devices">>, #{<<"id">> => Id}, DeviceModel).
+    em_storage:update(<<"devices">>, #{<<"id">> => Id}, maps:put(<<"lastUpdate">>, bson:unixtime_to_secs(bson:timenow()), DeviceModel)).
 
 delete(Id) ->
     em_storage:delete_one(<<"devices">>, #{<<"id">> => Id}).

@@ -220,8 +220,12 @@ create_device(UserId, DeviceName, DeviceUniqueId) ->
     end.
 
 update_device(Device) ->
+    em_logger:info("update_device => ~s", [em_json:encode(Device)]),
     DeviceId = maps:get(<<"id">>, Device),
-    em_storage_device:update(DeviceId, maps:remove(<<"id">>, Device)).
+    FixDevice = fun(DeviceModel) ->
+                maps:remove(<<"id">>, DeviceModel)
+              end,
+    em_storage_device:update(DeviceId, FixDevice(Device)).
 
 update_device(UserId, DeviceId, Field, Value) ->
     case em_storage_permission:get(UserId, DeviceId) of
