@@ -169,8 +169,21 @@ create_user(Name, Email, Password) ->
     end.
 
 update_user(User) ->
+    em_logger:info("update_user => ~s", [em_json:encode(User)]),
     UserId = maps:get(<<"id">>, User),
-    em_storage_user:update(UserId, maps:remove(<<"id">>, User)).
+    FixUser = fun(UserModel) ->
+                Password = maps:get(<<"password">>, UserModel),
+                UserModel1 = maps:remove(<<"id">>, UserModel),
+                case Password of
+                  undefinded ->
+                    UserModel1;
+                  <<"">> ->
+                    UserModel1;
+                  _ ->
+                    maps:put(<<"hashPassword">>, em_password:hash(Password), UserModel1)
+                end
+              end,
+    em_storage_user:update(UserId, FixUser(User)).
 
 
 
