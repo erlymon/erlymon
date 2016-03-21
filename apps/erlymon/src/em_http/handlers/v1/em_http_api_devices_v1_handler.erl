@@ -32,100 +32,85 @@
 
 %% GET http://demo.traccar.org/api/device/get?_dc=1436251203853&page=1&start=0&limit=25
 %% {"success":true,"data":[]}
--spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
+-spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
-  Method = cowboy_req:method(Req),
-  {ok, request(Method, Req), Opts}.
+  case cowboy_session:get(user, Req) of
+    {undefined, Req2} ->
+      {ok, cowboy_req:reply(?STATUS_NOT_FOUND, Req2), Opts};
+    {User, Req2} ->
+      Method = cowboy_req:method(Req2),
+      {ok, request(Method, Req2, User), Opts}
+  end.
 
--spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
-request(?GET, Req) ->
-    get_devices(Req);
-request(?POST, Req) ->
-    add_device(Req);
-request(?PUT, Req) ->
-    update_device(Req);
-request(?DELETE, Req) ->
-    remove_device(Req);
-request(_, Req) ->
+-spec request(Method :: binary(), Opts :: any(), User :: map()) -> cowboy_req:req().
+request(?GET, Req, User) ->
+  get_devices(Req, User);
+request(?POST, Req, User) ->
+  add_device(Req, User);
+request(?PUT, Req, User) ->
+  update_device(Req, User);
+request(?DELETE, Req, User) ->
+  remove_device(Req, User);
+request(_, Req, _) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, [], <<"Allowed GET,POST,PUT,DELETE requests.">>, Req).
 
--spec get_devices(Req::cowboy_req:req()) -> cowboy_req:req().
-get_devices(Req) ->
-    case cowboy_session:get(user, Req) of
-        {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
-        {User, Req2} ->
-            Qs = cowboy_req:parse_qs(Req2),
-            All = binary_to_atom(proplists:get_value(<<"all">>, Qs, <<"false">>), utf8),
-            UserId = list_to_integer(binary_to_list(proplists:get_value(<<"userId">>, Qs, <<"0">>))),
-	    case All of
-	     true ->
-                case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
-                    false ->
-                        cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-                    _ ->
-                        cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req2)
-                end;
-             false ->
-                case em_permissions_manager:check_user(maps:get(<<"id">>, User), get_user_id(UserId, User)) of
-                    false ->
-                        cowboy_req:reply(?STATUS_FORBIDDEN, Req2);
-                    _ ->
-                        cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_devices(get_user_id(UserId, User))), Req2)
-                end
-            end
-    end.
+-spec get_devices(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
+get_devices(Req, User) ->
+  Qs = cowboy_req:parse_qs(Req),
+  All = binary_to_atom(proplists:get_value(<<"all">>, Qs, <<"false">>), utf8),
+  UserId = list_to_integer(binary_to_list(proplists:get_value(<<"userId">>, Qs, <<"0">>))),
+  case All of
+    true ->
+      case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+        false ->
+          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+        _ ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req)
+      end;
+    false ->
+      case em_permissions_manager:check_user(maps:get(<<"id">>, User), get_user_id(UserId, User)) of
+        false ->
+          cowboy_req:reply(?STATUS_FORBIDDEN, Req);
+        _ ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_devices(get_user_id(UserId, User))), Req)
+      end
+  end.
 
 get_user_id(0, User) ->
-    maps:get(<<"id">>, User);
+  maps:get(<<"id">>, User);
 get_user_id(UserId, _) ->
-    UserId.
+  UserId.
 
--spec add_device(Req::cowboy_req:req()) -> cowboy_req:req().
-add_device(Req) ->
-    case cowboy_session:get(user, Req) of
-        {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
-        {User, Req2} ->
-            {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
-            DeviceModel = em_json:decode(JsonBin),
-            Device = em_data_manager:create_device(DeviceModel),
-            em_data_manager:link_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, Device)), Req3)
-    end.
-    
--spec update_device(Req::cowboy_req:req()) -> cowboy_req:req().
-update_device(Req) ->
-    case cowboy_session:get(user, Req) of
-        {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
-        {User, Req2} ->
-            {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
-            Device = em_json:decode(JsonBin),
-            case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
-                false ->
-                    cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req3);
-                true ->
-                    em_data_manager:update_device(Device),
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Device), Req3)
-            end
-    end.
+-spec add_device(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
+add_device(Req, User) ->
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  DeviceModel = em_json:decode(JsonBin),
+  Device = em_data_manager:create_device(DeviceModel),
+  em_data_manager:link_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)),
+  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, Device)), Req2).
 
--spec remove_device(Req::cowboy_req:req()) -> cowboy_req:req().
-remove_device(Req) ->
-    case cowboy_session:get(user, Req) of
-        {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
-        {User, Req2} ->
-            {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
-            Device = em_json:decode(JsonBin),
-            case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
-                false ->
-                    cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req3);
-                true ->
-                    em_data_manager:delete_device(Device),
-                    em_data_manager:unlink_device(maps:get(<<"id">>, Device)),
-                    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, Device)), Req3)
-            end
-    end.
+-spec update_device(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
+update_device(Req, User) ->
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  Device = em_json:decode(JsonBin),
+  case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
+    false ->
+      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
+    true ->
+      em_data_manager:update_device(Device),
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Device), Req2)
+  end.
+
+-spec remove_device(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
+remove_device(Req, User) ->
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  Device = em_json:decode(JsonBin),
+  case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
+    false ->
+      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
+    true ->
+      em_data_manager:delete_device(Device),
+      em_data_manager:unlink_device(maps:get(<<"id">>, Device)),
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, Device)), Req2)
+  end.
