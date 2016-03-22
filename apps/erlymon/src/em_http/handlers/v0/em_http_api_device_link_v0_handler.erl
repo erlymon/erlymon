@@ -53,9 +53,10 @@ add_permission(Req, User) ->
     false ->
       cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req);
     _ ->
-      {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
       %% {userId: 1458137425, deviceId: 1458137433}
-      PermissionModel = em_json:decode(JsonBin),
-      em_data_manager:link_device(maps:get(<<"userId">>, PermissionModel), maps:get(<<"deviceId">>, PermissionModel)),
+      {ok, PostVals, Req2} = cowboy_req:body_qs(Req),
+      UserId = list_to_integer(binary_to_list(proplists:get_value(<<"userId">>, PostVals))),
+      DeviceId = list_to_integer(binary_to_list(proplists:get_value(<<"deviceId">>, PostVals))),
+      em_data_manager:link_device(UserId, DeviceId),
       cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true}), Req2)
   end.
