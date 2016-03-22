@@ -29,7 +29,7 @@
 -export([
   create/2,
   update/2,
-  delete/1,
+  delete/2,
   get/2,
   get/1
 ]).
@@ -47,8 +47,9 @@ create(UserId, DeviceId) ->
 
 update(_UserId, _DeviceId) -> ok.
 
-delete(DeviceId) -> 
-    em_storage:delete(<<"permissions">>, #{<<"deviceId">> => DeviceId}).
+delete(UserId, DeviceId) ->
+    PermissionModel = #{<<"userId">> => UserId, <<"deviceId">> => DeviceId},
+    em_storage:delete(<<"permissions">>, PermissionModel).
 
 get(UserId, DeviceId) ->
     Item = em_storage:find_one(<<"permissions">>, #{<<"userId">> => UserId, <<"deviceId">> => DeviceId}, #{projector => #{<<"_id">> => false}}),

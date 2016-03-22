@@ -46,7 +46,7 @@
 
 -export([
   link_device/2,
-  unlink_device/1,
+  unlink_device/2,
   create_device/1,
   create_device/3,
   update_device/1,
@@ -286,5 +286,5 @@ get_all_devices() ->
 link_device(UserId, DeviceId) ->
     em_storage_permission:create(UserId, DeviceId).
 
-unlink_device(DeviceId) ->
-    em_storage_permission:delete(DeviceId).
+unlink_device(UserId, DeviceId) ->
+    em_storage_permission:delete(UserId, DeviceId).
