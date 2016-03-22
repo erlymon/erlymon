@@ -34,25 +34,50 @@
 %% {"success":true,"data":[]}
 -spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
-  Method = cowboy_req:method(Req),
-      {ok, request(Method, Req), Opts}.
+  case cowboy_session:get(user, Req) of
+    {undefined, Req2} ->
+      {ok, cowboy_req:reply(?STATUS_NOT_FOUND, Req2), Opts};
+    {User, Req2} ->
+      Method = cowboy_req:method(Req2),
+      {ok, request(Method, Req2, User), Opts}
+  end.
 
--spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
-request(?GET, Req) ->
-    get_devices(Req);
-request(_, Req) ->
+-spec request(Method::binary(), Opts::any(), User::map()) -> cowboy_req:req().
+request(?GET, Req, User) ->
+    get_devices(Req, User);
+request(_, Req, _) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
--spec get_devices(Req::cowboy_req:req()) -> cowboy_req:req().
-get_devices(Req) ->
-    case cowboy_session:get(user, Req) of
-        {undefined, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
-        {User, Req2} ->
-	    em_logger:info("http_req:get_devices => user = ~w", [User]),
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{
-                                                                  <<"success">> => true, 
-                                                                  <<"data">> => em_data_manager:get_devices(maps:get(<<"id">>, User))
-                                                                }), Req2)
-    end.
+-spec get_devices(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
+get_devices(Req, User) ->
+  Qs = cowboy_req:parse_qs(Req),
+  All = binary_to_atom(proplists:get_value(<<"all">>, Qs, <<"false">>), utf8),
+  UserId = list_to_integer(binary_to_list(proplists:get_value(<<"userId">>, Qs, <<"0">>))),
+  case All of
+    true ->
+      case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+        false ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req);
+        _ ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{
+            <<"success">> => true,
+            <<"data">> => em_data_manager:get_all_devices()}
+          ), Req)
+      end;
+    false ->
+      case em_permissions_manager:check_user(maps:get(<<"id">>, User), get_user_id(UserId, User)) of
+        false ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req);
+        _ ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{
+            <<"success">> => true,
+            <<"data">> => em_data_manager:get_devices(get_user_id(UserId, User))
+          }), Req)
+      end
+  end.
+
+get_user_id(0, User) ->
+  maps:get(<<"id">>, User);
+get_user_id(UserId, _) ->
+  UserId.
