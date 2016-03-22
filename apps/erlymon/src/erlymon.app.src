@@ -37,10 +37,10 @@
    ,jsx
    ,ibrowse
    ,ranch
-   ,iso8601
    ,cowboy
    ,cowboy_session
    ,tempo
+   ,gproc
    ]}
  ,{env,[
     {lager, [
