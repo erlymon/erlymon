@@ -51,21 +51,18 @@ get_positions(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
         {User, Req2} ->
-            #{deviceId := DeviceId, from := From, to := To} = cowboy_req:match_qs([deviceId, from, to], Req),
-            %%em_logger:info("Device ID: ~d, From: ~w, To: ~w", [str_to_int(DeviceId), str_to_utc(From), str_to_utc(To)]),
-            Id = str_to_int(DeviceId),
-            case em_permissions_manager:check_device(maps:get(<<"id">>, User), Id) of
+            Qs = cowboy_req:parse_qs(Req),
+            DeviceId = list_to_integer(binary_to_list(proplists:get_value(<<"deviceId">>, Qs, <<"0">>))),
+            From = proplists:get_value(<<"from">>, Qs, <<"">>),
+            To = proplists:get_value(<<"to">>, Qs, <<"">>),
+            em_logger:info("Device ID: ~w, From: ~s, To: ~s", [DeviceId, From, To]),
+            case em_permissions_manager:check_device(maps:get(<<"id">>, User), DeviceId) of
                 false ->
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => false}), Req2);
                 _ ->
-                    Messages = em_data_manager:get_messages(Id, str_to_utc(From), str_to_utc(To)),
+                    {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, From),
+                    {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, To),
+                    Messages = em_data_manager:get_messages(DeviceId, TimeFrom * 1000, TimeTo * 1000),
                     cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true, <<"data">> => Messages}), Req2)
             end
     end.
-
-str_to_int(Str) ->
-    list_to_integer(binary_to_list(Str)).
-
-
-str_to_utc(Str) ->
-    em_helper_time:iso8601_to_utc(Str).
