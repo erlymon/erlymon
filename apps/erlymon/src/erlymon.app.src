@@ -41,6 +41,7 @@
    ,cowboy_session
    ,tempo
    ,gproc
+   ,syn
    ]}
  ,{env,[
     {lager, [
