@@ -108,7 +108,7 @@ create_message(DeviceId, Protocol, MessageParams) ->
               <<"positionId">> => maps:get(<<"id">>, Message),
               <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
             }),
-            em_manager_event:broadcast(maps:remove(<<"_id">>, Message)),
+            em_manager_event:broadcast(convert_date_in_message(maps:remove(<<"_id">>, Message))),
             Message
         end;
       _ ->
@@ -118,16 +118,7 @@ create_message(DeviceId, Protocol, MessageParams) ->
 get_messages(DeviceId, TimeFrom, TimeTo) ->
     em_logger:info("get_messages => Device ID: ~w, From: ~w, To: ~w", [DeviceId, TimeFrom, TimeTo]),
     GetMessage = fun(Message, Acc) ->
-                        %% deviceTime: "2016-01-09T14:56:18.000+0000"
-                        %% fixTime: "2016-01-09T14:56:18.000+0000"
-                        %% serverTime: "2016-01-09T14:57:16.000+0000"
-                        {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message) / 1000),
-                        {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message) / 1000),
-                        {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message) / 1000),
-                        NewMessage0 = maps:put(<<"deviceTime">>, DeviceTime, Message),
-                        NewMessage1 = maps:put(<<"fixTime">>, FixTime, NewMessage0),
-                        NewMessage2 = maps:put(<<"serverTime">>, ServerTime, NewMessage1),
-                        [NewMessage2|Acc]
+                        [convert_date_in_message(Message)|Acc]
           end,
     Cursor = em_storage_message:get(DeviceId, TimeFrom, TimeTo),
     Messages = em_storage_cursor:foldl(GetMessage, [], Cursor),
@@ -140,18 +131,20 @@ get_last_message(MessageId, DeviceId) ->
         true ->
             null;
         false ->
-          %% deviceTime: "2016-01-09T14:56:18.000+0000"
-          %% fixTime: "2016-01-09T14:56:18.000+0000"
-          %% serverTime: "2016-01-09T14:57:16.000+0000"
-          {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message) / 1000),
-          {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message) / 1000),
-          {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message) / 1000),
-          NewMessage0 = maps:put(<<"deviceTime">>, DeviceTime, Message),
-          NewMessage1 = maps:put(<<"fixTime">>, FixTime, NewMessage0),
-          NewMessage2 = maps:put(<<"serverTime">>, ServerTime, NewMessage1),
-          NewMessage2
+          convert_date_in_message(Message)
     end.
 
+
+convert_date_in_message(Message) ->
+  %% deviceTime: "2016-01-09T14:56:18.000+0000"
+  %% fixTime: "2016-01-09T14:56:18.000+0000"
+  %% serverTime: "2016-01-09T14:57:16.000+0000"
+  {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"deviceTime">>, Message) / 1000),
+  {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"fixTime">>, Message) / 1000),
+  {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"serverTime">>, Message) / 1000),
+  NewMessage0 = maps:put(<<"deviceTime">>, DeviceTime, Message),
+  NewMessage1 = maps:put(<<"fixTime">>, FixTime, NewMessage0),
+  maps:put(<<"serverTime">>, ServerTime, NewMessage1).
 
 create_user(User) ->
     create_user(maps:get(<<"name">>, User), maps:get(<<"email">>, User), maps:get(<<"password">>, User)).
