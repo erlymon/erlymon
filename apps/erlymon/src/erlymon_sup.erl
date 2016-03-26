@@ -47,7 +47,16 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { {one_for_all, 0, 1}, []} }.
+    RestartStrategy = one_for_all,
+    MaxRestarts = 1000,
+    MaxSecondsBetweenRestarts = 3600,
+
+    SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
+
+    SupManager = {em_manager_sup,{em_manager_sup, start_link,[]},
+        permanent,2000,supervisor,dynamic},
+
+    {ok, {SupFlags, [SupManager]} }.
 
 %%====================================================================
 %% Internal functions
