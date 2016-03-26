@@ -108,7 +108,7 @@ create_message(DeviceId, Protocol, MessageParams) ->
               <<"positionId">> => maps:get(<<"id">>, Message),
               <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
             }),
-            em_manager_event:broadcast(Message),
+            em_manager_event:broadcast(maps:remove(<<"_id">>, Message)),
             Message
         end;
       _ ->

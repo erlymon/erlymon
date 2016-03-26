@@ -123,7 +123,7 @@ handle_call(_Request, _From, State) ->
 handle_cast({broadcast, Position}, State) ->
   SendNotify = fun(Permission) ->
     em_logger:info("Permission: ~w", [Permission]),
-    em_http_api_socket_v1_handler:notify(maps:get(<<"userId">>, Permission), positions, [maps:remove(<<"_id">>, Position)])
+    em_http_api_socket_v1_handler:notify(maps:get(<<"userId">>, Permission), positions, [Position])
     end,
   Cursor = em_storage_permission:get_by_device_id(maps:get(<<"deviceId">>, Position)),
   em_logger:info("Permissions Cursor: ~w", [Cursor]),
