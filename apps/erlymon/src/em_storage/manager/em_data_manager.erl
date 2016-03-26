@@ -265,7 +265,7 @@ get_devices(UserId, Projector) ->
                           [maps:put(<<"lastUpdate">>, Date, Device)|Acc]
                   end
           end,
-    Cursor = em_storage_permission:get(UserId),
+    Cursor = em_storage_permission:get_by_user_id(UserId),
     Devices = em_storage_cursor:foldl(GetDeviceById, [], Cursor),
     em_storage_cursor:close(Cursor),
     Devices.

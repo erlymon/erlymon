@@ -31,7 +31,8 @@
   update/2,
   delete/2,
   get/2,
-  get/1
+  get_by_user_id/1,
+  get_by_device_id/1
 ]).
 
 %%// permission
@@ -60,5 +61,8 @@ get(UserId, DeviceId) ->
 	null
     end.
 
-get(UserId) ->
+get_by_user_id(UserId) ->
     em_storage:find(<<"permissions">>, #{<<"userId">> => UserId}, #{projector => #{<<"_id">> => false}}).
+
+get_by_device_id(DeviceId) ->
+  em_storage:find(<<"permissions">>, #{<<"deviceId">> => DeviceId}, #{projector => #{<<"_id">> => false}}).
