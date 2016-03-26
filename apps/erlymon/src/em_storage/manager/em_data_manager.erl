@@ -105,8 +105,7 @@ create_message(DeviceId, Protocol, MessageParams) ->
             null;
           Message ->
             em_storage_device:update(DeviceId, #{
-              <<"positionId">> => maps:get(<<"id">>, Message),
-              <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow())
+              <<"positionId">> => maps:get(<<"id">>, Message)
             }),
             em_manager_event:broadcast(convert_date_in_message(maps:remove(<<"_id">>, Message))),
             Message
