@@ -84,6 +84,8 @@
     ]}
     ,{em_hardware, [
       {tcp_servers, [
+        {gps103, [{port, 5001}], []},
+        {tk103, [{port, 5002}], []},
         {t55, [{port, 5005}], []},
         {meitrack, [{port, 5020}], []},
         {echo, [{port, 5555}], []}
