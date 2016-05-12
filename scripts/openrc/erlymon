@@ -1,0 +1,31 @@
+#!/sbin/runscript
+# Copyright 1999-2013 Gentoo Foundation
+# Distributed under the terms of the GNU General Public License v2
+# $Header: $
+
+NAME=erlymon
+DESCRIPTION="Erlymon is OpenSource GPS Tracking System"
+WORKING_DIRECTORY=/opt/erlymon
+PID_FILE=/tmp/${NAME}.pid
+EXEC_START='$WORKING_DIRECTORY/${NAME}ctl start'
+EXEC_STOP='$WORKING_DIRECTORY/${NAME}ctl stop'
+EXEC=$WORKING_DIRECTORY/${NAME}ctl
+
+depend() {
+    need net
+    need mongodb
+}
+
+start() {
+    ebegin "Starting $NAME"
+     start-stop-daemon --start --exec $EXEC start \
+      --pidfile $PID_FILE
+    eend $?
+}
+
+stop() {
+    ebegin "Stopping $NAME"
+     start-stop-daemon --stop --exec $EXEC stop \
+     --pidfile $PID_FILE
+    eend $?
+} 
