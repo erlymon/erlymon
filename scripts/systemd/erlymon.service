@@ -1,0 +1,24 @@
+[Unit]
+Description=Erlymon is OpenSource GPS Tracking System
+After=network.target
+After=mongodb.service
+
+[Service]
+Type=simple
+PIDFile=/tmp/erlymon.pid
+WorkingDirectory=/opt/erlymon
+Environment=SYSTEMD_LOG_LEVEL=debug
+
+User=root
+Group=root
+
+KillMode=process
+Restart=on-failure
+RestartPreventExitStatus=255
+
+ExecStart=/opt/erlymon/erlymonctl start
+ExecStop=/opt/erlymon/erlymonctl stop
+ExecReload=/opt/erlymon/erlymonctl restart
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,24 @@
+#!/bin/sh
+
+NAME=erlymon
+PROJECT_ROOT_PATH=/opt/$NAME
+APP_SCRIPT="$PROJECT_ROOT_PATH/bin/$NAME"
+PID_FILE=/tmp/${NAME}.pid
+export HOME=$PROJECT_ROOT_PATH
+
+case "$1" in
+console)
+	$APP_SCRIPT console
+;;
+start)
+	$APP_SCRIPT start && $APP_SCRIPT pid > $PID_FILE
+;;
+stop)
+	$APP_SCRIPT stop && rm $PID_FILE
+;;
+restart)
+	$APP_SCRIPT restart && $APP_SCRIPT pid > $PID_FILE
+;;
+*)
+esac
+ 
