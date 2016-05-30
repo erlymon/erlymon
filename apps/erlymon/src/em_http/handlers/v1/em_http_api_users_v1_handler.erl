@@ -82,8 +82,12 @@ add_user(Req) ->
     false ->
       cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
     _ ->
-      NewUser = em_data_manager:create_user(UserModel),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(NewUser), Req2)
+      case em_data_manager:create_user(UserModel) of
+        null ->
+          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+        User ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, User)), Req2)
+      end
   end.
 
 -spec add_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
@@ -94,8 +98,12 @@ add_user(Req, User) ->
     false ->
       cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
     _ ->
-      NewUser = em_data_manager:create_user(UserModel),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(NewUser), Req2)
+      case em_data_manager:create_user(UserModel) of
+        null ->
+          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+        User ->
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, User)), Req2)
+      end
   end.
 
 -spec remove_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().

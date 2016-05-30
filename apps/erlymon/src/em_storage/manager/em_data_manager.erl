@@ -151,14 +151,9 @@ create_user(User) ->
 create_user(Name, Email, Password) ->
     case em_storage_user:get_by_email(Email) of
         null ->
-            case em_storage_user:create(Name, Email, Password) of
-              null ->
-                false;
-              _ ->
-                true
-            end;
+            em_storage_user:create(Name, Email, Password);
         _ ->
-            false
+            null
     end.
 
 update_user(User) ->
