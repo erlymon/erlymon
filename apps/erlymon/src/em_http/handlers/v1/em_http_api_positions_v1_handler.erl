@@ -65,6 +65,6 @@ get_positions(Req, User) ->
     _ ->
       {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, From),
       {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, To),
-      Messages = em_data_manager:get_messages(DeviceId, TimeFrom * 1000, TimeTo * 1000),
+      Messages = em_data_manager:get_messages(DeviceId, TimeFrom, TimeTo),
       cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Messages), Req)
   end.

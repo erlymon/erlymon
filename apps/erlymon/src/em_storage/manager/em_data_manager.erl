@@ -119,7 +119,7 @@ get_messages(DeviceId, TimeFrom, TimeTo) ->
     GetMessage = fun(Message, Acc) ->
                         [convert_date_in_message(Message)|Acc]
           end,
-    Cursor = em_storage_message:get(DeviceId, TimeFrom, TimeTo),
+    Cursor = em_storage_message:get(DeviceId, TimeFrom * 1000, TimeTo * 1000),
     Messages = em_storage_cursor:foldl(GetMessage, [], Cursor),
     em_storage_cursor:close(Cursor),
     Messages.
