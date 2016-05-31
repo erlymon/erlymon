@@ -27,33 +27,22 @@
 
 %% API
 -export([
-  iso8601_to_utc/1,
-  utc_to_iso8601/1,
   datetime_to_utc/1,
   utc_to_datetime/1,
   format/2,
-  parse/2
+  parse/2,
+  timestamp/0
 ]).
 
 format(Format, Utc) ->
-  tempo:format_unix(Format, Utc).
+  tempo:format_unix(Format, Utc div 1000000).
 
 parse(Format, Bin) ->
-  tempo:parse_unix(Format, Bin).
-
-iso8601_to_utc(BinStr) ->
-  Date = iso8601:parse(BinStr),
-  datetime_to_utc(Date).
+  tempo:parse_unix(Format, Bin) * 1000000.
 
 datetime_to_utc({{Year, Month, Day}, Time}) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
   (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate) * 1000000.
-
-
-
-utc_to_iso8601(Utc) ->
-  Date = utc_to_datetime(Utc),
-  iso8601:format(Date).
 
 
 utc_to_datetime(Milliseconds) when is_integer(Milliseconds) ->
@@ -61,3 +50,12 @@ utc_to_datetime(Milliseconds) when is_integer(Milliseconds) ->
   Seconds = BaseDate + (Milliseconds div 1000000),
   {{Year, Month, Day}, Time} = calendar:gregorian_seconds_to_datetime(Seconds),
   {{Year, Month, Day}, Time}.
+
+
+%%--------------------------------------------------------------------
+%% @doc Calc current utc time
+%% @spec timestamp() -> integer().
+%% @end
+%%--------------------------------------------------------------------
+timestamp() ->
+  timer:now_diff(os:timestamp(), {0, 0, 0}).
