@@ -52,11 +52,11 @@
 %% {"id":10995,"name":"sgdvdc","uniqueId":"cfgbh","status":null,"lastUpdate":"2016-01-24T11:52:15.000+0000","positionId":0}
 create(Name, UniqueId) ->
     DeviceModel = #{
-      <<"id">> => bson:unixtime_to_secs(bson:timenow()),
+      <<"id">> => em_helper_time:timestamp() div 1000000,
       <<"name">> => Name,
       <<"uniqueId">> => UniqueId,
       <<"status">> => <<>>,
-      <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow()),
+      <<"lastUpdate">> => em_helper_time:timestamp(),
       <<"positionId">> => 0
      },
     create(DeviceModel).

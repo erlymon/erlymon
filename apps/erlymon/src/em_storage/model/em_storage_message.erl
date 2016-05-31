@@ -104,13 +104,13 @@
 %%        { name: 'other', type: 'string' }
 
 create(DeviceId, Protocol, MessageParams) ->
-    ServerTime = timestamp(),
+    ServerTime = em_helper_time:timestamp(),
     DeviceTime = maps:get(<<"deviceTime">>, MessageParams),
     %%Latitude = maps:get(<<"latitude">>, MessageParams),
     %%Longitude = maps:get(<<"longitude">>, MessageParams),
     %%Address = em_geocoder:geocode(Latitude, Longitude, en),
     MessageModel = maps:merge(MessageParams, #{
-      <<"id">> => bson:unixtime_to_secs(bson:timenow()),
+      <<"id">> => em_helper_time:timestamp() div 1000000,
       <<"serverTime">> => ServerTime,
       <<"fixTime">> => fix_time(ServerTime, DeviceTime),
       <<"deviceTime">> => DeviceTime,
@@ -128,14 +128,6 @@ fix_time(ServerTime, DeviceTime) when ServerTime < DeviceTime ->
     ServerTime;
 fix_time(_, DeviceTime) ->
     DeviceTime.
-
-%%--------------------------------------------------------------------
-%% @doc Calc current utc time
-%% @spec timestamp() -> integer().
-%% @end
-%%--------------------------------------------------------------------
-timestamp() ->
-  timer:now_diff(os:timestamp(), {0, 0, 0}).
 
 
 get(SearchSpec) ->

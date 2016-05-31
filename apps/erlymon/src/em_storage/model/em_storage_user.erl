@@ -66,7 +66,7 @@ create(Name, Email, Password) ->
 
 create(Name, Email, Password, Admin) ->
   UserModel = #{
-    <<"id">> => bson:unixtime_to_secs(bson:timenow()),
+    <<"id">> => em_helper_time:timestamp() div 1000000,
     <<"name">> => Name,
     <<"email">> => Email,
     <<"admin">> => Admin,
@@ -78,7 +78,7 @@ create(Name, Email, Password, Admin) ->
     <<"latitude">> => 0.0,
     <<"longitude">> => 0.0,
     <<"zoom">> => 0,
-    <<"lastUpdate">> => bson:unixtime_to_secs(bson:timenow()),
+    <<"lastUpdate">> => em_helper_time:timestamp(),
     <<"password">> => Password,
     <<"hashPassword">> => em_password:hash(Password)
   },

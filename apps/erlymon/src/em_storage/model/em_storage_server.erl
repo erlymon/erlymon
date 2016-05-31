@@ -45,7 +45,7 @@
 
 create(Registration, Latitude, Longitude, Zoom) ->
     ServerModel = #{
-      <<"id">> => bson:unixtime_to_secs(bson:timenow()),
+      <<"id">> => em_helper_time:timestamp() div 1000000,
       <<"registration">> => Registration,
       <<"readonly">> => false,
       <<"map">> => <<>>,
