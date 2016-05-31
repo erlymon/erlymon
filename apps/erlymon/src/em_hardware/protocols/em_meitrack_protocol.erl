@@ -193,7 +193,7 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
       list_to_integer(binary_to_list(Second))
     }
   },
-  em_hardware:datetime_to_utc(Date).
+  em_hardware:to_timestamp(Date).
 
 test() ->
   Packet = <<"\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n">>,

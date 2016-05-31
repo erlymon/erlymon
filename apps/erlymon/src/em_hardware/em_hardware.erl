@@ -33,7 +33,8 @@
   to_nmea/1,
   parsing_gprmc/1,
   utc_to_datetime/1,
-  datetime_to_utc/1
+  datetime_to_utc/1,
+  to_timestamp/1
 ]).
 
 -export([
@@ -158,6 +159,13 @@ datetime_to_utc({{Year, Month, Day}, Time}) ->
   (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate) * 1000.
 
 
+%% @spec to_timestamp(DateTime::tuple()) -> Result::integer()
+%% DateTime = {{Year::integer(), Month::integer(), Day::integer()},{Hours::integer(), Minutes::integer(), Secunds::integer()}}
+%% @doc Convert datetime to utc.
+to_timestamp({{Year,Month,Day},{Hours,Minutes,Seconds}}) ->
+  (calendar:datetime_to_gregorian_seconds(
+    {{Year,Month,Day},{Hours,Minutes,Seconds}}
+  ) - 62167219200)*1000000.
 %%--------------------------------------------------------------------
 %% @doc Converted meters per secunds to knots.
 %% @spec mpers_to_kn(Value::float()) -> Result::float()

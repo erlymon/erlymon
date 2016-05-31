@@ -381,7 +381,7 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
       list_to_integer(binary_to_list(Second))
     }
   },
-  em_hardware:datetime_to_utc(Date).
+  em_hardware:to_timestamp(Date).
 
 
 trccr_parse_date(Year, Month, Day, Hour, Minute, Second) ->
@@ -397,7 +397,7 @@ trccr_parse_date(Year, Month, Day, Hour, Minute, Second) ->
       list_to_integer(binary_to_list(Second))
     }
   },
-  em_hardware:datetime_to_utc(Date).
+  em_hardware:to_timestamp(Date).
 
 bin_to_num(Bin) ->
     N = binary_to_list(Bin),

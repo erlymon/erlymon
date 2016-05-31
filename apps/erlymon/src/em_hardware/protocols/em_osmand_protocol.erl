@@ -116,7 +116,7 @@ parse_param(Map, _) ->
     Map.
 
 parse_time(Value) ->
-    bin_to_num(Value) * 1000.
+    bin_to_num(Value) * 1000000.
 
 parse_coord(Value) ->
     bin_to_num(Value).

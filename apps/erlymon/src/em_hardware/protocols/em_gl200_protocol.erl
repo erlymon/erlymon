@@ -185,7 +185,7 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
         list_to_integer(binary_to_list(Second)) 
       }
      },
-    em_hardware:datetime_to_utc(Date).
+    em_hardware:to_timestamp(Date).
 
 data_match(Data, Pattern) ->
   {match, List} = re:run(Data, Pattern),

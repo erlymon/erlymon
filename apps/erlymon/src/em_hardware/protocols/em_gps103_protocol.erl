@@ -84,11 +84,22 @@ parse_imei(ImeiData) when is_binary(ImeiData) ->
   Imei.
 
 parse_date_time(LocalDateTime, TimeUtc) when is_binary(LocalDateTime) ->
-  {ok, [Years, Month, Days, LocalHours, LocalMinutes], []} = io_lib:fread("~2s~2s~2s~2s~2s", binary_to_list(LocalDateTime)),
-  {ok, [UtcHours, UtcMinutes, UtcSeconds, _UtcMillseconds], []} = io_lib:fread("~2s~2s~2s.~3s", binary_to_list(TimeUtc)),
-  DeltaMinutes = calc_delta_minutes(list_to_integer(LocalHours), list_to_integer(LocalMinutes), list_to_integer(UtcHours), list_to_integer(UtcMinutes)),
-  BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
-  (calendar:datetime_to_gregorian_seconds({{list_to_integer(Years) + 2000, list_to_integer(Month), list_to_integer(Days)}, {list_to_integer(LocalHours), list_to_integer(LocalMinutes) - DeltaMinutes, list_to_integer(UtcSeconds)}}) - BaseDate) * 1000.
+  {ok, [Year, Month, Day, LocalHour, LocalMinute], []} = io_lib:fread("~2s~2s~2s~2s~2s", binary_to_list(LocalDateTime)),
+  {ok, [UtcHour, UtcMinute, UtcSecond, _UtcMillseconds], []} = io_lib:fread("~2s~2s~2s.~3s", binary_to_list(TimeUtc)),
+  DeltaMinutes = calc_delta_minutes(list_to_integer(LocalHour), list_to_integer(LocalMinute), list_to_integer(UtcHour), list_to_integer(UtcMinute)),
+  Date = {
+    {
+      list_to_integer(Year) + 2000,
+      list_to_integer(Month),
+      list_to_integer(Day)
+    },
+    {
+      list_to_integer(LocalHour),
+      list_to_integer(LocalMinute) - DeltaMinutes,
+      list_to_integer(UtcSecond)
+    }
+  },
+  em_hardware:to_timestamp(Date).
 
 calc_delta_minutes(LocalHours, LocalMinutes, UtcHours, UtcMinutes) ->
   delta((LocalHours - UtcHours) * 60 + LocalMinutes - UtcMinutes).
