@@ -29,6 +29,8 @@
 -export([
   iso8601_to_utc/1,
   utc_to_iso8601/1,
+  datetime_to_utc/1,
+  utc_to_datetime/1,
   format/2,
   parse/2
 ]).
@@ -45,7 +47,7 @@ iso8601_to_utc(BinStr) ->
 
 datetime_to_utc({{Year, Month, Day}, Time}) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
-  (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate) * 1000.
+  (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate) * 1000000.
 
 
 
@@ -56,6 +58,6 @@ utc_to_iso8601(Utc) ->
 
 utc_to_datetime(Milliseconds) when is_integer(Milliseconds) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
-  Seconds = BaseDate + (Milliseconds div 1000),
+  Seconds = BaseDate + (Milliseconds div 1000000),
   {{Year, Month, Day}, Time} = calendar:gregorian_seconds_to_datetime(Seconds),
   {{Year, Month, Day}, Time}.
