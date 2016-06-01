@@ -99,7 +99,7 @@ parse_date_time(LocalDateTime, TimeUtc) when is_binary(LocalDateTime) ->
       list_to_integer(UtcSecond)
     }
   },
-  em_hardware:to_timestamp(Date).
+  em_helper_time:datetime_to_utc(Date).
 
 calc_delta_minutes(LocalHours, LocalMinutes, UtcHours, UtcMinutes) ->
   delta((LocalHours - UtcHours) * 60 + LocalMinutes - UtcMinutes).
