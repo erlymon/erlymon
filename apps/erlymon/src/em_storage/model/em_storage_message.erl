@@ -118,7 +118,7 @@ create(DeviceId, Protocol, MessageParams) ->
       <<"protocol">> => Protocol
       %%<<"address">> => Address
      }),
-    em_logger:info("Message: ~w", [MessageModel]),
+    em_logger:info("Message: ~s", [em_json:encode(MessageModel)]),
     {_, Item} = em_storage:insert(<<"messages">>, MessageModel),
     Item.
 

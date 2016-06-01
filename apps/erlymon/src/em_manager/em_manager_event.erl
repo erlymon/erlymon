@@ -55,7 +55,7 @@
 -spec(broadcast(Position::map()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 broadcast(Position) ->
-  em_logger:info("~w:broadcast => ~w", [?MODULE, Position]),
+  em_logger:info("~w:broadcast => ~s", [?MODULE, em_json:encode(Position)]),
   gen_server:cast(?SERVER, {broadcast, Position}).
 
 
