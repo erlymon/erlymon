@@ -107,7 +107,8 @@ create_message(DeviceId, Protocol, MessageParams) ->
             em_storage_device:update(DeviceId, #{
               <<"positionId">> => maps:get(<<"id">>, Message)
             }),
-            em_manager_event:broadcast(convert_date_in_message(maps:remove(<<"_id">>, Message))),
+            Device = em_storage_device:get_by_id(DeviceId),
+            em_manager_event:broadcast(convert_date_in_device(Device), convert_date_in_message(maps:remove(<<"_id">>, Message))),
             Message
         end;
       _ ->
@@ -249,8 +250,7 @@ get_devices(UserId, Projector) ->
                       Device ->
                           %% format lastUpdate: 2016-01-09T15:31:11.000+0000
 			                    %%em_logger:info("lastUpdate: ~w", [maps:get(<<"lastUpdate">>, Device)]),
-			                    {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
-                          [maps:put(<<"lastUpdate">>, Date, Device)|Acc]
+                          [convert_date_in_device(Device)|Acc]
                   end
           end,
     Cursor = em_storage_permission:get_by_user_id(UserId),
@@ -265,11 +265,14 @@ get_device_by_uid(UniqueId) ->
 get_all_devices() ->
     Cursor = em_storage_device:get_all(),
     Devices = em_storage_cursor:map(fun(Device) ->
-	      {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
-        maps:put(<<"lastUpdate">>, Date, Device)
+      convert_date_in_device(Device)
     end, Cursor),
     em_storage_cursor:close(Cursor),
     Devices.
+
+convert_date_in_device(Device) ->
+  {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
+  maps:put(<<"lastUpdate">>, Date, Device).
 
 link_device(UserId, DeviceId) ->
     em_storage_permission:create(UserId, DeviceId).

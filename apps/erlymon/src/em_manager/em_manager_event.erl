@@ -28,7 +28,7 @@
 
 %% API
 -export([start_link/0]).
--export([broadcast/1]).
+-export([broadcast/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -52,11 +52,11 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(broadcast(Position::map()) ->
+-spec(broadcast(Device::map(), Position::map()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-broadcast(Position) ->
-  em_logger:info("~w:broadcast => ~s", [?MODULE, em_json:encode(Position)]),
-  gen_server:cast(?SERVER, {broadcast, Position}).
+broadcast(Device, Position) ->
+  em_logger:info("~w:broadcast => ~s ~s", [?MODULE, em_json:encode(Device), em_json:encode(Position)]),
+  gen_server:cast(?SERVER, {broadcast, {Device, Position}}).
 
 
 %%--------------------------------------------------------------------
@@ -120,10 +120,11 @@ handle_call(_Request, _From, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_cast({broadcast, Position}, State) ->
+handle_cast({broadcast, {Device, Position}}, State) ->
   SendNotify = fun(Permission) ->
     em_logger:info("Permission: ~w", [Permission]),
-    em_http_api_socket_v1_handler:notify(maps:get(<<"userId">>, Permission), positions, [Position])
+    em_http_api_socket_v1_handler:notify(maps:get(<<"userId">>, Permission), positions, [Position]),
+    em_http_api_socket_v1_handler:notify(maps:get(<<"userId">>, Permission), devices, [Device])
     end,
   Cursor = em_storage_permission:get_by_device_id(maps:get(<<"deviceId">>, Position)),
   em_logger:info("Permissions Cursor: ~w", [Cursor]),
