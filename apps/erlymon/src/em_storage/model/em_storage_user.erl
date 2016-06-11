@@ -89,7 +89,7 @@ create(UserModel) ->
   Item.
 
 update(Id, UserModel) ->
-  em_storage:update(<<"users">>, #{<<"id">> => Id}, UserModel).
+  em_storage:update(<<"users">>, #{<<"id">> => Id}, maps:put(<<"lastUpdate">>, em_helper_time:timestamp(), UserModel)).
 
 delete(Id) ->
   em_storage:delete_one(<<"users">>, #{<<"id">> => Id}).
