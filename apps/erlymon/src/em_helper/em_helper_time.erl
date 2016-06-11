@@ -38,7 +38,12 @@ format(Format, Utc) ->
   tempo:format_unix(Format, Utc div 1000000).
 
 parse(Format, Bin) ->
-  tempo:parse_unix(Format, Bin) * 1000000.
+  case tempo:parse_unix(Format, Bin) of
+    {ok, Utc} ->
+      {ok, Utc * 1000000};
+    Reason ->
+      Reason
+  end.
 
 datetime_to_utc({{Year, Month, Day}, Time}) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
