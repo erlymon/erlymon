@@ -40,3 +40,7 @@ Run application:
 ~~~sh
 $ sh _build/default/rel/erlymon/bin/erlymon console
 ~~~
+
+# Doc
+
+[Manual Rus](./apps/erlymon/docs/ru/index.md)
