@@ -1,45 +1,32 @@
-# Erlymon GPS Tracking System
-=====
+# [Erlymon GPS Tracking System](https://www.erlymon.org)
+
+## Contacts
+
+Author - Sergey Penkovsky ([dev@erlymon.org](mailto:dev@erlymon.org))
+
+Website - [https://www.erlymon.org](https://www.erlymon.org)
+
+## Overview
 
 Erlymon is an open source GPS tracking system for various GPS tracking devices.
 
-# License
------
+## License
 
-Erlymon software is licensed under the [AGPL Version 3](http://www.gnu.org/licenses/agpl-3.0.html).
+    GNU Affero General Public License, Version 3.0
 
-# Install
------
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-Clone repository
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
 
-~~~sh
-$ git clone https://github.com/pese-git/erlymon.git
-~~~
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <https://www.gnu.org/licenses/agpl-3.0.txt>.
 
-Go to erlymon dir
-
-~~~sh
-$ cd erlymon
-~~~
-
-Compile project
-
-~~~sh
-$ ./rebar3 compile
-~~~
-
-Create release
-
-~~~sh
-$ ./rebar3 release
-~~~
-
-Run application:
-
-~~~sh
-$ sh _build/default/rel/erlymon/bin/erlymon console
-~~~
 
 # Doc
 
