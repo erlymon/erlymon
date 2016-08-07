@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_permissions_v1_handler).
+-module(em_http_api_positions_handler).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
@@ -30,7 +30,10 @@
 
 -include("em_http.hrl").
 
--spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
+
+%% GET http://demo.traccar.org/api/user/get?_dc=1436251203853&page=1&start=0&limit=25
+%% {"success":true,"data":[]}
+-spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
   case cowboy_session:get(user, Req) of
     {undefined, Req2} ->
@@ -40,37 +43,28 @@ init(Req, Opts) ->
       {ok, request(Method, Req2, User), Opts}
   end.
 
--spec request(Method::binary(), Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
-request(?POST, Req, User) ->
-  add_permission(Req, User);
-request(?DELETE, Req, User) ->
-  remove_permission(Req, User);
+-spec request(Method :: binary(), Opts :: any(), User :: map()) -> cowboy_req:req().
+request(?GET, Req, User) ->
+  get_positions(Req, User);
 request(_, Req, _) ->
   %% Method not allowed.
   cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
 
--spec add_permission(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
-add_permission(Req, User) ->
-  case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+-spec get_positions(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
+get_positions(Req, User) ->
+  %%#{deviceId := DeviceId, from := From, to := To} = cowboy_req:match_qs([deviceId, from, to], Req),
+  Qs = cowboy_req:parse_qs(Req),
+  DeviceId = list_to_integer(binary_to_list(proplists:get_value(<<"deviceId">>, Qs, <<"0">>))),
+  From = proplists:get_value(<<"from">>, Qs, <<"">>),
+  To = proplists:get_value(<<"to">>, Qs, <<"">>),
+  em_logger:info("Device ID: ~w, From: ~s, To: ~s", [DeviceId, From, To]),
+  %%Id = str_to_int(DeviceId),
+  case em_permissions_manager:check_device(maps:get(<<"id">>, User), DeviceId) of
     false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req);
     _ ->
-      {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-      %% {userId: 1458137425, deviceId: 1458137433}
-      PermissionModel = em_json:decode(JsonBin),
-      em_data_manager:link_device(maps:get(<<"userId">>, PermissionModel), maps:get(<<"deviceId">>, PermissionModel)),
-      cowboy_req:reply(?STATUS_OK, Req2)
-  end.
-
--spec remove_permission(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
-remove_permission(Req, User) ->
-  case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
-    _ ->
-      {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-      %% {userId: 1458137425, deviceId: 1458137433}
-      PermissionModel = em_json:decode(JsonBin),
-      em_data_manager:unlink_device(maps:get(<<"userId">>, PermissionModel), maps:get(<<"deviceId">>, PermissionModel)),
-      cowboy_req:reply(?STATUS_OK, Req2)
+      {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, From),
+      {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, To),
+      Messages = em_data_manager:get_messages(DeviceId, TimeFrom, TimeTo),
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Messages), Req)
   end.

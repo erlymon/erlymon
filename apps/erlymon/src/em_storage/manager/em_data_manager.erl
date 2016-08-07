@@ -91,11 +91,10 @@ init() ->
 
 
 get_server() ->
-    em_storage_server:get().
+  em_model_server:get().
 
 update_server(Server) ->
-    ServerId = maps:get(<<"id">>, Server),
-    em_storage_server:update(ServerId, maps:remove(<<"id">>, Server)).
+    em_model_server:update(Server).
 
 create_message(DeviceId, Protocol, MessageParams) ->
     case em_storage_message:get(DeviceId, maps:get(<<"deviceTime">>, MessageParams)) of

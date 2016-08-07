@@ -21,38 +21,25 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_logout_v0_handler).
+-module(routes).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
+-export([get/1]).
 
--export([init/2]).
+get(Opts) ->
+  [{'_', [
+    {"/api/server", em_http_api_server_handler, []},
+    {"/api/session", em_http_api_session_handler, []},
+    {"/api/devices[/:id]", em_http_api_devices_handler, []},
+    {"/api/users[/:id]", em_http_api_users_handler, []},
+    {"/api/positions", em_http_api_positions_handler, []},
+    {"/api/socket", em_http_api_socket_handler, []},
+    {"/api/permissions", em_http_api_permissions_handler, []},
+    {"/api/commands", em_http_api_commands_handler, []},
+    {"/", cowboy_static, {priv_file, erlymon, io_lib:format("web/~s.html", [debug(proplists:get_value(debug, Opts))])}},
+    {"/[...]", cowboy_static, {priv_dir, erlymon, "web/", [{mimetypes, cow_mimetypes, all}]}}
+  ]}].
 
--include("em_http.hrl").
-
-%% POST http://demo.traccar.org/api/login
-%% FORM DATA:
-%% email:assa@assa.com
-%% password:assa
-
-%% ANSWER:
-%% {"success":true,"data":{"admin":false,"email":"assa@assa.com","name":"assa","id":623}}
-%% or
-%% {"success":false}
-
--spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
-init(Req, Opts) ->
-    Method = cowboy_req:method(Req),
-    {ok, request(Method, Req), Opts}.
-
--spec request(Method::binary(), Opts::any()) -> cowboy_req:req().
-request(?GET, Req) ->
-    logout(Req);
-request(_, Req) ->
-  %% Method not allowed.
-  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, Req).
-
--spec logout(Req::cowboy_req:req()) -> cowboy_req:req().
-logout(Req) ->
-    {ok, Req2} = cowboy_session:expire(Req),
-    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(#{<<"success">> => true}), Req2).
+debug(true) -> "debug";
+debug(false) -> "release".

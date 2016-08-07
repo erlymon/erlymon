@@ -69,16 +69,15 @@ create(Name, Email, Password, Admin) ->
     <<"id">> => em_helper_time:timestamp() div 1000000,
     <<"name">> => Name,
     <<"email">> => Email,
-    <<"admin">> => Admin,
     <<"readonly">> => false,
-    <<"map">> => <<>>,
-    <<"language">> => <<>>,
-    <<"distanceUnit">> => <<>>,
-    <<"speedUnit">> => <<>>,
+    <<"admin">> => Admin,
+    <<"map">> => <<"osm">>,
+    <<"language">> => <<"en">>,
+    <<"distanceUnit">> => <<"km">>,
+    <<"speedUnit">> => <<"km/h">>,
     <<"latitude">> => 0.0,
     <<"longitude">> => 0.0,
     <<"zoom">> => 0,
-    <<"lastUpdate">> => em_helper_time:timestamp(),
     <<"password">> => Password,
     <<"hashPassword">> => em_password:hash(Password)
   },
@@ -89,13 +88,13 @@ create(UserModel) ->
   Item.
 
 update(Id, UserModel) ->
-  em_storage:update(<<"users">>, #{<<"id">> => Id}, maps:put(<<"lastUpdate">>, em_helper_time:timestamp(), UserModel)).
+  em_storage:update(<<"users">>, #{<<"id">> => Id}, UserModel).
 
 delete(Id) ->
   em_storage:delete_one(<<"users">>, #{<<"id">> => Id}).
 
 get_by_name(Name) ->
-    Item = em_storage:find_one(<<"users">>, #{<<"name">> => Name}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}),
+    Item = em_storage:find_one(<<"users">>, #{<<"name">> => Name}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -104,7 +103,7 @@ get_by_name(Name) ->
     end.
 
 get_by_email(Email) ->
-    Item = em_storage:find_one(<<"users">>, #{<<"email">> => Email}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}),
+    Item = em_storage:find_one(<<"users">>, #{<<"email">> => Email}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -113,7 +112,7 @@ get_by_email(Email) ->
     end.
 
 get_by_id(UserId) ->
-    Item = em_storage:find_one(<<"users">>, #{<<"id">> => UserId}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}),
+    Item = em_storage:find_one(<<"users">>, #{<<"id">> => UserId}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -122,7 +121,7 @@ get_by_id(UserId) ->
     end.
 
 get(Email, HashPassword) ->
-    Item = em_storage:find_one(<<"users">>, #{<<"email">> => Email, <<"hashPassword">> => HashPassword}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}),
+    Item = em_storage:find_one(<<"users">>, #{<<"email">> => Email, <<"hashPassword">> => HashPassword}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}),
     case (maps:size(Item) =/= 0) of
       true ->
 	Item;
@@ -132,4 +131,4 @@ get(Email, HashPassword) ->
 
 
 get_all() ->
-    em_storage:find(<<"users">>, #{}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false, <<"lastUpdate">> => false}}).
+    em_storage:find(<<"users">>, #{}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}).

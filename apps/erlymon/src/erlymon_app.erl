@@ -41,12 +41,12 @@ start(_StartType, _StartArgs) ->
     em_data_manager:init(),
     em_geocoder_sup:start_link(),
     start_hardware(_StartType, _StartArgs),
-    start_http(_StartType, _StartArgs),
+    start_web(_StartType, _StartArgs),
     erlymon_sup:start_link().
 
 %%--------------------------------------------------------------------
 stop(_State) ->
-    stop_http(_State),
+    stop_web(_State),
     stop_hardware(_State).
 
     
@@ -82,23 +82,21 @@ stop_hardware(_State) ->
   ok.
 
   
-start_http(_StartType, _StartArgs) ->
+start_web(_StartType, _StartArgs) ->
   {ok, EmHttp} = application:get_env(erlymon, em_http),
-  Servers = proplists:get_value(servers, EmHttp),
-  lists:foreach(fun({Name, Options, Routes}) ->
-    em_logger:info("Start http server ~w port: ~w", [Name, proplists:get_value(port, Options)]),
-    Dispatch = cowboy_router:compile(Routes),
-    {ok, _} = cowboy:start_http(Name, 100, Options, [{env, [{dispatch, Dispatch}]}])
-  end, Servers).
+  Web = proplists:get_value(web, EmHttp),
+
+  em_logger:info("Start web server port: ~w", [proplists:get_value(port, Web)]),
+  Dispatch = cowboy_router:compile(routes:get([{debug, proplists:get_value(debug, Web)}])),
+  cowboy:start_http(web, 100, [
+    {port, proplists:get_value(port, Web)},
+    {timeout, proplists:get_value(timeout, Web)}
+  ], [{env, [{dispatch, Dispatch}]}]).
 
 %%--------------------------------------------------------------------
-stop_http(_State) ->
-  {ok, EmHttp} = application:get_env(erlymon, em_http),
-  Servers = proplists:get_value(servers, EmHttp),
-  lists:foreach(fun({Name, _, _}) ->
-    cowboy:stop_listener(Name)
-  end, Servers),
-  ok.
+stop_web(_State) ->
+  cowboy:stop_listener(web).
+
 %%====================================================================
 %% Internal functions
 %%====================================================================

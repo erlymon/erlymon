@@ -24,6 +24,10 @@
 -module(em_storage_device).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
+-define(STATUS_UNKNOWN, unknown).
+-define(STATUS_ONLINE, online).
+-define(STATUS_OFFLINE, offline).
+
 %% API
 -export([
   create/2,
@@ -55,7 +59,7 @@ create(Name, UniqueId) ->
       <<"id">> => em_helper_time:timestamp() div 1000000,
       <<"name">> => Name,
       <<"uniqueId">> => UniqueId,
-      <<"status">> => <<>>,
+      <<"status">> => ?STATUS_UNKNOWN,
       <<"lastUpdate">> => em_helper_time:timestamp(),
       <<"positionId">> => 0
      },
@@ -79,14 +83,14 @@ delete(Id) ->
     em_storage:delete_one(<<"devices">>, #{<<"id">> => Id}).
 
 get_by_id(Id) ->
-    get_by_id(Id, #{<<"_id">> => false}).
+    get_by_id(Id, #{<<"_id">> => false, <<"positionId">> => false}).
 
 get_by_id(Id, Projector) ->
     get(#{id => Id}, Projector).
 
 
 get_by_uid(UniqueId) ->
-    get(#{<<"uniqueId">> => UniqueId}, #{<<"_id">> => false}).
+    get(#{<<"uniqueId">> => UniqueId}, #{<<"_id">> => false, <<"positionId">> => false}).
     
 get(Query, Projector) ->
     Item = em_storage:find_one(<<"devices">>, Query, #{projector => Projector}),
@@ -98,4 +102,4 @@ get(Query, Projector) ->
     end.
 
 get_all() ->
-    em_storage:find(<<"devices">>, #{}, #{projector => #{<<"_id">> => false}}).
+    em_storage:find(<<"devices">>, #{}, #{projector => #{<<"_id">> => false, <<"positionId">> => false}}).

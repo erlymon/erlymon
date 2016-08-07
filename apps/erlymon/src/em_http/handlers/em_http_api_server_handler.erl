@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_http_api_server_v1_handler).
+-module(em_http_api_server_handler).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
@@ -29,6 +29,7 @@
 -export([init/2]).
 
 -include("em_http.hrl").
+-include("em_records.hrl").
 
 %% GET http://demo.traccar.org/api/server/get?_dc=1436250979884
 %% QUERY STRING PARAM:
@@ -53,24 +54,45 @@ request(_, Req) ->
 
 -spec get_server(Req::cowboy_req:req()) -> cowboy_req:req().
 get_server(Req) ->
-    Server = em_data_manager:get_server(),
-    cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Server), Req).
+  {ok, Server} = em_data_manager:get_server(),
+  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_server:to_str(Server), Req).
 
     
 -spec update_server(Req :: cowboy_req:req()) -> cowboy_req:req().
 update_server(Req) ->
-  case cowboy_session:get(user, Req) of
-    {undefined, Req2} ->
-      cowboy_req:reply(?STATUS_BAD_REQUEST, Req2);
-    {User, Req2} ->
-      em_logger:info("User: ~w", [maps:get(<<"id">>,User)]),
-      case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
-           false ->
+  {ok, [{JsonBin, true}], Req1} = cowboy_req:body_qs(Req),
+  em_logger:info("SERVER JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #server{}, [
+    {<<"id">>, required, integer, #server.id, []},
+    {<<"registration">>, required, boolean, #server.registration, []},
+    {<<"readonly">>, required, boolean, #server.readonly, []},
+    {<<"map">>, required, string, #server.map, []},
+    {<<"bingKey">>, required, string, #server.bingKey, []},
+    {<<"mapUrl">>, required, string, #server.mapUrl, []},
+    {<<"language">>, required, string, #server.language, []},
+    {<<"distanceUnit">>, required, string, #server.distanceUnit, []},
+    {<<"speedUnit">>, required, string, #server.speedUnit, []},
+    {<<"latitude">>, required, integer, #server.latitude, []},
+    {<<"longitude">>, required, integer, #server.longitude, []},
+    {<<"zoom">>, required, integer, #server.zoom, []}
+  ]),
+  em_logger:info("Result: ~w", [Result]),
+  case Result of
+    {ok, Server} ->
+      case cowboy_session:get(user, Req1) of
+        {undefined, Req2} ->
+          cowboy_req:reply(?STATUS_BAD_REQUEST, Req2);
+        {User, Req2} ->
+          em_logger:info("User: ~w", [maps:get(<<"id">>,User)]),
+          case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+            false ->
               cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-           _ ->
-              {ok, [{JsonBin, true}], Req3} = cowboy_req:body_qs(Req2),
-              Server = em_json:decode(JsonBin),
+            _ ->
               em_data_manager:update_server(Server),
-              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Server), Req3)
-      end
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_server:to_str(Server), Req2)
+          end
+      end;
+    {error, Reason} ->
+      %% Encode end set error
+      cowboy_req:reply(?STATUS_UNKNOWN, [], em_json:encode(Reason), Req1)
   end.
