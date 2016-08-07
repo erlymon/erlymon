@@ -25,6 +25,7 @@
 -module(em_json).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
+-include("em_records.hrl").
 %% API
 -export([
   encode/1,
