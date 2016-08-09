@@ -24,6 +24,8 @@
 -module(em_permissions_manager).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
+-include("em_records.hrl").
+
 %% API
 -export([
   check_admin/1,
@@ -34,12 +36,12 @@
 
 check_admin(UserId) ->
     em_logger:info("check_admin: ~w", [UserId]),
-    case em_storage_user:get_by_id(UserId) of
-        null ->
+    case em_model_user:get_by_id(UserId) of
+      {error, _Reason} ->
             false;
-        User ->
+      {ok, User} ->
             em_logger:info("check_admin user: ~w", [User]),
-            maps:get(<<"admin">>, User)
+            User#user.id
     end.
 
 check_user(UserId, OtherUserId) when UserId == OtherUserId ->

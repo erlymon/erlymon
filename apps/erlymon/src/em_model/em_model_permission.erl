@@ -31,20 +31,29 @@
 -export([
   to_map/1,
   from_map/1,
-  to_str/1]).
+  to_str/1,
+  get_by_user_id/1
+]).
 
 
 to_map(Rec) ->
   #{
-    userId => Rec#permission.userId,
-    deviceId => Rec#permission.deviceId
+    <<"userId">> => Rec#permission.userId,
+    <<"deviceId">> => Rec#permission.deviceId
   }.
 
 from_map(Map) ->
   #permission{
-    userId = maps:get(userId, Map, 0),
-    deviceId = maps:get(deviceId, Map, 0)
+    userId = maps:get(<<"userId">>, Map, 0),
+    deviceId = maps:get(<<"deviceId">>, Map, 0)
   }.
 
 to_str(Rec) ->
   em_json:encode(to_map(Rec)).
+
+get_by_user_id(UserId) ->
+  Callback = fun(Permission) -> from_map(Permission)  end,
+  Cursor = em_storage:find(<<"permissions">>, #{<<"userId">> => UserId}, #{projector => #{<<"_id">> => false}}),
+  Permissions = em_storage_cursor:map(Callback, Cursor),
+  em_storage_cursor:close(Cursor),
+  {ok, Permissions}.

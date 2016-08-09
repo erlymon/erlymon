@@ -36,16 +36,16 @@
 
 to_map(Rec) ->
   #{
-    deviceId  => Rec#command.deviceId,
-    type  => Rec#command.type,
-    attributes  => Rec#command.attributes
+    <<"deviceId">>  => Rec#command.deviceId,
+    <<"type">>  => Rec#command.type,
+    <<"attributes">>  => Rec#command.attributes
   }.
 
 from_map(Map) ->
   #command{
-    deviceId = maps:get(deviceId, Map, 0),
-    type = maps:get(type, Map, <<"">>),
-    attributes = maps:get(attributes, Map, #{})
+    deviceId = maps:get(<<"deviceId">>, Map, 0),
+    type = maps:get(<<"type">>, Map, <<"">>),
+    attributes = maps:get(<<"attributes">>, Map, #{})
   }.
 
 to_str(Rec) ->

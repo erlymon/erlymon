@@ -31,46 +31,82 @@
 -export([
   to_map/1,
   from_map/1,
-  to_str/1]).
+  to_str/1,
+  get_all/0,
+  get_devices/1,
+  get_by_uid/1,
+  get_by_id/1
+]).
 
 
 to_map(Rec) ->
   #{
-    id => Rec#user.id,
-    name => Rec#user.name,
-    email => Rec#user.email,
-    readonly => Rec#user.readonly,
-    admin => Rec#user.admin,
-    map => Rec#user.map,
-    language => Rec#user.language,
-    distanceUnit => Rec#user.distanceUnit,
-    speedUnit => Rec#user.speedUnit,
-    latitude => Rec#user.latitude,
-    longitude => Rec#user.longitude,
-    zoom => Rec#user.zoom,
-    password => Rec#user.password,
-    hashPassword => Rec#user.hashPassword,
-    salt => Rec#user.salt
+    <<"id">> => Rec#device.id,
+    <<"name">> => Rec#device.name,
+    <<"uniqueId">> => Rec#device.uniqueId,
+    <<"status">> => Rec#device.status,
+    <<"lastUpdate">> => Rec#device.lastUpdate,
+    <<"positionId">> => Rec#device.positionId
   }.
 
 from_map(Map) ->
-  #user{
-    id = maps:get(id, Map, 0),
-    name = maps:get(name, Map, <<"">>),
-    email = maps:get(email, Map, <<"">>),
-    readonly = maps:get(readonly, Map, false),
-    admin = maps:get(admin, Map, false),
-    map = maps:get(map, Map, <<"">>),
-    language = maps:get(language, Map, <<"">>),
-    distanceUnit = maps:get(distanceUnit, Map, <<"">>),
-    speedUnit = maps:get(speedUnit, Map, <<"">>),
-    latitude = maps:get(latitude, Map, 0.0),
-    longitude = maps:get(longitude, Map, 0.0),
-    zoom = maps:get(zoom, Map, 0.0),
-    password = maps:get(password, Map, <<"">>),
-    hashPassword = maps:get(hashPassword, Map, <<"">>),
-    salt = maps:get(salt, Map, <<"">>)
+  #device{
+    id = maps:get(<<"id">>, Map, 0),
+    name = maps:get(<<"name">>, Map, <<"">>),
+    uniqueId = maps:get(<<"uniqueId">>, Map, <<"">>),
+    status = maps:get(<<"status">>, Map, ?STATUS_UNKNOWN),
+    lastUpdate = maps:get(<<"lastUpdate">>, Map, 0),
+    positionId = maps:get(<<"positionId">>, Map, 0)
   }.
 
+to_str(Recs) when is_list(Recs) ->
+  em_logger:info("CONVERT RECORDS: ~w", [Recs]),
+  em_json:encode(lists:map(fun(Rec) -> to_map(Rec) end, Recs));
 to_str(Rec) ->
+  em_logger:info("CONVERT RECORD: ~w", [Rec]),
   em_json:encode(to_map(Rec)).
+
+
+get_by_uid(UniqueId) ->
+  Item = em_storage:find_one(<<"devices">>, #{<<"uniqueId">> => UniqueId}, #{projector => #{<<"_id">> => false, <<"positionId">> => false}}),
+  case (maps:size(Item) =/= 0) of
+    true ->
+      {ok, from_map(Item)};
+    false ->
+      {error, <<"Not find device by uniqueId">>}
+  end.
+
+get_by_id(Id) ->
+  Item = em_storage:find_one(<<"devices">>, #{<<"id">> => Id}, #{projector => #{<<"_id">> => false, <<"positionId">> => false}}),
+  case (maps:size(Item) =/= 0) of
+    true ->
+      {ok, from_map(Item)};
+    false ->
+      {error, <<"Not find device by id">>}
+  end.
+
+get_all() ->
+  Callback = fun(Device) ->
+                Rec = from_map(Device),
+                {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Device#device.lastUpdate),
+                Rec#device{lastUpdate = Date}
+             end,
+  Cursor = em_storage:find(<<"devices">>, #{}, #{projector => #{<<"_id">> => false, <<"positionId">> => false}}),
+  Devices = em_storage_cursor:map(Callback, Cursor),
+  em_storage_cursor:close(Cursor),
+  {ok, Devices}.
+
+get_devices(UserId) ->
+  Callback = fun(Permission = #permission{deviceId = DeviceId}, Acc) ->
+                em_logger:info("PERMISSION: ~w", [Permission]),
+                case get_by_id(DeviceId) of
+                  {ok, Device} ->
+                    {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Device#device.lastUpdate),
+                    [Device#device{lastUpdate = Date} | Acc];
+                  {error, _Reason} ->
+                    Acc
+                end
+             end,
+  {ok, Permissions} = em_model_permission:get_by_user_id(UserId),
+  Devices = lists:foldl(Callback, [], Permissions),
+  {ok, Devices}.

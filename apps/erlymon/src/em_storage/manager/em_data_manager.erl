@@ -54,7 +54,6 @@
   delete_device/1,
   delete_device/2,
   get_devices/1,
-  get_devices/2,
   get_device_by_uid/1,
   get_all_devices/0
 ]).
@@ -182,7 +181,7 @@ delete_user(User) ->
     em_storage_user:delete(maps:get(<<"id">>, User)).
 
 check_user(Email, Password) ->
-    em_storage_user:get(Email, em_password:hash(Password)).
+    em_model_user:get(Email, em_password:hash(Password)).
 
 get_users() ->
     GetUser = fun(User, Acc) ->
@@ -239,35 +238,14 @@ delete_device(UserId, DeviceId) ->
 
 
 get_devices(UserId) ->
-    get_devices(UserId, #{<<"_id">> => false}).
-
-get_devices(UserId, Projector) ->
-    GetDeviceById = fun(#{<<"deviceId">> := DeviceId}, Acc) ->
-                  case em_storage_device:get_by_id(DeviceId, Projector) of
-                      null ->
-                          Acc;
-                      Device ->
-                          %% format lastUpdate: 2016-01-09T15:31:11.000+0000
-			                    %%em_logger:info("lastUpdate: ~w", [maps:get(<<"lastUpdate">>, Device)]),
-                          [convert_date_in_device(Device)|Acc]
-                  end
-          end,
-    Cursor = em_storage_permission:get_by_user_id(UserId),
-    Devices = em_storage_cursor:foldl(GetDeviceById, [], Cursor),
-    em_storage_cursor:close(Cursor),
-    Devices.
+    em_model_device:get_devices(UserId).
 
 get_device_by_uid(UniqueId) ->
     em_storage_device:get_by_uid(UniqueId).
 
 
 get_all_devices() ->
-    Cursor = em_storage_device:get_all(),
-    Devices = em_storage_cursor:map(fun(Device) ->
-      convert_date_in_device(Device)
-    end, Cursor),
-    em_storage_cursor:close(Cursor),
-    Devices.
+    em_model_device:get_all().
 
 convert_date_in_device(Device) ->
   {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),

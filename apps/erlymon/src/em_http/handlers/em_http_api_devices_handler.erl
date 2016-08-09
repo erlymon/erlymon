@@ -29,11 +29,14 @@
 -export([init/2]).
 
 -include("em_http.hrl").
+-include("em_records.hrl").
 
+-record(get_devices_params, {all = false, userId = 0}).
 %% GET http://demo.traccar.org/api/device/get?_dc=1436251203853&page=1&start=0&limit=25
 %% {"success":true,"data":[]}
 -spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
+  em_logger:info("SESSION: ~w", [cowboy_session:get(user, Req)]),
   case cowboy_session:get(user, Req) of
     {undefined, Req2} ->
       {ok, cowboy_req:reply(?STATUS_NOT_FOUND, Req2), Opts};
@@ -58,27 +61,33 @@ request(_, Req, _) ->
 -spec get_devices(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 get_devices(Req, User) ->
   Qs = cowboy_req:parse_qs(Req),
-  All = binary_to_atom(proplists:get_value(<<"all">>, Qs, <<"false">>), utf8),
-  UserId = list_to_integer(binary_to_list(proplists:get_value(<<"userId">>, Qs, <<"0">>))),
-  case All of
-    true ->
-      case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+  Result = emodel:from_proplist(Qs, #get_devices_params{}, [
+    {<<"all">>, optional, boolean, #get_devices_params.all, []},
+    {<<"userId">>, optional, integer, #get_devices_params.userId, []}
+  ]),
+  case Result of
+    {ok, #get_devices_params{all = true}} ->
+      case em_permissions_manager:check_admin(User#user.id) of
         false ->
           cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
         _ ->
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_all_devices()), Req)
+          {ok, Devices} = em_data_manager:get_all_devices(),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Devices), Req)
       end;
-    false ->
-      case em_permissions_manager:check_user(maps:get(<<"id">>, User), get_user_id(UserId, User)) of
+    {ok, #get_devices_params{all = false, userId = UserId}} ->
+      case em_permissions_manager:check_user(User#user.id, get_user_id(UserId, User)) of
         false ->
           cowboy_req:reply(?STATUS_FORBIDDEN, Req);
         _ ->
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(em_data_manager:get_devices(get_user_id(UserId, User))), Req)
-      end
+          {ok, Devices} = em_data_manager:get_devices(get_user_id(UserId, User)),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Devices), Req)
+      end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format.">>, Req)
   end.
 
 get_user_id(0, User) ->
-  maps:get(<<"id">>, User);
+  User#user.id;
 get_user_id(UserId, _) ->
   UserId.
 

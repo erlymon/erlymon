@@ -37,42 +37,42 @@
 
 to_map(Rec) ->
   #{
-    id => Rec#position.id,
-    type => Rec#position.type,
-    protocol => Rec#position.protocol,
-    serverTime => Rec#position.serverTime,
-    deviceTime => Rec#position.deviceTime,
-    fixTime => Rec#position.fixTime,
-    deviceId => Rec#position.deviceId,
-    outdated => Rec#position.outdated,
-    valid => Rec#position.valid,
-    latitude => Rec#position.latitude,
-    longitude => Rec#position.longitude,
-    altitude => Rec#position.altitude,
-    speed => Rec#position.speed,
-    course => Rec#position.course,
-    address => Rec#position.address,
-    attributes => Rec#position.attributes
+    <<"id">> => Rec#position.id,
+    <<"type">> => Rec#position.type,
+    <<"protocol">> => Rec#position.protocol,
+    <<"serverTime">> => Rec#position.serverTime,
+    <<"deviceTime">> => Rec#position.deviceTime,
+    <<"fixTime">> => Rec#position.fixTime,
+    <<"deviceId">> => Rec#position.deviceId,
+    <<"outdated">> => Rec#position.outdated,
+    <<"valid">> => Rec#position.valid,
+    <<"latitude">> => Rec#position.latitude,
+    <<"longitude">> => Rec#position.longitude,
+    <<"altitude">> => Rec#position.altitude,
+    <<"speed">> => Rec#position.speed,
+    <<"course">> => Rec#position.course,
+    <<"address">> => Rec#position.address,
+    <<"attributes">> => Rec#position.attributes
   }.
 
 from_map(Map) ->
   #position{
-    id = maps:get(id, Map, 0),
-    type = maps:get(type, Map, <<"">>),
-    protocol = maps:get(protocol, Map, <<"">>),
-    serverTime = maps:get(serverTime, Map, 0),
-    deviceTime = maps:get(deviceTime, Map, 0),
-    fixTime = maps:get(fixTime, Map, 0),
-    deviceId = maps:get(deviceId, Map, 0),
-    outdated = maps:get(outdated, Map, false),
-    valid = maps:get(valid, Map, false),
-    latitude = maps:get(latitude, Map, 0.0),
-    longitude = maps:get(longitude, Map, 0.0),
-    altitude = maps:get(altitude, Map, 0.0),
-    speed = maps:get(speed, Map, 0.0),
-    course = maps:get(course, Map, 0.0),
-    address = maps:get(address, Map, <<"">>),
-    attributes = maps:get(attributes, Map, #{})
+    id = maps:get(<<"id"">">>, Map, 0),
+    type = maps:get(<<"type">>, Map, <<"">>),
+    protocol = maps:get(<<"protocol">>, Map, <<"">>),
+    serverTime = maps:get(<<"serverTime">>, Map, 0),
+    deviceTime = maps:get(<<"deviceTime">>, Map, 0),
+    fixTime = maps:get(<<"fixTime">>, Map, 0),
+    deviceId = maps:get(<<"deviceId">>, Map, 0),
+    outdated = maps:get(<<"outdated">>, Map, false),
+    valid = maps:get(<<"valid">>, Map, false),
+    latitude = maps:get(<<"latitude">>, Map, 0.0),
+    longitude = maps:get(<<"longitude">>, Map, 0.0),
+    altitude = maps:get(<<"altitude">>, Map, 0.0),
+    speed = maps:get(<<"speed">>, Map, 0.0),
+    course = maps:get(<<"course">>, Map, 0.0),
+    address = maps:get(<<"address">>, Map, <<"">>),
+    attributes = maps:get(<<"attributes">>, Map, #{})
   }.
 
 to_str(Rec) ->

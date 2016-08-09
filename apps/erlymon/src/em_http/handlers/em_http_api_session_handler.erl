@@ -65,7 +65,7 @@ get_session(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
         {User, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(User), Req2)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(User), Req2)
     end.
 
 -spec add_session(Req::cowboy_req:req()) -> cowboy_req:req().
@@ -78,11 +78,12 @@ add_session(Req) ->
     case Result of
         {ok, #user{email =  Email, password = Password}} ->
                 case em_data_manager:check_user(Email, Password) of
-                    null ->
+                    {error, _Reason} ->
                         cowboy_req:reply(?STATUS_UNAUTHORIZED, Req2);
-                    User ->
+                    {ok, User} ->
+                        em_logger:info("SESSION SAVE: ~w", [User]),
                         {ok, Req3} = cowboy_session:set(user, User, Req2),
-                        cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(User), Req3)
+                        cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(User), Req3)
                 end;
       {error, _Reason} ->
                 %% Encode end set error
