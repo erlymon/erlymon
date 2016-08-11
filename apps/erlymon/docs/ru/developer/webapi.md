@@ -1,6 +1,6 @@
 # WebApi
 
-Доступ к api можно получить по ссылке http://localhost:8081/api
+Доступ к api можно получить по ссылке http://localhost:8082/api
 
 На любой запрос, если у вас есть права и сервер функционирует в штатном режиме, сервер отвечает json объектом либо json массивом.
 Иначе сервер возвращает код ошибки с сообщением.
@@ -17,7 +17,7 @@
 
 ### Получить сессию
 ```sh
-$ http localhost:8081/api/session 'Cookie:session=7cafa2ff-8e17-416c-955e-e16faa2fb2ac'
+$ http localhost:8082/api/session 'Cookie:session=7cafa2ff-8e17-416c-955e-e16faa2fb2ac'
 
 HTTP/1.1 200 OK
 Connection: keep-alive
@@ -27,25 +27,26 @@ Date: Fri, 01 Jul 2016 10:02:28 GMT
 Keep-Alive: timeout=20
 Server: nginx/1.8.1
 
-{
-    "admin": true,
-    "distanceUnit": "",
-    "email": "admin",
-    "id": 12371,
-    "latitude": 45.0,
-    "longitude": 20.0,
-    "map": "",
-    "name": "admin",
-    "password": null,
-    "readonly": false,
-    "speedUnit": "",
+{                                                                                                                                                                                 
+    "admin": true,                                                                                                                                                                
+    "distanceUnit": "km",                                                                                                                                                         
+    "email": "admin",                                                                                                                                                             
+    "id": 1,                                                                                                                                                                      
+    "language": "en",                                                                                                                                                             
+    "latitude": 53.0,                                                                                                                                                             
+    "longitude": 28.0,                                                                                                                                                            
+    "map": "osm", 
+    "name": "admin", 
+    "password": null, 
+    "readonly": false, 
+    "speedUnit": "kmh", 
     "zoom": 10
 }
 ```
 
 ### Открыть сессию
 ```sh
-$ http -f POST localhost:8081/api/session email=admin password=admin
+$ http -f POST localhost:8082/api/session email=admin password=admin
 
 HTTP/1.1 200 OK
 content-length: 174
@@ -55,24 +56,26 @@ server: Cowboy
 set-cookie: session=76e93a36-02d6-4f34-a518-a982086bf52c; Version=1; Path=/
 
 {
-    "admin": false,
-    "distanceUnit": "",
-    "email": "admin",
-    "id": 12371,
-    "latitude": 45.0,
-    "longitude": 20.0,
-    "map": "",
-    "name": "admin",
-    "password": null,
-    "readonly": false,
-    "speedUnit": "",
+    "admin": true, 
+    "distanceUnit": "km", 
+    "email": "admin", 
+    "id": 1, 
+    "language": "en", 
+    "latitude": 53.0, 
+    "longitude": 28.0, 
+    "map": "osm", 
+    "name": "admin", 
+    "password": null, 
+    "readonly": false, 
+    "speedUnit": "kmh", 
     "zoom": 10
 }
+
 ```
 
 ### Закрыть сессию
 ```sh
-$ http DELETE localhost:8081/api/session 'Cookie:session=7cafa2ff-8e17-416c-955e-e16faa2fb2ac'
+$ http DELETE localhost:8082/api/session 'Cookie:session=7cafa2ff-8e17-416c-955e-e16faa2fb2ac'
 
 Connection: keep-alive
 Content-Length: 0
@@ -93,7 +96,7 @@ set-cookie: session=deleted; Version=1; Path=/
 ### Получить параметры сервера
 
 ```sh
-$ http localhost:8081/api/server
+$ http localhost:8082/api/server
 
 HTTP/1.1 200 OK
 content-length: 171
@@ -102,24 +105,26 @@ date: Fri, 01 Jul 2016 12:40:42 GMT
 server: Cowboy
 
 {
-    "bingKey": null,
-    "distanceUnit": null,
-    "id": 1,
-    "latitude": 0.0,
-    "longitude": 0.0,
-    "map": null,
-    "mapUrl": null,
-    "readonly": false,
-    "registration": true,
-    "speedUnit": null,
-    "zoom": 0
+    "bingKey": "", 
+    "distanceUnit": "", 
+    "id": 1, 
+    "language": null, 
+    "latitude": 53.0, 
+    "longitude": 27.0, 
+    "map": "12311111", 
+    "mapUrl": "", 
+    "readonly": false, 
+    "registration": true, 
+    "speedUnit": "", 
+    "zoom": 10
 }
+
 ```
 
 ### Обновить параметры сервера
 
 ```sh
-$ http --json PUT localhost:8081/api/server 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' id:=1465545256 bingKey= distanceUnit= language= latitude:=0 longitude:=0 map=osm mapUrl= readonly:=false readonly:=true speedUnit= zoom:=0
+$ http --json PUT localhost:8082/api/server 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' id:=1465545256 bingKey= distanceUnit= language= latitude:=0 longitude:=0 map=osm mapUrl= readonly:=false readonly:=true speedUnit= zoom:=0
 
 HTTP/1.1 200 OK
 content-length: 153
@@ -151,7 +156,7 @@ server: Cowboy
 ### Получить список пользователей
 
 ```sh
-$ http GET localhost:8081/api/users 'Cookie:session=76e93a36-02d6-4f34-a518-a982086bf52c; Version=1; Path=/'
+$ http GET localhost:8082/api/users 'Cookie:session=76e93a36-02d6-4f34-a518-a982086bf52c; Version=1; Path=/'
 
 HTTP/1.1 200 OK
 content-length: 176
@@ -161,18 +166,19 @@ server: Cowboy
 
 [
     {
-        "admin": true,
-        "distanceUnit": "",
-        "email": "admin",
-        "id": 1465545256,
-        "language": "",
-        "latitude": 0.0,
-        "longitude": 0.0,
-        "map": "",
-        "name": "admin",
-        "readonly": false,
-        "speedUnit": "",
-        "zoom": 0
+        "admin": true, 
+        "distanceUnit": "km", 
+        "email": "admin", 
+        "id": 1, 
+        "language": "en", 
+        "latitude": 53.0, 
+        "longitude": 28.0, 
+        "map": "osm", 
+        "name": "admin", 
+        "password": null, 
+        "readonly": false, 
+        "speedUnit": "kmh", 
+        "zoom": 10
     }
 ]
 
@@ -181,13 +187,36 @@ server: Cowboy
 ### Создать/Зарегистрировать пользователя
 
 ```
-$ http --json POST localhost:8081/api/users 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' name=manager email=manager@manager.com password=manager
+$ http --json POST localhost:8082/api/users 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' name=manager email=manager@manager.com password=manager
+
+HTTP/1.1 200 OK
+content-length: 176
+content-type: application/json; charset=UTF-8
+date: Fri, 01 Jul 2016 12:43:42 GMT
+server: Cowboy
+
+{
+    "admin": false, 
+    "distanceUnit": null, 
+    "email": "manager@manager.com", 
+    "id": 37, 
+    "language": null, 
+    "latitude": 0.0, 
+    "longitude": 0.0, 
+    "map": null, 
+    "name": "manager", 
+    "password": "manager", 
+    "readonly": false, 
+    "speedUnit": null, 
+    "zoom": 0
+}
+
 ```
 
 ### Обновить пользователя
 
 ```
-http --json PUT localhost:8081/api/users/1467380757 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' id:=1467380757 name=manager email=manager@manager.com password=manager
+http --json PUT localhost:8082/api/users/1467380757 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' id:=37 name=manager1 email=manager@manager.com password=manager admin:=false map=null language=null distanceUnit=null speedUnit=null latitude:=0 longitude:=0 zoom:=0
 
 HTTP/1.1 200 OK
 content-length: 85
@@ -196,30 +225,33 @@ date: Fri, 01 Jul 2016 13:50:48 GMT
 server: Cowboy
 
 {
-    "email": "manager@manager.com",
-    "id": 1467380757,
-    "name": "manager",
-    "password": "manager"
+    "admin": false, 
+    "distanceUnit": "null", 
+    "email": "manager@manager.com", 
+    "id": 37, 
+    "language": "null", 
+    "latitude": 0.0, 
+    "longitude": 0.0, 
+    "map": "null", 
+    "name": "manager1", 
+    "password": "manager", 
+    "readonly": false, 
+    "speedUnit": "null", 
+    "zoom": 0
 }
+
 ```
 
 ### Удалить пользователя
 
 ```sh
-$ http --json DELETE localhost:8081/api/users/1467380757 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' id:=1467380757 name=manager email=manager@manager.com password=manager
+$ http --json DELETE localhost:8082/api/users/37 'Cookie:JSESSIONID=1e3lt2gnqxzj1sk5gigg29s94;Path=/api' id:=37
 
 HTTP/1.1 200 OK
 content-length: 85
 content-type: application/json; charset=UTF-8
 date: Fri, 01 Jul 2016 13:51:27 GMT
 server: Cowboy
-
-{
-    "email": "manager@manager.com",
-    "id": 1467380757,
-    "name": "manager",
-    "password": "manager"
-}
 ```
 
 ## Устройство
@@ -229,7 +261,7 @@ server: Cowboy
 ### Получить список устройств
 
 ```sh
-$ http GET localhost:8081/api/devices 'Cookie:session=76e93a36-02d6-4f34-a518-a982086bf52c; Version=1; Path=/'
+$ http GET localhost:8082/api/devices 'Cookie:session=76e93a36-02d6-4f34-a518-a982086bf52c; Version=1; Path=/'
 
 HTTP/1.1 200 OK
 content-length: 134
@@ -239,12 +271,12 @@ server: Cowboy
 
 [
     {
-        "id": 1465545256,
-        "lastUpdate": "2016-06-10T07:54:16.000+0000",
-        "name": "test1",
-        "positionId": 0,
-        "status": "",
-        "uniqueId": "123456789012345"
+        "id": 1, 
+        "lastUpdate": "2016-07-28T09:52:47.593+0000", 
+        "name": "wialon", 
+        "positionId": 10, 
+        "status": "offline", 
+        "uniqueId": "001"
     }
 ]
 
@@ -252,7 +284,7 @@ server: Cowboy
 
 ### Создать устройство
 ```sh
-$ http --json POST localhost:8081/api/devices 'Cookie:session=c914b9fd-ac19-48f1-883d-3fc3eb286a70; Version=1; Path=/' id=-1 name=tractor uniqueId=tractor
+$ http --json POST localhost:8082/api/devices 'Cookie:session=c914b9fd-ac19-48f1-883d-3fc3eb286a70; Version=1; Path=/' id=-1 name=tractor uniqueId=tractor
 
 HTTP/1.1 200 OK
 content-length: 112
@@ -261,20 +293,21 @@ date: Fri, 01 Jul 2016 13:25:34 GMT
 server: Cowboy
 
 {
-    "id": 1467379534,
-    "lastUpdate": 1467379534810728,
-    "name": "tractor",
-    "positionId": 0,
-    "status": "",
+    "id": 39, 
+    "lastUpdate": null, 
+    "name": "tractor", 
+    "positionId": 0, 
+    "status": null, 
     "uniqueId": "tractor"
 }
+
 
 ```
 
 ### Обновить устройство
 
 ```sh
-$ http --json PUT localhost:8081/api/devices/1467379534 'Cookie:session=91b7a488-cc80-4ceb-a12e-fb9f2bb48a20' id:=1467379534 name=tractor1 uniqueId=tractor1 lastUpdate=2016-07-01T13:25:34.000+0000 positionId:=0 status=
+$ http --json PUT localhost:8082/api/devices/39 'Cookie:session=91b7a488-cc80-4ceb-a12e-fb9f2bb48a20' id:=39 name=tractor uniqueId=tractor
 
 HTTP/1.1 200 OK
 content-length: 128
@@ -283,12 +316,12 @@ date: Fri, 01 Jul 2016 13:32:25 GMT
 server: Cowboy
 
 {
-    "id": 1467379534,
-    "lastUpdate": "2016-07-01T13:25:34.000 0000",
-    "name": "tractor1",
-    "positionId": 0,
-    "status": "",
-    "uniqueId": "tractor1"
+    "id": 39, 
+    "lastUpdate": null, 
+    "name": "tractor", 
+    "positionId": 0, 
+    "status": null, 
+    "uniqueId": "tractor"
 }
 
 ```
@@ -296,7 +329,15 @@ server: Cowboy
 ### Удалить устройство
 
 ```sh
-$ http --json DELETE localhost:8081/api/devices/1467379534 'Cookie:session=91b7a488-cc80-4ceb-a12e-fb9f2bb48a20' id:=1467379534 name=tractor1 uniqueId=tractor1 lastUpdate=2016-07-01T13:25:34.000+0000 positionId:=0 status=
+$ http --json DELETE localhost:8082/api/devices/39 'Cookie:session=91b7a488-cc80-4ceb-a12e-fb9f2bb48a20' id:=39
+
+HTTP/1.1 204 No Content
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Headers: origin, content-type, accept, authorization
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Origin: *
+Date: Wed, 10 Aug 2016 13:55:24 GMT
+server: Cowboy
 
 ```
 
@@ -307,23 +348,37 @@ $ http --json DELETE localhost:8081/api/devices/1467379534 'Cookie:session=91b7a
 ### Добавить доступ к устройству
 
 ```sh
-http --json POST localhost:8081/api/permissions 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' userId:=1467380569 deviceId:=1465545256
+http --json POST localhost:8082/api/permissions 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' userId:=9 deviceId:=9
 
 HTTP/1.1 200 OK
-content-length: 0
-date: Fri, 01 Jul 2016 14:02:25 GMT
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Headers: origin, content-type, accept, authorization
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Origin: *
+Content-Length: 25
+Content-Type: application/json
+Date: Wed, 10 Aug 2016 13:58:10 GMT
 server: Cowboy
+
+{
+    "deviceId": 1, 
+    "userId": 9
+}
 
 ```
 
 ### Удалить доступ к устройству
 
 ```sh
-$ http --json DELETE localhost:8081/api/permissions 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' userId:=1467380569 deviceId:=1465545256
-HTTP/1.1 200 OK
-content-length: 0
-date: Fri, 01 Jul 2016 14:03:01 GMT
+$ http --json DELETE localhost:8082/api/permissions 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' userId:=9 deviceId:=9
+HTTP/1.1 204 No Content
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Headers: origin, content-type, accept, authorization
+Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+Access-Control-Allow-Origin: *
+Date: Wed, 10 Aug 2016 13:59:10 GMT
 server: Cowboy
+
 
 ```
 
@@ -332,7 +387,7 @@ server: Cowboy
 ### Выгрузка сообщений
 
 ```sh
-$ http GET localhost:8081/api/positions 'Cookie:session=feabd330-f679-421b-bd95-ed5ee5520af8; Version=1; Path=/' deviceId==1465545256 from==2016-07-01T14:03:56.000Z to==2016-07-01T14:33:56.000Z
+$ http GET localhost:8082/api/positions 'Cookie:session=feabd330-f679-421b-bd95-ed5ee5520af8; Version=1; Path=/' deviceId==1 from==2016-07-01T14:03:56.000Z to==2016-08-01T14:33:56.000Z
 
 HTTP/1.1 200 OK
 content-length: 2
@@ -340,7 +395,28 @@ content-type: application/json; charset=UTF-8
 date: Fri, 01 Jul 2016 14:37:50 GMT
 server: Cowboy
 
-[]
+[
+    {
+        "address": null, 
+        "altitude": 0.0, 
+        "attributes": {
+            "ip": "127.0.0.1"
+        }, 
+        "course": 0.0, 
+        "deviceId": 1, 
+        "deviceTime": "2016-07-22T07:33:06.000+0000", 
+        "fixTime": "2016-07-22T07:33:06.000+0000", 
+        "id": 1, 
+        "latitude": 53.90553216666667, 
+        "longitude": 27.502491833333334, 
+        "outdated": false, 
+        "protocol": "wialon", 
+        "serverTime": "2016-07-22T07:33:25.273+0000", 
+        "speed": 0.0, 
+        "type": null, 
+        "valid": false
+    }
+]
 ```
 
 ## Команды
@@ -348,11 +424,15 @@ server: Cowboy
 ### Выполнить команду
 
 ```sh
-$ http --json POST localhost:8081/api/commands 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' id:=-1 deviceId:=1465545256 type=engineResume
+$ http --json POST localhost:8082/api/commands 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/' id:=-1 deviceId:=1 type=engineResume
 HTTP/1.1 403 Forbidden
 content-length: 20
 date: Fri, 01 Jul 2016 14:10:38 GMT
 server: Cowboy
 
-TODO: need implement
+{
+    "details": "exception", 
+    "message": null
+}
+
 ```
