@@ -32,8 +32,13 @@
   to_map/1,
   from_map/1,
   to_str/1,
+  create/1,
+  update/1,
+  delete/1,
+  get_all/0,
   get/2,
-  get_by_id/1
+  get_by_id/1,
+  get_by_email/1
 ]).
 
 to_map(Rec) ->
@@ -56,30 +61,83 @@ to_map(Rec) ->
   }.
 
 from_map(Map) ->
-  #user{
-    id = maps:get(<<"id">>, Map, 0),
-    name = maps:get(<<"name">>, Map, <<"">>),
-    email = maps:get(<<"email">>, Map, <<"">>),
-    readonly = maps:get(<<"readonly">>, Map, false),
-    admin = maps:get(<<"admin">>, Map, false),
-    map = maps:get(<<"map">>, Map, <<"">>),
-    language = maps:get(<<"language">>, Map, <<"">>),
-    distanceUnit = maps:get(<<"distanceUnit">>, Map, <<"">>),
-    speedUnit = maps:get(<<"speedUnit">>, Map, <<"">>),
-    latitude = maps:get(<<"latitude">>, Map, 0.0),
-    longitude = maps:get(<<"longitude">>, Map, 0.0),
-    zoom = maps:get(<<"zoom">>, Map, 0.0),
-    password = maps:get(<<"password">>, Map, <<"">>),
-    hashPassword = maps:get(<<"hashPassword">>, Map, <<"">>),
-    salt = maps:get(<<"salt">>, Map, <<"">>)
-  }.
+  Fun = fun(K,V,User) ->
+          case K of
+            <<"id">> -> User#user{id = V};
+            <<"name">> -> User#user{name = V};
+            <<"email">> -> User#user{email = V};
+            <<"readonly">> -> User#user{readonly = V};
+            <<"admin">> -> User#user{admin = V};
+            <<"map">> -> User#user{map = V};
+            <<"language">> -> User#user{language = V};
+            <<"distanceUnit">> -> User#user{distanceUnit = V};
+            <<"speedUnit">> -> User#user{speedUnit = V};
+            <<"latitude">> -> User#user{latitude = V};
+            <<"longitude">> -> User#user{longitude = V};
+            <<"zoom">> -> User#user{zoom = V};
+            <<"password">> -> User#user{password = V};
+            <<"hashPassword">> -> User#user{hashPassword = V};
+            <<"salt">> -> User#user{salt = V};
+            _ ->
+                User
+          end
+        end,
+  maps:fold(Fun,#user{},Map).
 
+to_str(Recs) when is_list(Recs) ->
+  em_logger:info("CONVERT RECORDS: ~w", [Recs]),
+  em_json:encode(lists:map(fun(Rec) -> to_map(Rec) end, Recs));
 to_str(Rec) ->
   em_json:encode(to_map(Rec)).
 
 
+create(Rec) ->
+  User = Rec#user{
+    id = em_helper_time:timestamp() div 1000000,
+    hashPassword = em_password:hash(Rec#user.password)
+  },
+  {_, Item} = em_storage:insert(<<"users">>, to_map(User)),
+  {ok, from_map(Item)}.
+
+update(Rec) ->
+  FixUser = fun(UserModel = #user{password = Password}) ->
+                case Password of
+                  undefinded ->
+                    UserModel0 = maps:remove(<<"password">>, to_map(UserModel)),
+                    UserModel1 = maps:remove(<<"hashPassword">>, UserModel0);
+                  <<"">> ->
+                    UserModel0 = maps:remove(<<"password">>, to_map(UserModel)),
+                    UserModel1 = maps:remove(<<"hashPassword">>, UserModel0);
+                  _ ->
+                    UserModel1 = to_map(UserModel#user{hashPassword = em_password:hash(Password)})
+                end,
+                maps:remove(<<"id">>, UserModel1)
+              end,
+  em_storage:update(<<"users">>, #{<<"id">> => Rec#user.id}, FixUser(Rec)).
+
+delete(Rec) ->
+  em_storage:delete_one(<<"users">>, #{<<"id">> => Rec#user.id}).
+
+get_all() ->
+  Callback = fun(User) ->
+              from_map(User)
+             end,
+  Cursor = em_storage:find(<<"users">>, #{}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}),
+  Users = em_storage_cursor:map(Callback, Cursor),
+  em_storage_cursor:close(Cursor),
+  {ok, Users}.
+
 get_by_id(UserId) ->
   Item = em_storage:find_one(<<"users">>, #{<<"id">> => UserId}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}),
+  case (maps:size(Item) =/= 0) of
+    true ->
+      {ok, from_map(Item)};
+    false ->
+      {error, <<"Not find user">>}
+  end.
+
+get_by_email(Email) ->
+  Item = em_storage:find_one(<<"users">>, #{<<"email">> => Email}, #{projector => #{<<"_id">> => false, <<"password">> => false, <<"hashPassword">> => false}}),
   case (maps:size(Item) =/= 0) of
     true ->
       {ok, from_map(Item)};

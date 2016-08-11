@@ -32,6 +32,8 @@
   to_map/1,
   from_map/1,
   to_str/1,
+  create/1,
+  delete/1,
   get_by_user_id/1
 ]).
 
@@ -50,6 +52,15 @@ from_map(Map) ->
 
 to_str(Rec) ->
   em_json:encode(to_map(Rec)).
+
+create(Rec) ->
+  {_, Item} = em_storage:insert(<<"permissions">>, to_map(Rec)),
+  {ok, Item}.
+
+delete(Rec = #permission{userId = UserId}) when UserId == 0 ->
+  em_storage:delete(<<"permissions">>, #{<<"deviceId">> => Rec#permission.deviceId});
+delete(Rec) ->
+  em_storage:delete(<<"permissions">>, to_map(Rec)).
 
 get_by_user_id(UserId) ->
   Callback = fun(Permission) -> from_map(Permission)  end,

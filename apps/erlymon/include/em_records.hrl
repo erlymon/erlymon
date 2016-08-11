@@ -24,82 +24,82 @@
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -record(server, {
-  id :: integer(),
-  registration :: boolean(),
-  readonly :: boolean(),
-  map :: string(),
-  bingKey :: string(),
-  mapUrl :: string(),
-  language :: string(),
-  distanceUnit :: string(),
-  speedUnit :: string(),
-  latitude :: string(),
-  longitude :: string(),
-  zoom :: string()
+  id = 0 :: integer(),
+  registration = true :: boolean(),
+  readonly = false :: boolean(),
+  map = <<"osm">> :: string(),
+  bingKey = <<"">> :: string(),
+  mapUrl = <<"">> :: string(),
+  language = <<"en">> :: string(),
+  distanceUnit  = <<"km">> :: string(),
+  speedUnit = <<"km/h">> :: string(),
+  latitude = 0 :: string(),
+  longitude = 0 :: string(),
+  zoom = 0 :: string()
 }).
 
 -record(user, {
-  id :: integer(),
-  name :: string(),
-  email :: string(),
-  readonly :: boolean(),
-  admin :: boolean(),
-  map :: string(),
-  language :: string(),
-  distanceUnit :: string(),
-  speedUnit :: string(),
-  latitude :: string(),
-  longitude :: string(),
-  zoom :: string(),
-  password :: string(),
-  hashPassword :: string(),
-  salt :: string()
+  id = 0 :: integer(),
+  name = <<"">> :: string(),
+  email = <<"">> :: string(),
+  readonly = false :: boolean(),
+  admin = false  :: boolean(),
+  map = <<"osm">> :: string(),
+  language = <<"en">> :: string(),
+  distanceUnit  = <<"km">> :: string(),
+  speedUnit = <<"km/h">> :: string(),
+  latitude = 0 :: string(),
+  longitude = 0 :: string(),
+  zoom = 0 :: string(),
+  password = <<"">> :: string(),
+  hashPassword = <<"">> :: string(),
+  salt = <<"">> :: string()
 }).
 
 -record(device, {
-  id :: integer(),
-  name :: string(),
-  uniqueId :: string(),
-  status :: string(),
-  lastUpdate :: integer(),
-  positionId :: integer()
+  id = 0 :: integer(),
+  name = <<"">> :: string(),
+  uniqueId = <<"">> :: string(),
+  status = <<"">> :: string(),
+  lastUpdate = 0 :: integer(),
+  positionId = 0 :: integer()
 }).
 
 -record(position, {
-  id :: integer(),
-  type :: string(),
-  protocol :: string(),
-  serverTime :: integer(),
-  deviceTime :: integer(),
-  fixTime :: integer(),
-  deviceId :: integer(),
-  outdated :: boolean(),
-  valid :: boolean(),
-  latitude :: float(),
-  longitude :: float(),
-  altitude :: float(),
-  speed :: float(),
-  course :: float(),
-  address :: string(),
-  attributes :: map()
+  id = 0 :: integer(),
+  type = <<"">> :: string(),
+  protocol = <<"">> :: string(),
+  serverTime = 0 :: integer(),
+  deviceTime = 0 :: integer(),
+  fixTime = 0 :: integer(),
+  deviceId = 0 :: integer(),
+  outdated = false :: boolean(),
+  valid = false :: boolean(),
+  latitude = 0.0 :: float(),
+  longitude = 0.0 :: float(),
+  altitude = 0.0 :: float(),
+  speed = 0.0 :: float(),
+  course = 0.0 :: float(),
+  address = <<"">> :: string(),
+  attributes =#{} :: map()
 }).
 
 -record(command, {
-  deviceId :: integer(),
-  type :: string(),
-  attributes :: map()
+  deviceId = 0 :: integer(),
+  type = <<"">> :: string(),
+  attributes = #{} :: map()
 }).
 
 -record(permission, {
-  userId :: integer(),
-  deviceId :: integer()
+  userId = 0 :: integer(),
+  deviceId = 0 :: integer()
 }).
 
 
 %%  Device
--define(STATUS_UNKNOWN, unknown).
--define(STATUS_ONLINE, online).
--define(STATUS_OFFLINE, offline).
+-define(STATUS_UNKNOWN, <<"unknown">>).
+-define(STATUS_ONLINE, <<"online">>).
+-define(STATUS_OFFLINE, <<"offline">>).
 
 %% Words separated by dashes (word-second-third)
 -define(KEY_INDEX, <<"index">>).

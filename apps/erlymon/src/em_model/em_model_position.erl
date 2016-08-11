@@ -90,7 +90,7 @@ create(Rec) ->
   },
   em_logger:info("Message: ~s", [to_str(MessageModel)]),
   {_, Item} = em_storage:insert(<<"messages">>, to_map(MessageModel)),
-  from_map(Item).
+  {ok, from_map(Item)}.
 
 
 fix_time(ServerTime, DeviceTime) when ServerTime < DeviceTime ->

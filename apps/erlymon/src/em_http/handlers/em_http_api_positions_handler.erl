@@ -29,7 +29,9 @@
 -export([init/2]).
 
 -include("em_http.hrl").
+-include("em_records.hrl").
 
+-record(qs_params, {deviceId = 0, from = <<"">>, to = <<"">>}).
 
 %% GET http://demo.traccar.org/api/user/get?_dc=1436251203853&page=1&start=0&limit=25
 %% {"success":true,"data":[]}
@@ -52,19 +54,25 @@ request(_, Req, _) ->
 
 -spec get_positions(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 get_positions(Req, User) ->
-  %%#{deviceId := DeviceId, from := From, to := To} = cowboy_req:match_qs([deviceId, from, to], Req),
   Qs = cowboy_req:parse_qs(Req),
-  DeviceId = list_to_integer(binary_to_list(proplists:get_value(<<"deviceId">>, Qs, <<"0">>))),
-  From = proplists:get_value(<<"from">>, Qs, <<"">>),
-  To = proplists:get_value(<<"to">>, Qs, <<"">>),
-  em_logger:info("Device ID: ~w, From: ~s, To: ~s", [DeviceId, From, To]),
-  %%Id = str_to_int(DeviceId),
-  case em_permissions_manager:check_device(maps:get(<<"id">>, User), DeviceId) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req);
-    _ ->
-      {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, From),
-      {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, To),
-      Messages = em_data_manager:get_messages(DeviceId, TimeFrom, TimeTo),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Messages), Req)
+  Result = emodel:from_proplist(Qs, #qs_params{}, [
+    {<<"deviceId">>, optional, integer, #qs_params.deviceId, []},
+    {<<"from">>, optional, string, #qs_params.from, []},
+    {<<"to">>, optional, string, #qs_params.to, []}
+  ]),
+  case Result of
+    {ok, Params} ->
+          em_logger:info("Device ID: ~w, From: ~s, To: ~s", [Params#qs_params.deviceId, Params#qs_params.from, Params#qs_params.to]),
+          %%Id = str_to_int(DeviceId),
+          case em_permissions_manager:check_device(User#user.id, Params#qs_params.deviceId) of
+            false ->
+              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req);
+            _ ->
+              {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.from),
+              {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.to),
+              Messages = em_data_manager:get_messages(Params#qs_params.deviceId, TimeFrom, TimeTo),
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Messages), Req)
+          end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.

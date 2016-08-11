@@ -29,6 +29,7 @@
 -export([init/2]).
 
 -include("em_http.hrl").
+-include("em_records.hrl").
 
 %% GET http://demo.traccar.org/api/user/get?_dc=1436251203853&page=1&start=0&limit=25
 %% {"success":true,"data":[]}
@@ -65,69 +66,134 @@ request(_, Req) ->
 
 -spec get_users(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 get_users(Req, User) ->
-  em_logger:info("User: ~w", [maps:get(<<"id">>, User)]),
-  case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+  em_logger:info("User: ~w", [User#user.id]),
+  case em_permissions_manager:check_admin(User#user.id) of
     false ->
       cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
     _ ->
-      Users = em_data_manager:get_users(),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Users), Req)
+      {ok, Users} = em_data_manager:get_users(),
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(Users), Req)
   end.
 
 -spec add_user(Req :: cowboy_req:req()) -> cowboy_req:req().
 add_user(Req) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  UserModel = em_json:decode(JsonBin),
-  case em_permissions_manager:check_registration() of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-    _ ->
-      case em_data_manager:create_user(UserModel) of
-        null ->
-          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-        User ->
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, User)), Req2)
-      end
+  em_logger:info("REGISTRY USER JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
+    {<<"name">>, required, string, #user.name, []},
+    {<<"email">>, required, string, #user.email, []},
+    {<<"password">>, required, string, #user.password, []}
+  ]),
+  case Result of
+    {ok, UserModel} ->
+        case em_permissions_manager:check_registration() of
+          false ->
+            cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+          _ ->
+            case em_data_manager:create_user(UserModel) of
+              {error, _Reason} ->
+                cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+              {ok, User} ->
+                cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(User), Req2)
+            end
+        end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
 
 -spec add_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 add_user(Req, User) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  UserModel = em_json:decode(JsonBin),
-  case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-    _ ->
-      case em_data_manager:create_user(UserModel) of
-        null ->
-          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-        User ->
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, User)), Req2)
-      end
+  em_logger:info("ADD USER JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
+    {<<"id">>, required, integer, #user.id, []},
+    {<<"name">>, required, string, #user.name, []},
+    {<<"email">>, required, string, #user.email, []},
+    {<<"password">>, optional, string, #user.password, []},
+    {<<"admin">>, required, boolean, #user.admin, []},
+    {<<"map">>, required, string, #user.map, []},
+    {<<"distanceUnit">>, required, string, #user.distanceUnit, []},
+    {<<"speedUnit">>, required, string, #user.speedUnit, []},
+    {<<"latitude">>, required, integer, #user.latitude, []},
+    {<<"longitude">>, required, integer, #user.longitude, []},
+    {<<"zoom">>, required, integer, #user.zoom, []}
+  ]),
+  case Result of
+    {ok, UserModel} ->
+          case em_permissions_manager:check_admin(User#user.id) of
+            false ->
+              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+            _ ->
+              case em_data_manager:create_user(UserModel) of
+                {error, _Reason} ->
+                  cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+                {ok, NewUser} ->
+                  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(NewUser), Req2)
+              end
+          end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
 
 -spec remove_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 remove_user(Req, User) ->
-  case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
-    _ ->
-      {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-      UserModel = em_json:decode(JsonBin),
-      em_data_manager:delete_user(UserModel),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(UserModel), Req2)
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  %%UserModel = em_json:decode(JsonBin),
+  em_logger:info("REMOVE USER JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
+    {<<"id">>, required, integer, #user.id, []},
+    {<<"name">>, required, string, #user.name, []},
+    {<<"email">>, required, string, #user.email, []},
+    {<<"password">>, optional, string, #user.password, []},
+    {<<"admin">>, required, boolean, #user.admin, []},
+    {<<"map">>, required, string, #user.map, []},
+    {<<"distanceUnit">>, required, string, #user.distanceUnit, []},
+    {<<"speedUnit">>, required, string, #user.speedUnit, []},
+    {<<"latitude">>, required, integer, #user.latitude, []},
+    {<<"longitude">>, required, integer, #user.longitude, []},
+    {<<"zoom">>, required, integer, #user.zoom, []}
+  ]),
+  case Result of
+    {ok, UserModel} ->
+            case em_permissions_manager:check_admin(User#user.id) of
+              false ->
+                cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+              _ ->
+                em_data_manager:delete_user(UserModel),
+                cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(UserModel), Req2)
+            end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
 
 -spec update_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
-update_user(Req, User) ->
+update_user(Req, CurrUser) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  UserModel = em_json:decode(JsonBin),
-  case check_permission(maps:get(<<"id">>, User), maps:get(<<"id">>, UserModel)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-    _ ->
-      em_data_manager:update_user(maps:remove(<<"o">>, UserModel)),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(UserModel), Req2)
+  em_logger:info("UPDATE USER JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
+    {<<"id">>, required, integer, #user.id, []},
+    {<<"name">>, required, string, #user.name, []},
+    {<<"email">>, required, string, #user.email, []},
+    {<<"password">>, optional, string, #user.password, []},
+    {<<"admin">>, required, boolean, #user.admin, []},
+    {<<"map">>, required, string, #user.map, []},
+    {<<"distanceUnit">>, required, string, #user.distanceUnit, []},
+    {<<"speedUnit">>, required, string, #user.speedUnit, []},
+    {<<"latitude">>, required, integer, #user.latitude, []},
+    {<<"longitude">>, required, integer, #user.longitude, []},
+    {<<"zoom">>, required, integer, #user.zoom, []}
+  ]),
+  case Result of
+    {ok, UserModel} ->
+      case check_permission(CurrUser#user.id, UserModel#user.id) of
+        false ->
+          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+        _ ->
+          em_data_manager:update_user(UserModel),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(UserModel), Req2)
+      end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
 
 

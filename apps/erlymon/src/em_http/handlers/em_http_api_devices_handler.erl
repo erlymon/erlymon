@@ -83,7 +83,7 @@ get_devices(Req, User) ->
           cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Devices), Req)
       end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format.">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
 
 get_user_id(0, User) ->
@@ -94,32 +94,68 @@ get_user_id(UserId, _) ->
 -spec add_device(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 add_device(Req, User) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  DeviceModel = em_json:decode(JsonBin),
-  Device = em_data_manager:create_device(DeviceModel),
-  em_data_manager:link_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)),
-  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, Device)), Req2).
+  em_logger:info("DEVICE JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #device{}, [
+    {<<"id">>, required, integer, #device.id, []},
+    {<<"name">>, required, string, #device.name, []},
+    {<<"uniqueId">>, required, string, #device.uniqueId, []}
+  ]),
+  case Result of
+    {ok, DeviceModel} ->
+      {ok, Device} = em_data_manager:create_device(DeviceModel),
+      em_data_manager:link_device(#permission{userId = User#user.id, deviceId = Device#device.id}),
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Device), Req2);
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+  end.
 
 -spec update_device(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 update_device(Req, User) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  Device = em_json:decode(JsonBin),
-  case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
-    true ->
-      em_data_manager:update_device(Device),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Device), Req2)
+  em_logger:info("DEVICE JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #device{}, [
+    {<<"id">>, required, integer, #device.id, []},
+    {<<"name">>, required, string, #device.name, []},
+    {<<"uniqueId">>, required, string, #device.uniqueId, []},
+    {<<"status">>, optional, string, #device.status, []},
+    {<<"lastUpdate">>, optional, string, #device.lastUpdate, []},
+    {<<"positionId">>, optional, integer, #device.positionId, []}
+  ]),
+  case Result of
+    {ok, Device} ->
+      case em_permissions_manager:check_device(User#user.id, Device#device.id) of
+        false ->
+          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
+        true ->
+          em_data_manager:update_device(Device),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Device), Req2)
+      end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
 
 -spec remove_device(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 remove_device(Req, User) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  Device = em_json:decode(JsonBin),
-  case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"id">>, Device)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
-    true ->
-      em_data_manager:delete_device(Device),
-      em_data_manager:unlink_device(maps:get(<<"id">>, Device)),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(maps:remove(<<"_id">>, Device)), Req2)
+  em_logger:info("DEVICE JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #device{}, [
+    {<<"id">>, required, integer, #device.id, []},
+    {<<"name">>, required, string, #device.name, []},
+    {<<"uniqueId">>, required, string, #device.uniqueId, []},
+    {<<"status">>, optional, string, #device.status, []},
+    {<<"lastUpdate">>, optional, string, #device.lastUpdate, []},
+    {<<"positionId">>, optional, integer, #device.positionId, []}
+  ]),
+  case Result of
+    {ok, Device} ->
+      case em_permissions_manager:check_device(User#user.id, Device#device.id) of
+        false ->
+          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
+        true ->
+          em_data_manager:delete_device(Device),
+          em_data_manager:unlink_device(#permission{deviceId = Device#device.id}),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Device), Req2)
+      end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.

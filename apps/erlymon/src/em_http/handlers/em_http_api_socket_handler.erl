@@ -26,6 +26,7 @@
 
 %% API
 -include("em_http.hrl").
+-include("em_records.hrl").
 
 -export([init/2]).
 -export([websocket_handle/3]).
@@ -44,12 +45,12 @@ init(Req, Opts) ->
         {undefined, Req2} ->
             {cowboy_websocket, Req2, Opts};
         {User, Req2} ->
-            UserId = maps:get(<<"id">>, User),
-            em_logger:info("Process reg for user: ~w", [UserId]),
-            em_helper_process:reg({p, l, {user, UserId}}),
-            Devices = em_data_manager:get_devices(maps:get(<<"id">>, User)),
+            %%UserId = maps:get(<<"id">>, User),
+            em_logger:info("Process reg for user: ~w", [User#user.id]),
+            em_helper_process:reg({p, l, {user, User#user.id}}),
+            {ok, Devices} = em_data_manager:get_devices(User#user.id),
             GetLastPosition = fun(Device, Acc) ->
-                                      case em_data_manager:get_last_message(maps:get(<<"positionId">>, Device), maps:get(<<"id">>, Device)) of
+                                      case em_data_manager:get_last_message(Device#device.positionId, Device#device.id) of
                                           null ->
                                               Acc;
                                           Message ->
@@ -57,7 +58,7 @@ init(Req, Opts) ->
                                       end
                               end,
             Positions = lists:foldl(GetLastPosition, [], Devices),
-            notify(UserId, init, {Devices, Positions}),
+            notify(User#user.id, init, {[], Positions}),
             {cowboy_websocket, Req2, Opts}
     end.
 

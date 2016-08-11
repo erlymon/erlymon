@@ -29,6 +29,7 @@
 -export([init/2]).
 
 -include("em_http.hrl").
+-include("em_records.hrl").
 
 -spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
@@ -50,10 +51,20 @@ request(_, Req, _) ->
 -spec add_command(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
 add_command(Req, User) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-  CommandModel = em_json:decode(JsonBin),
-  case em_permissions_manager:check_device(maps:get(<<"id">>, User), maps:get(<<"deviceId">>, CommandModel)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
-    _ ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"TODO: need implement">>, Req2)
+  em_logger:info("ADD COMMAND JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #command{}, [
+    {<<"deviceId">>, required, integer, #command.deviceId, []},
+    {<<"type">>, required, string, #command.type, []},
+    {<<"attributes">>, required, map, #command.attributes, []}
+  ]),
+  case Result of
+    {ok, CommandModel} ->
+        case em_permissions_manager:check_device(User#user.id, CommandModel#command.deviceId) of
+          false ->
+            cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+          _ ->
+            cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"TODO: need implement">>, Req2)
+        end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.

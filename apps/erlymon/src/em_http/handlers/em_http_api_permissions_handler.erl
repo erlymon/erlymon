@@ -29,6 +29,7 @@
 -export([init/2]).
 
 -include("em_http.hrl").
+-include("em_records.hrl").
 
 -spec init(Req::cowboy_req:req(), Opts::any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
@@ -51,26 +52,46 @@ request(_, Req, _) ->
 
 -spec add_permission(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
 add_permission(Req, User) ->
-  case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
-    _ ->
-      {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-      %% {userId: 1458137425, deviceId: 1458137433}
-      PermissionModel = em_json:decode(JsonBin),
-      em_data_manager:link_device(maps:get(<<"userId">>, PermissionModel), maps:get(<<"deviceId">>, PermissionModel)),
-      cowboy_req:reply(?STATUS_OK, Req2)
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  %% {userId: 1458137425, deviceId: 1458137433}
+  %%PermissionModel = em_json:decode(JsonBin),
+  em_logger:info("ADD PERMISSION JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #permission{}, [
+    {<<"userId">>, required, integer, #permission.userId, []},
+    {<<"deviceId">>, required, integer, #permission.deviceId, []}
+  ]),
+  case Result of
+    {ok, PermissionModel} ->
+          case em_permissions_manager:check_admin(User#user.id) of
+            false ->
+              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+            _ ->
+              em_data_manager:link_device(PermissionModel),
+              cowboy_req:reply(?STATUS_OK, Req2)
+          end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
 
 -spec remove_permission(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
 remove_permission(Req, User) ->
-  case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
-    false ->
-      cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
-    _ ->
-      {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
-      %% {userId: 1458137425, deviceId: 1458137433}
-      PermissionModel = em_json:decode(JsonBin),
-      em_data_manager:unlink_device(maps:get(<<"userId">>, PermissionModel), maps:get(<<"deviceId">>, PermissionModel)),
-      cowboy_req:reply(?STATUS_OK, Req2)
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  %% {userId: 1458137425, deviceId: 1458137433}
+  %%PermissionModel = em_json:decode(JsonBin),
+  em_logger:info("REMOVE PERMISSION JSON: ~s", [JsonBin]),
+  Result = emodel:from_map(em_json:decode(JsonBin), #permission{}, [
+    {<<"userId">>, required, integer, #permission.userId, []},
+    {<<"deviceId">>, required, integer, #permission.deviceId, []}
+  ]),
+  case Result of
+    {ok, PermissionModel} ->
+          case em_permissions_manager:check_admin(User#user.id) of
+            false ->
+              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+            _ ->
+              em_data_manager:unlink_device(PermissionModel),
+              cowboy_req:reply(?STATUS_OK, Req2)
+          end;
+    _Reason ->
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.

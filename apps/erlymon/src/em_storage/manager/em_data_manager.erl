@@ -24,6 +24,8 @@
 -module(em_data_manager).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
+-include("em_records.hrl").
+
 %% API
 -export([
   init/0
@@ -36,7 +38,6 @@
 
 -export([
   create_user/1,
-  create_user/3,
   update_user/1,
   update_user/3,
   delete_user/1,
@@ -45,8 +46,8 @@
 ]).
 
 -export([
-  link_device/2,
-  unlink_device/2,
+  link_device/1,
+  unlink_device/1,
   create_device/1,
   create_device/3,
   update_device/1,
@@ -82,7 +83,7 @@ init() ->
             em_storage_server:create(true, 0, 0, 0),
             Admin = em_storage_user:create(<<"admin">>, <<"admin">>, <<"admin">>, true),
             Device = em_storage_device:create(<<"test1">>, <<"123456789012345">>),
-            link_device(maps:get(<<"id">>, Admin), maps:get(<<"id">>, Device)),
+            %%link_device(maps:get(<<"id">>, Admin), maps:get(<<"id">>, Device)),
             em_logger:info("Create account admin: username: ~s, password: ~s", [maps:get(<<"email">>, Admin), maps:get(<<"password">>, Admin)]);
         _ ->
             em_logger:info("Storage already init")
@@ -145,32 +146,15 @@ convert_date_in_message(Message) ->
   maps:put(<<"serverTime">>, ServerTime, NewMessage1).
 
 create_user(User) ->
-    create_user(maps:get(<<"name">>, User), maps:get(<<"email">>, User), maps:get(<<"password">>, User)).
-
-create_user(Name, Email, Password) ->
-    case em_storage_user:get_by_email(Email) of
-        null ->
-            em_storage_user:create(Name, Email, Password);
+    case em_model_user:get_by_email(User#user.email) of
+      {error, _Reason} ->
+            em_model_user:create(User);
         _ ->
-            null
+          {error, <<"Duplicate email">>}
     end.
 
 update_user(User) ->
-    em_logger:info("update_user => ~s", [em_json:encode(User)]),
-    UserId = maps:get(<<"id">>, User),
-    FixUser = fun(UserModel) ->
-                Password = maps:get(<<"password">>, UserModel),
-                UserModel1 = maps:remove(<<"id">>, UserModel),
-                case Password of
-                  undefinded ->
-                    UserModel1;
-                  <<"">> ->
-                    UserModel1;
-                  _ ->
-                    maps:put(<<"hashPassword">>, em_password:hash(Password), UserModel1)
-                end
-              end,
-    em_storage_user:update(UserId, FixUser(User)).
+  em_model_user:update(User).
 
 
 
@@ -178,24 +162,18 @@ update_user(UserId, Field, Value) ->
     em_storage_user:update(UserId, Field, Value).
 
 delete_user(User) ->
-    em_storage_user:delete(maps:get(<<"id">>, User)).
+    em_model_user:delete(User).
 
 check_user(Email, Password) ->
     em_model_user:get(Email, em_password:hash(Password)).
 
 get_users() ->
-    GetUser = fun(User, Acc) ->
-                      [User|Acc]
-          end,
-    Cursor = em_storage_user:get_all(),
-    Users = em_storage_cursor:foldl(GetUser, [], Cursor),
-    em_storage_cursor:close(Cursor),
-    Users.
+    em_model_user:get_all().
 
 
 
 create_device(Device) ->
-    em_storage_device:create(maps:get(<<"name">>, Device), maps:get(<<"uniqueId">>, Device)).
+    em_model_device:create(Device).
 
 create_device(UserId, DeviceName, DeviceUniqueId) ->
     case em_storage_device:create(DeviceName, DeviceUniqueId) of
@@ -207,12 +185,7 @@ create_device(UserId, DeviceName, DeviceUniqueId) ->
     end.
 
 update_device(Device) ->
-    em_logger:info("update_device => ~s", [em_json:encode(Device)]),
-    DeviceId = maps:get(<<"id">>, Device),
-    FixDevice = fun(DeviceModel) ->
-                maps:remove(<<"id">>, DeviceModel)
-              end,
-    em_storage_device:update(DeviceId, FixDevice(Device)).
+    em_model_device:update(Device).
 
 update_device(UserId, DeviceId, Field, Value) ->
     case em_storage_permission:get(UserId, DeviceId) of
@@ -224,7 +197,7 @@ update_device(UserId, DeviceId, Field, Value) ->
     end.
 
 delete_device(Device) ->
-    em_storage_device:delete(maps:get(<<"id">>, Device)).
+    em_model_device:delete(Device).
 
 delete_device(UserId, DeviceId) ->
     case em_storage_permission:get(UserId, DeviceId) of
@@ -251,8 +224,8 @@ convert_date_in_device(Device) ->
   {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
   maps:put(<<"lastUpdate">>, Date, Device).
 
-link_device(UserId, DeviceId) ->
-    em_storage_permission:create(UserId, DeviceId).
+link_device(Permission) ->
+    em_model_permission:create(Permission).
 
-unlink_device(UserId, DeviceId) ->
-    em_storage_permission:delete(UserId, DeviceId).
+unlink_device(Permission) ->
+  em_model_permission:delete(Permission).

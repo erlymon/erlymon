@@ -32,6 +32,9 @@
   to_map/1,
   from_map/1,
   to_str/1,
+  create/1,
+  update/1,
+  delete/1,
   get_all/0,
   get_devices/1,
   get_by_uid/1,
@@ -66,6 +69,27 @@ to_str(Rec) ->
   em_logger:info("CONVERT RECORD: ~w", [Rec]),
   em_json:encode(to_map(Rec)).
 
+create(Rec) ->
+  Device = Rec#device{
+    id = em_helper_time:timestamp() div 1000000,
+    status = ?STATUS_UNKNOWN,
+    lastUpdate = em_helper_time:timestamp(),
+    positionId = 0
+  },
+  {_, Item} = em_storage:insert(<<"devices">>, to_map(Device)),
+  {ok, from_map(Item)}.
+
+update(Rec) ->
+  Device = Rec#device{
+    lastUpdate = em_helper_time:timestamp()
+  },
+  FixDevice = fun(DeviceModel) ->
+                maps:remove(<<"id">>, DeviceModel)
+              end,
+  em_storage:update(<<"devices">>, #{<<"id">> => Rec#device.id}, FixDevice(to_map(Device))).
+
+delete(Rec) ->
+  em_storage:delete_one(<<"devices">>, #{<<"id">> => Rec#device.id}).
 
 get_by_uid(UniqueId) ->
   Item = em_storage:find_one(<<"devices">>, #{<<"uniqueId">> => UniqueId}, #{projector => #{<<"_id">> => false, <<"positionId">> => false}}),
@@ -87,9 +111,9 @@ get_by_id(Id) ->
 
 get_all() ->
   Callback = fun(Device) ->
-                Rec = from_map(Device),
-                {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Device#device.lastUpdate),
-                Rec#device{lastUpdate = Date}
+    Rec = from_map(Device),
+    {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Rec#device.lastUpdate),
+    Rec#device{lastUpdate = Date}
              end,
   Cursor = em_storage:find(<<"devices">>, #{}, #{projector => #{<<"_id">> => false, <<"positionId">> => false}}),
   Devices = em_storage_cursor:map(Callback, Cursor),
