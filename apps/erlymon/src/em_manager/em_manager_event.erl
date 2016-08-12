@@ -26,6 +26,8 @@
 
 -behaviour(gen_server).
 
+-include("em_records.hrl").
+
 %% API
 -export([start_link/0]).
 -export([broadcast/2]).
@@ -55,7 +57,7 @@
 -spec(broadcast(Device::map(), Position::map()) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 broadcast(Device, Position) ->
-  em_logger:info("~w:broadcast => ~s ~s", [?MODULE, em_json:encode(Device), em_json:encode(Position)]),
+  em_logger:info("~w:broadcast => ~w ~w", [?MODULE, Device, Position]),
   gen_server:cast(?SERVER, {broadcast, {Device, Position}}).
 
 
@@ -122,14 +124,12 @@ handle_call(_Request, _From, State) ->
   {stop, Reason :: term(), NewState :: #state{}}).
 handle_cast({broadcast, {Device, Position}}, State) ->
   SendNotify = fun(Permission) ->
-    em_logger:info("Permission: ~w", [Permission]),
-    em_http_api_socket_handler:notify(maps:get(<<"userId">>, Permission), positions, [Position]),
-    em_http_api_socket_handler:notify(maps:get(<<"userId">>, Permission), devices, [Device])
-    end,
-  Cursor = em_storage_permission:get_by_device_id(maps:get(<<"deviceId">>, Position)),
-  em_logger:info("Permissions Cursor: ~w", [Cursor]),
-  em_storage_cursor:map(SendNotify, Cursor),
-  em_storage_cursor:close(Cursor),
+                  em_logger:info("Permission: ~w", [Permission]),
+                  em_http_api_socket_handler:notify(Permission#permission.userId, positions, [Position]),
+                  em_http_api_socket_handler:notify(Permission#permission.userId, devices, [Device])
+               end,
+  {ok, Permissions} = em_model_permission:get_by_device_id(Position#position.deviceId),
+  lists:map(SendNotify, Permissions),
   {noreply, State};
 handle_cast(_Request, State) ->
   {noreply, State}.

@@ -34,7 +34,8 @@
   to_str/1,
   create/1,
   delete/1,
-  get_by_user_id/1
+  get_by_user_id/1,
+  get_by_device_id/1
 ]).
 
 
@@ -65,6 +66,15 @@ delete(Rec) ->
 get_by_user_id(UserId) ->
   Callback = fun(Permission) -> from_map(Permission)  end,
   Cursor = em_storage:find(<<"permissions">>, #{<<"userId">> => UserId}, #{projector => #{<<"_id">> => false}}),
+  Permissions = em_storage_cursor:map(Callback, Cursor),
+  em_storage_cursor:close(Cursor),
+  {ok, Permissions}.
+
+get_by_device_id(DeviceId) ->
+  Callback = fun(Permission) ->
+              from_map(Permission)
+             end,
+  Cursor = em_storage:find(<<"permissions">>, #{<<"deviceId">> => DeviceId}, #{projector => #{<<"_id">> => false}}),
   Permissions = em_storage_cursor:map(Callback, Cursor),
   em_storage_cursor:close(Cursor),
   {ok, Permissions}.

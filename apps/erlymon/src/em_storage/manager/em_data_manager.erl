@@ -60,7 +60,7 @@
 ]).
 
 -export([
-  create_message/3,
+  create_message/2,
   get_messages/3,
   get_last_message/2
 ]).
@@ -95,6 +95,22 @@ get_server() ->
 
 update_server(Server) ->
     em_model_server:update(Server).
+
+create_message(DeviceModel, PositionModel) ->
+  case em_model_position:get(DeviceModel#device.id, PositionModel#position.deviceTime) of
+    {error, _} ->
+      case em_model_position:create(PositionModel) of
+        {ok, Position} ->
+          em_model_device:update(DeviceModel#device{positionId = Position#position.id}),
+          {ok, Device} = em_model_device:get_by_id(DeviceModel#device.id),
+          em_manager_event:broadcast(Device, Position),
+          {ok, Position};
+        Reason ->
+          Reason
+      end;
+    _ ->
+      {error, <<"Duplicate position">>}
+  end.
 
 create_message(DeviceId, Protocol, MessageParams) ->
     case em_storage_message:get(DeviceId, maps:get(<<"deviceTime">>, MessageParams)) of
@@ -214,7 +230,7 @@ get_devices(UserId) ->
     em_model_device:get_devices(UserId).
 
 get_device_by_uid(UniqueId) ->
-    em_storage_device:get_by_uid(UniqueId).
+  em_model_device:get_by_uid(UniqueId).
 
 
 get_all_devices() ->

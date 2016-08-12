@@ -87,9 +87,10 @@ init(Ref, Socket, Transport, Opts) ->
   {ok, Pattern} = re:compile(?PATTERN),
   loop(#state{protocol = Protocol, socket = Socket, transport = Transport, pattern = Pattern}).
 
-
-loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport, pattern = Pattern}) ->
-  case Transport:recv(Socket, 0, 5000) of
+% echo "39. wialon"
+% (echo -n -e "#D#030816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n";) | nc -v localhost 5003
+loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport, device = Device, pattern = Pattern}) ->
+  case Transport:recv(Socket, 0, infinity) of
     {ok, Data} ->
       em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
       [_, Head, Body] = binary:split(Data, [<<"#">>], [global]),
@@ -97,14 +98,27 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
         {auth, Imei, Password} ->
           em_logger:info("[packet] unit: ip = '~s' imei: ~s password: ~s", [em_hardware:resolve(Socket), Imei, Password]),
           case em_data_manager:get_device_by_uid(Imei) of
-            null ->
+            {error, _Reason} ->
               em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
               send_packet(State, <<"#AL#0">>),
               Transport:close(Socket);
-            Object ->
+            {ok, FindDevice} ->
               send_packet(State, <<"#AL#1">>),
-              loop(State#state{device = Object})
-          end
+              loop(State#state{device = FindDevice})
+          end;
+        {data, PositionModel} ->
+          Position = PositionModel#position{
+            deviceId = Device#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            }
+          },
+          case em_data_manager:create_message(Device, Position) of
+            {ok, _} -> send_packet(State, <<"#AD#1">>);
+            _ -> send_packet(State, <<"#AD#0">>)
+          end,
+          loop(State)
       end,
       loop(State);
     _ ->
@@ -118,11 +132,17 @@ parse(<<"L">>, Data, _) ->
   end;
 parse(<<"D">>, Data, Pattern) ->
   case data_match(Data, Pattern) of
-    [_, Date, Time, Latitude, NS, Longitude, EW, Speed, Course, Altitude, Satellites, Hdop, Inputs, Outputs, Adc, IButton, Params | _] ->
+    %% [_, Day, Month, Year, Hour, Minute, Second, LatDeg, LatMin, LatHem, LonDeg, LonMin, LonHem, Speed, Course, Altitude, Satellites, Hdop, Inputs, Outputs, Adc, IButton, Params | _]
+    [_, Day, Month, Year, Hour, Minute, Second, LatDeg, LatMin, LatHem, LonDeg, LonMin, LonHem, Speed, Course, Altitude | _] ->
       Position = #position{
-
+        deviceTime = parse_date(Day, Month, Year, Hour, Minute, Second),
+        latitude = parse_coordinate(deg_min_hem, {LatDeg, LatMin, LatHem}),
+        longitude = parse_coordinate(deg_min_hem, {LonDeg, LonMin, LonHem}),
+        speed = parse_speed(Speed),
+        course = parse_course(Course),
+        altitude = parse_altitude(Altitude)
       },
-      {position, Position};
+      {data, Position};
     Reason ->
       {error, Reason}
   end.
@@ -130,39 +150,32 @@ parse(<<"D">>, Data, Pattern) ->
 fix_password(<<"NA">>) -> <<>>;
 fix_password(Val) -> Val.
 
+parse_coordinate(deg_min_hem, {<<"NA">>, <<"NA">>, <<"NA">>}) ->
+  undefined;
+parse_coordinate(deg_min_hem, {Deg, Min, Hem}) ->
+  hemisphere(list_to_integer(binary_to_list(Deg)) + list_to_float(binary_to_list(Min)) / 60, Hem).
 
-send_packet(#state{socket = Socket, transport = Transport}, Bin) ->
-    Transport:send(Socket, Bin).
-
-% echo "39. wialon"
-% (echo -n -e "#D#030816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n";) | nc -v localhost 5003
-do_parse(Data, Pattern) ->
-  case data_match(Data, Pattern) of
-    [_, Date, Time, Latitude, NS, Longitude, EW, Speed, Course, Altitude, Satellites, Hdop, Inputs, Outputs, Adc, IButton, Params | _] ->
-      Message = #position{
-
-      };
-    _ ->
-      {error}
-  end.
+hemisphere(Coordinate, <<"S">>) -> -1 * Coordinate;
+hemisphere(Coordinate, <<"W">>) -> -1 * Coordinate;
+hemisphere(Coordinate, <<"-">>) -> -1 * Coordinate;
+hemisphere(Coordinate, _) -> Coordinate.
 
 
-parse_altitude(Altitude) ->
-  list_to_float(binary_to_list(Altitude)).
+parse_speed(<<"NA">>) ->
+  undefined;
+parse_speed(Value) ->
+  list_to_integer(binary_to_list(Value)).
 
-parse_speed(Speed) ->
-  list_to_float(binary_to_list(Speed)).
+parse_course(<<"NA">>) ->
+  undefined;
+parse_course(Value) ->
+  list_to_integer(binary_to_list(Value)).
 
-parse_course(Course) ->
-  list_to_integer(binary_to_list(Course)).
+parse_altitude(<<"NA">>) ->
+  undefined;
+parse_altitude(Value) ->
+  list_to_integer(binary_to_list(Value)).
 
-parse_coord(Coord) ->
-  list_to_float(binary_to_list(Coord)).
-
-parse_valid(Validity) when Validity == <<"1">> ->
-  true;
-parse_valid(Validity) when Validity == <<"0">> ->
-  false.
 
 
 
@@ -172,7 +185,7 @@ parse_valid(Validity) when Validity == <<"0">> ->
 parse_date(Year, Month, Day, Hour, Minute, Second) ->
   Date = {
     {
-      list_to_integer(binary_to_list(Year)),
+      list_to_integer(binary_to_list(Year)) + 2000,
       list_to_integer(binary_to_list(Month)),
       list_to_integer(binary_to_list(Day))
     },
@@ -182,6 +195,7 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
       list_to_integer(binary_to_list(Second))
     }
   },
+  em_logger:info("Date => ~w", [Date]),
   em_helper_time:datetime_to_utc(Date).
 
 data_match(Data, Pattern) ->
@@ -194,6 +208,10 @@ read_param({-1, 0}, _) ->
   void;
 read_param({Pos, Len}, Data) ->
   binary:part(Data, Pos, Len).
+
+
+send_packet(#state{socket = Socket, transport = Transport}, Bin) ->
+  Transport:send(Socket, <<Bin/binary, "\r\n">>).
 
 test() ->
   Packet = <<"#D#030816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n">>,

@@ -32,7 +32,9 @@
   create/1,
   to_map/1,
   from_map/1,
-  to_str/1]).
+  to_str/1,
+  get/2
+]).
 
 
 to_map(Rec) ->
@@ -85,8 +87,7 @@ create(Rec) ->
     id = em_helper_time:timestamp() div 1000000,
     type = <<>>,
     serverTime = ServerTime,
-    fixTime = fix_time(ServerTime, DeviceTime),
-    deviceTime = DeviceTime
+    fixTime = fix_time(ServerTime, DeviceTime)
   },
   em_logger:info("Message: ~s", [to_str(MessageModel)]),
   {_, Item} = em_storage:insert(<<"messages">>, to_map(MessageModel)),
@@ -97,3 +98,13 @@ fix_time(ServerTime, DeviceTime) when ServerTime < DeviceTime ->
   ServerTime;
 fix_time(_, DeviceTime) ->
   DeviceTime.
+
+
+get(DeviceId, DeviceTime) ->
+  Item = em_storage:find_one(<<"messages">>, #{<<"deviceId">> => DeviceId, <<"deviceTime">> => DeviceTime}, #{projector => #{<<"_id">> => false}}),
+  case (maps:size(Item) =/= 0) of
+    true ->
+      {ok, from_map(Item)};
+    false ->
+      {error, <<"Not find position">>}
+  end.
