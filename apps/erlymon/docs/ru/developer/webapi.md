@@ -436,3 +436,38 @@ server: Cowboy
 }
 
 ```
+
+## Соединение по WS
+
+```sh
+$ http --json GET localhost:8082/api/socket 'Cookie:session=cc3aee99-f4dd-459f-9b66-e9d304a5aa2f; Version=1; Path=/'
+
+Accept-Encoding:gzip, deflate, sdch
+Accept-Language:ru-RU,ru;q=0.8,en-US;q=0.6,en;q=0.4
+Cache-Control:no-cache
+Connection:Upgrade
+Cookie:JSESSIONID=5fwb90b9nlzo19bm3w194etgv
+Host:localhost:8082
+Origin:http://localhost:8082
+Pragma:no-cache
+Sec-WebSocket-Extensions:permessage-deflate; client_max_window_bits
+Sec-WebSocket-Key:GO+VzBUmBviMg4vxxZHzXA==
+Sec-WebSocket-Version:13
+Upgrade:websocket
+User-Agent:Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/47.0.2526.106 Safari/537.36
+
+$ ws://localhost:8082/api/socket
+
+Request Method:GET
+Status Code:101 Switching Protocols
+
+{"positions":[{"fixTime":"2016-08-11T09:39:38.000+03:00","latitude":53.905508,"longitude":27.502530666666665,"outdated":false,"valid":false,"altitude":0.0,"speed":0.0,"course":0.0,"deviceTime":"2016-08-11T09:39:38.000+03:00","id":11,"protocol":"wialon","attributes":{"ip":"127.0.0.1"},"deviceId":1}]}
+
+{"devices":[{"status":"online","uniqueId":"001","lastUpdate":"2016-08-11T09:45:00.047+03:00","positionId":10,"name":"wialon","id":1}]}
+
+{"positions":[{"fixTime":"2016-08-11T09:44:50.000+03:00","latitude":53.90554866666667,"longitude":27.5024825,"outdated":false,"valid":false,"altitude":0.0,"speed":0.0,"course":0.0,"deviceTime":"2016-08-11T09:44:50.000+03:00","id":13,"protocol":"wialon","attributes":{"ip":"127.0.0.1"},"deviceId":1}]}
+
+{"devices":[{"status":"offline","uniqueId":"001","lastUpdate":"2016-08-11T09:45:00.047+03:00","positionId":13,"name":"wialon","id":1}]}
+
+
+```
