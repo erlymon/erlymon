@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(routes).
+-module(em_http_routes).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
