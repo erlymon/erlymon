@@ -47,16 +47,30 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    RestartStrategy = one_for_all,
-    MaxRestarts = 1000,
-    MaxSecondsBetweenRestarts = 3600,
+    {ok, EmStorageEnv} = application:get_env(erlymon, em_storage),
+    StorageType = proplists:get_value(type, EmStorageEnv),
+    StorageSettings = proplists:get_value(settings, EmStorageEnv),
 
-    SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
-
-    SupManager = {em_manager_sup,{em_manager_sup, start_link,[]},
-        permanent,2000,supervisor,dynamic},
-
-    {ok, {SupFlags, [SupManager]} }.
+    SupFlags = #{strategy => one_for_all, intensity => 1000, period => 3600},
+    ChildSpecs = [
+        #{
+            id => em_storage_sup,
+            start => {em_storage_sup, start_link, [StorageType, StorageSettings]},
+            restart => permanent,
+            shutdown => 3000,
+            type => supervisor,
+            modules => dynamic
+        },
+        #{
+            id => em_manager_sup,
+            start => {em_manager_sup, start_link, []},
+            restart => permanent,
+            shutdown => 3000,
+            type => supervisor,
+            modules => dynamic
+        }
+    ],
+    {ok, {SupFlags, ChildSpecs}}.
 
 %%====================================================================
 %% Internal functions

@@ -37,12 +37,13 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
-    em_storage_sup:start_link(),
-    em_data_manager:init(),
-    em_geocoder_sup:start_link(),
+    Res = erlymon_sup:start_link(),
+    %%em_storage_sup:start_link(),
+    %%em_data_manager:init(),
+    %%em_geocoder_sup:start_link(),
     start_hardware(_StartType, _StartArgs),
     start_web(_StartType, _StartArgs),
-    erlymon_sup:start_link().
+  Res.
 
 %%--------------------------------------------------------------------
 stop(_State) ->
@@ -87,7 +88,7 @@ start_web(_StartType, _StartArgs) ->
   Web = proplists:get_value(web, EmHttp),
 
   em_logger:info("Start web server port: ~w", [proplists:get_value(port, Web)]),
-  Dispatch = cowboy_router:compile(routes:get([{debug, proplists:get_value(debug, Web)}])),
+  Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, Web)}])),
   cowboy:start_http(web, 100, [
     {port, proplists:get_value(port, Web)},
     {timeout, proplists:get_value(timeout, Web)}
