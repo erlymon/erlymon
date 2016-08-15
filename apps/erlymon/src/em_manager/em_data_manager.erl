@@ -91,7 +91,7 @@ init() ->
 
 
 get_server() ->
-  em_model_server:get().
+  em_storage:get_server().
 
 update_server(Server) ->
     em_model_server:update(Server).

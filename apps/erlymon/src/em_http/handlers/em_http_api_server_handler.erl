@@ -55,7 +55,7 @@ request(_, Req) ->
 -spec get_server(Req::cowboy_req:req()) -> cowboy_req:req().
 get_server(Req) ->
   {ok, Server} = em_data_manager:get_server(),
-  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_server:to_str(Server), Req).
+  cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Server), Req).
 
     
 -spec update_server(Req :: cowboy_req:req()) -> cowboy_req:req().
@@ -96,3 +96,20 @@ update_server(Req) ->
       %% Encode end set error
       cowboy_req:reply(?STATUS_UNKNOWN, [], em_json:encode(Reason), Req1)
   end.
+
+
+str(Rec) ->
+  em_json:encode(#{
+    <<"id">> => Rec#server.id,
+    <<"registration">> => Rec#server.registration,
+    <<"readonly">> => Rec#server.readonly,
+    <<"map">> => Rec#server.map,
+    <<"bingKey">> => Rec#server.bingKey,
+    <<"mapUrl">> => Rec#server.mapUrl,
+    <<"language">> => Rec#server.language,
+    <<"distanceUnit">> => Rec#server.distanceUnit,
+    <<"speedUnit">> => Rec#server.speedUnit,
+    <<"latitude">> => Rec#server.latitude,
+    <<"longitude">> => Rec#server.longitude,
+    <<"zoom">> => Rec#server.zoom
+  }).
