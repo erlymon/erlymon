@@ -181,7 +181,16 @@ delete_user(User) ->
     em_model_user:delete(User).
 
 check_user(Email, Password) ->
-    em_model_user:get(Email, em_password:hash(Password)).
+  CheckPass = fun(Password, User = #user{hashPassword = HashPassword}) ->
+                case Password =:= HashPassword of
+                  true -> {ok, User};
+                  false -> {error, <<"Access is denied">>}
+                end
+              end,
+  case em_storage:get_user_by_email(Email) of
+    {ok, User} -> CheckPass(em_password:hash(Password), User);
+    Reason -> Reason
+  end.
 
 get_users() ->
     em_model_user:get_all().

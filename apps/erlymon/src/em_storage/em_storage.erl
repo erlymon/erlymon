@@ -733,7 +733,7 @@ to_map(position, Rec) ->
 
 gen_uid() -> bson:unixtime_to_secs(bson:timenow()).
 
-hash(V) -> V.
+hash(V) -> em_password:hash(V).
 
 
 %%test() ->

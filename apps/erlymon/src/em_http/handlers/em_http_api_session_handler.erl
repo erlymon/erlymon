@@ -65,7 +65,7 @@ get_session(Req) ->
         {undefined, Req2} ->
             cowboy_req:reply(?STATUS_NOT_FOUND, Req2);
         {User, Req2} ->
-            cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(User), Req2)
+            cowboy_req:reply(?STATUS_OK, ?HEADERS, str(User), Req2)
     end.
 
 -spec add_session(Req::cowboy_req:req()) -> cowboy_req:req().
@@ -78,12 +78,12 @@ add_session(Req) ->
     case Result of
         {ok, #user{email =  Email, password = Password}} ->
                 case em_data_manager:check_user(Email, Password) of
-                    {error, _Reason} ->
-                        cowboy_req:reply(?STATUS_UNAUTHORIZED, Req2);
+                    {error, Reason} ->
+                        cowboy_req:reply(?STATUS_UNAUTHORIZED, [], Reason, Req2);
                     {ok, User} ->
                         em_logger:info("SESSION SAVE: ~w", [User]),
                         {ok, Req3} = cowboy_session:set(user, User, Req2),
-                        cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(User), Req3)
+                        cowboy_req:reply(?STATUS_OK, ?HEADERS, str(User), Req3)
                 end;
       {error, _Reason} ->
                 %% Encode end set error
@@ -94,3 +94,21 @@ add_session(Req) ->
 remove_session(Req) ->
     {ok, Req2} = cowboy_session:expire(Req),
     cowboy_req:reply(?STATUS_OK, Req2).
+
+
+str(Rec) ->
+    em_json:encode(#{
+        <<"id">> => Rec#user.id,
+        <<"name">> => Rec#user.name,
+        <<"email">> => Rec#user.email,
+        <<"readonly">> => Rec#user.readonly,
+        <<"admin">> => Rec#user.admin,
+        <<"map">> => Rec#user.map,
+        <<"language">> => Rec#user.language,
+        <<"distanceUnit">> => Rec#user.distanceUnit,
+        <<"speedUnit">> => Rec#user.speedUnit,
+        <<"latitude">> => Rec#user.latitude,
+        <<"longitude">> => Rec#user.longitude,
+        <<"zoom">> => Rec#user.zoom,
+        <<"password">> => <<"">>
+    }).
