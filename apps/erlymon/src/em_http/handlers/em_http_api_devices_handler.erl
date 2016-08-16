@@ -102,11 +102,16 @@ add_device(Req, User) ->
   ]),
   case Result of
     {ok, DeviceModel} ->
-      {ok, Device} = em_data_manager:create_device(DeviceModel),
-      em_data_manager:link_device(#permission{userId = User#user.id, deviceId = Device#device.id}),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2);
+      case em_data_manager:create_device(DeviceModel) of
+        {ok, Device} ->
+          em_data_manager:link_device(#permission{userId = User#user.id, deviceId = Device#device.id}),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2);
+        {error, [Reason|_]} ->
+          em_logger:info("REASON: ~s", [Reason]),
+          cowboy_req:reply(?STATUS_UNKNOWN, [], Reason, Req2)
+      end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req2)
   end.
 
 -spec update_device(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().

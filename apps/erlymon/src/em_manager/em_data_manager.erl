@@ -198,7 +198,7 @@ get_users() ->
 
 
 create_device(Device) ->
-    em_model_device:create(Device).
+    em_storage:create_device(Device).
 
 create_device(UserId, DeviceName, DeviceUniqueId) ->
     case em_storage_device:create(DeviceName, DeviceUniqueId) of
@@ -262,7 +262,7 @@ convert_date_in_device(Device) ->
   maps:put(<<"lastUpdate">>, Date, Device).
 
 link_device(Permission) ->
-    em_model_permission:create(Permission).
+    em_storage:create_permission(Permission).
 
 unlink_device(Permission) ->
-  em_model_permission:delete(Permission).
+  em_storage:delete_permission(Permission).
