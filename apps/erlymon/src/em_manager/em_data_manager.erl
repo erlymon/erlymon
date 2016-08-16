@@ -94,7 +94,7 @@ get_server() ->
   em_storage:get_server().
 
 update_server(Server) ->
-    em_model_server:update(Server).
+    em_storage:update_server(Server).
 
 create_message(DeviceModel, PositionModel) ->
   case em_model_position:get(DeviceModel#device.id, PositionModel#position.deviceTime) of

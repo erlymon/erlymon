@@ -83,13 +83,13 @@ update_server(Req) ->
         {undefined, Req2} ->
           cowboy_req:reply(?STATUS_BAD_REQUEST, Req2);
         {User, Req2} ->
-          em_logger:info("User: ~w", [maps:get(<<"id">>,User)]),
-          case em_permissions_manager:check_admin(maps:get(<<"id">>, User)) of
+          em_logger:info("User: ~w", [User#user.id]),
+          case em_permissions_manager:check_admin(User#user.id) of
             false ->
               cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
             _ ->
               em_data_manager:update_server(Server),
-              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_server:to_str(Server), Req2)
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Server), Req2)
           end
       end;
     {error, Reason} ->
