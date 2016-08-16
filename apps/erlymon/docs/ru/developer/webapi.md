@@ -245,7 +245,7 @@ server: Cowboy
 ### Удалить пользователя
 
 ```sh
-$ http --json DELETE localhost:8082/api/users/37 'Cookie:JSESSIONID=1e3lt2gnqxzj1sk5gigg29s94;Path=/api' id:=37
+$ http --json DELETE localhost:8082/api/users/37 'Cookie:session=c2a288ca-e1e0-4c92-82e3-a3784a809614; Version=1; Path=/i' id:=37
 
 HTTP/1.1 200 OK
 content-length: 85

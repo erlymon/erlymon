@@ -162,15 +162,15 @@ convert_date_in_message(Message) ->
   maps:put(<<"serverTime">>, ServerTime, NewMessage1).
 
 create_user(User) ->
-    case em_model_user:get_by_email(User#user.email) of
+    case em_storage:get_user_by_email(User#user.email) of
       {error, _Reason} ->
-            em_model_user:create(User);
+            em_storage:create_user(User);
         _ ->
           {error, <<"Duplicate email">>}
     end.
 
 update_user(User) ->
-  em_model_user:update(User).
+  em_storage:update_user(User).
 
 
 
@@ -178,7 +178,7 @@ update_user(UserId, Field, Value) ->
     em_storage_user:update(UserId, Field, Value).
 
 delete_user(User) ->
-    em_model_user:delete(User).
+    em_storage:delete_user(User).
 
 check_user(Email, Password) ->
   CheckPass = fun(Password, User = #user{hashPassword = HashPassword}) ->
@@ -193,7 +193,7 @@ check_user(Email, Password) ->
   end.
 
 get_users() ->
-    em_model_user:get_all().
+    em_storage:get_users().
 
 
 

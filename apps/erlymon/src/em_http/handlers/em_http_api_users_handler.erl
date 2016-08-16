@@ -72,7 +72,7 @@ get_users(Req, User) ->
       cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
     _ ->
       {ok, Users} = em_data_manager:get_users(),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(Users), Req)
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Users), Req)
   end.
 
 -spec add_user(Req :: cowboy_req:req()) -> cowboy_req:req().
@@ -91,10 +91,10 @@ add_user(Req) ->
             cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
           _ ->
             case em_data_manager:create_user(UserModel) of
-              {error, _Reason} ->
-                cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+              {error, Reason} ->
+                cowboy_req:reply(?STATUS_FORBIDDEN, [], Reason, Req2);
               {ok, User} ->
-                cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(User), Req2)
+                cowboy_req:reply(?STATUS_OK, ?HEADERS, str(User), Req2)
             end
         end;
     _Reason ->
@@ -125,10 +125,10 @@ add_user(Req, User) ->
               cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
             _ ->
               case em_data_manager:create_user(UserModel) of
-                {error, _Reason} ->
-                  cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+                {error, Reason} ->
+                  cowboy_req:reply(?STATUS_FORBIDDEN, [], Reason, Req2);
                 {ok, NewUser} ->
-                  cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(NewUser), Req2)
+                  cowboy_req:reply(?STATUS_OK, ?HEADERS, str(NewUser), Req2)
               end
           end;
     _Reason ->
@@ -160,7 +160,7 @@ remove_user(Req, User) ->
                 cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
               _ ->
                 em_data_manager:delete_user(UserModel),
-                cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(UserModel), Req2)
+                cowboy_req:reply(?STATUS_OK, ?HEADERS, str(UserModel), Req2)
             end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
@@ -190,7 +190,7 @@ update_user(Req, CurrUser) ->
           cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
         _ ->
           em_data_manager:update_user(UserModel),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_user:to_str(UserModel), Req2)
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(UserModel), Req2)
       end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
@@ -202,3 +202,26 @@ check_permission(CurrUserId, UpdateUserId) when CurrUserId == UpdateUserId ->
   true;
 check_permission(CurrUserId, _) ->
   em_permissions_manager:check_admin(CurrUserId).
+
+str(Recs) when is_list(Recs) ->
+  em_logger:info("CONVERT RECORDS: ~w", [Recs]),
+  em_json:encode(lists:map(fun(Rec) -> rec_to_map(Rec) end, Recs));
+str(Rec) ->
+  em_json:encode(rec_to_map(Rec)).
+
+rec_to_map(Rec) ->
+  #{
+    <<"id">> => Rec#user.id,
+    <<"name">> => Rec#user.name,
+    <<"email">> => Rec#user.email,
+    <<"readonly">> => Rec#user.readonly,
+    <<"admin">> => Rec#user.admin,
+    <<"map">> => Rec#user.map,
+    <<"language">> => Rec#user.language,
+    <<"distanceUnit">> => Rec#user.distanceUnit,
+    <<"speedUnit">> => Rec#user.speedUnit,
+    <<"latitude">> => Rec#user.latitude,
+    <<"longitude">> => Rec#user.longitude,
+    <<"zoom">> => Rec#user.zoom,
+    <<"password">> => <<"">>
+  }.
