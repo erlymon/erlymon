@@ -236,7 +236,19 @@ delete_device(UserId, DeviceId) ->
 
 
 get_devices(UserId) ->
-    em_model_device:get_devices(UserId).
+  Callback = fun(Permission = #permission{deviceId = DeviceId}, Acc) ->
+                em_logger:info("PERMISSION: ~w", [Permission]),
+                case em_storage:get_device_by_id(DeviceId) of
+                  {ok, Device} ->
+                    [Device | Acc];
+                  {error, _Reason} ->
+                    Acc
+                end
+             end,
+  {ok, Permissions} = em_storage:get_permissions_by_user_id(UserId),
+  Devices = lists:foldl(Callback, [], Permissions),
+  {ok, Devices}.
+
 
 get_device_by_uid(UniqueId) ->
   em_model_device:get_by_uid(UniqueId).

@@ -72,7 +72,7 @@ get_devices(Req, User) ->
           cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
         _ ->
           {ok, Devices} = em_data_manager:get_all_devices(),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Devices), Req)
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Devices), Req)
       end;
     {ok, #get_devices_params{all = false, userId = UserId}} ->
       case em_permissions_manager:check_user(User#user.id, get_user_id(UserId, User)) of
@@ -80,7 +80,7 @@ get_devices(Req, User) ->
           cowboy_req:reply(?STATUS_FORBIDDEN, Req);
         _ ->
           {ok, Devices} = em_data_manager:get_devices(get_user_id(UserId, User)),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Devices), Req)
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Devices), Req)
       end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
@@ -104,7 +104,7 @@ add_device(Req, User) ->
     {ok, DeviceModel} ->
       {ok, Device} = em_data_manager:create_device(DeviceModel),
       em_data_manager:link_device(#permission{userId = User#user.id, deviceId = Device#device.id}),
-      cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Device), Req2);
+      cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2);
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
@@ -128,7 +128,7 @@ update_device(Req, User) ->
           cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
         true ->
           em_data_manager:update_device(Device),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Device), Req2)
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2)
       end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
@@ -154,8 +154,25 @@ remove_device(Req, User) ->
         true ->
           em_data_manager:delete_device(Device),
           em_data_manager:unlink_device(#permission{deviceId = Device#device.id}),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, em_model_device:to_str(Device), Req2)
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2)
       end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
+
+str(Recs) when is_list(Recs) ->
+  em_logger:info("CONVERT RECORDS: ~w", [Recs]),
+  em_json:encode(lists:map(fun(Rec) -> rec_to_map(Rec) end, Recs));
+str(Rec) ->
+  em_json:encode(rec_to_map(Rec)).
+
+rec_to_map(Rec) ->
+  {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Rec#device.lastUpdate),
+  #{
+    <<"id">> => Rec#device.id,
+    <<"name">> => Rec#device.name,
+    <<"uniqueId">> => Rec#device.uniqueId,
+    <<"status">> => Rec#device.status,
+    <<"lastUpdate">> => Date,
+    <<"positionId">> => Rec#device.positionId
+  }.
