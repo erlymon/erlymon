@@ -38,6 +38,7 @@
 
          create_permission/1,
          delete_permission/1,
+         get_permission/2,
          get_permissions_by_user_id/1,
          get_permissions_by_device_id/1,
 
@@ -108,6 +109,11 @@ get_permissions_by_user_id(UserId) ->
 -spec(get_permissions_by_device_id(DeviceId :: non_neg_integer()) -> {ok, [#permission{}]} | {error, string() | [string()]}).
 get_permissions_by_device_id(DeviceId) ->
   gen_server:call(?SERVER, {get_permissions, #{<<"deviceId">> => DeviceId}}).
+
+-spec(get_permission(UserId :: non_neg_integer(), DeviceId :: non_neg_integer()) -> {ok, #permission{}} | {error, string() | [string()]}).
+get_permission(UserId, DeviceId) ->
+  gen_server:call(?SERVER, {get_permission, #{<<"userId">> => UserId, <<"deviceId">> => DeviceId}}).
+
 
 
 -spec(create_user(Rec :: #user{}) -> {ok, #user{}} | {error, string() | [string()]}).
@@ -251,8 +257,10 @@ handle_call({create_permission, Rec}, _From, State) ->
     {reply, do_create_permission(State, Rec), State};
 handle_call({delete_permission, Rec}, _From, State) ->
     {reply, do_delete_permission(State, Rec), State};
+handle_call({get_permission, Query}, _From, State) ->
+    {reply, do_get_permission(State, Query), State};
 handle_call({get_permissions, Query}, _From, State) ->
-    {reply, do_get_permissions(State, Query), State};
+  {reply, do_get_permissions(State, Query), State};
 
 handle_call({create_user, Rec}, _From, State) ->
     {reply, do_create_user(State, Rec), State};
@@ -400,7 +408,7 @@ do_create_server(#state{topology = Topology}, Rec) ->
 
 
 do_create_permission(#state{topology = Topology}, Rec) ->
-    Map = to_map(permission, Rec),
+    Map = to_map(permission, Rec#permission{id = gen_uid()}),
     Callback = fun(Worker) ->
                        mc_worker_api:insert(Worker, ?COLLECTION_PERMISSIONS, Map)
                end,
@@ -420,6 +428,14 @@ do_delete_permission(#state{topology = Topology}, Rec) ->
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission).
 
+
+do_get_permission(#state{topology = Topology}, Query) ->
+  Callback = fun(Conf) ->
+                mongoc:find_one(Conf, ?COLLECTION_PERMISSIONS, Query, #{}, 0)
+             end,
+  Item = mongoc:transaction_query(Topology, Callback),
+  em_logger:info("RESULT: ~w", [Item]),
+  do_get_result(Item, permission).
 
 do_get_permissions(#state{topology = Topology}, Query) ->
     Callback = fun(Conf) ->
@@ -580,12 +596,14 @@ do_create_result({{true, #{<<"n">> := 1}}, Item}, ItemType) ->
 do_create_result({{true, #{<<"n">> := 0, <<"writeErrors">> := WriteErrors}}, _}, _ItemType) ->
     {error, lists:map(fun(#{<<"errmsg">> := ErrMsg}) -> ErrMsg end, WriteErrors)}.
 
+do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 0}}, Item, ItemType) ->
+  {warning, <<"Not update item">>};
 do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 1}}, Item, ItemType) ->
-    {ok, from_map(ItemType, Item)};
-do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 0}}, _Item, _ItemType) ->
-    {warning, <<"Not update item">>};
+  {ok, from_map(ItemType, Item)};
 do_update_result({true, #{<<"n">> := 0, <<"nModified">> := 0, <<"writeErrors">> := WriteErrors}}, _Item, _ItemType) ->
-    {error, lists:map(fun(#{<<"errmsg">> := ErrMsg}) -> ErrMsg end, WriteErrors)}.
+    {error, lists:map(fun(#{<<"errmsg">> := ErrMsg}) -> ErrMsg end, WriteErrors)};
+do_update_result({true, #{<<"n">> := 0, <<"nModified">> := 0}}, _Item, _ItemType) ->
+  {warning, <<"Not update item">>}.
 
 do_delete_result({true, #{<<"n">> := 1}}, Item, ItemType) ->
     {ok, from_map(ItemType, Item)};

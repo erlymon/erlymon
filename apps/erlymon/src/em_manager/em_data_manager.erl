@@ -210,7 +210,7 @@ create_device(UserId, DeviceName, DeviceUniqueId) ->
     end.
 
 update_device(Device) ->
-    em_model_device:update(Device).
+    em_storage:update_device(Device).
 
 update_device(UserId, DeviceId, Field, Value) ->
     case em_storage_permission:get(UserId, DeviceId) of
@@ -222,7 +222,7 @@ update_device(UserId, DeviceId, Field, Value) ->
     end.
 
 delete_device(Device) ->
-    em_model_device:delete(Device).
+    em_storage:delete_device(Device).
 
 delete_device(UserId, DeviceId) ->
     case em_storage_permission:get(UserId, DeviceId) of
