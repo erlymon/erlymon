@@ -61,7 +61,7 @@
 
 -export([
   create_message/2,
-  get_messages/3,
+  get_positions/3,
   get_last_message/2
 ]).
 
@@ -130,15 +130,8 @@ create_message(DeviceId, Protocol, MessageParams) ->
         null
     end.
 
-get_messages(DeviceId, TimeFrom, TimeTo) ->
-    em_logger:info("get_messages => Device ID: ~w, From: ~w, To: ~w", [DeviceId, TimeFrom, TimeTo]),
-    GetMessage = fun(Message, Acc) ->
-                        [convert_date_in_message(Message)|Acc]
-          end,
-    Cursor = em_storage_message:get(DeviceId, TimeFrom, TimeTo),
-    Messages = em_storage_cursor:foldl(GetMessage, [], Cursor),
-    em_storage_cursor:close(Cursor),
-    Messages.
+get_positions(DeviceId, TimeFrom, TimeTo) ->
+    em_storage:get_positions(DeviceId, TimeFrom, TimeTo).
 
 get_last_message(MessageId, DeviceId) ->
     Message = em_storage_message:get(#{<<"id">> => MessageId, <<"deviceId">> => DeviceId}),

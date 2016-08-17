@@ -70,9 +70,39 @@ get_positions(Req, User) ->
             _ ->
               {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.from),
               {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.to),
-              Messages = em_data_manager:get_messages(Params#qs_params.deviceId, TimeFrom, TimeTo),
-              cowboy_req:reply(?STATUS_OK, ?HEADERS, em_json:encode(Messages), Req)
+              {ok, Positions} = em_data_manager:get_positions(Params#qs_params.deviceId, TimeFrom, TimeTo),
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Positions), Req)
           end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
+
+
+str(Recs) when is_list(Recs) ->
+  em_logger:info("CONVERT RECORDS: ~w", [Recs]),
+  em_json:encode(lists:map(fun(Rec) -> rec_to_map(Rec) end, Recs));
+str(Rec) ->
+  em_json:encode(rec_to_map(Rec)).
+
+rec_to_map(Rec) ->
+  {ok, ServerTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Rec#position.serverTime),
+  {ok, DeviceTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Rec#position.deviceTime),
+  {ok, FixTime} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, Rec#position.fixTime),
+  #{
+    <<"id">> => Rec#position.id,
+    <<"type">> => Rec#position.type,
+    <<"protocol">> => Rec#position.protocol,
+    <<"serverTime">> => ServerTime,
+    <<"deviceTime">> => DeviceTime,
+    <<"fixTime">> => FixTime,
+    <<"deviceId">> => Rec#position.deviceId,
+    <<"outdated">> => Rec#position.outdated,
+    <<"valid">> => Rec#position.valid,
+    <<"latitude">> => Rec#position.latitude,
+    <<"longitude">> => Rec#position.longitude,
+    <<"altitude">> => Rec#position.altitude,
+    <<"speed">> => Rec#position.speed,
+    <<"course">> => Rec#position.course,
+    <<"address">> => Rec#position.address,
+    <<"attributes">> => Rec#position.attributes
+  }.
