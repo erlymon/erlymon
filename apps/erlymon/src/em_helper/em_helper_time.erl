@@ -34,8 +34,10 @@
   timestamp/0
 ]).
 
-format(Format, Utc) ->
-  tempo:format_unix(Format, Utc div 1000000).
+format(Format, Utc) when is_integer(Utc) ->
+  tempo:format_unix(Format, Utc div 1000000);
+format(Format,_) ->
+  tempo:format_unix(Format, 0).
 
 parse(Format, Bin) ->
   case tempo:parse_unix(Format, Bin) of
