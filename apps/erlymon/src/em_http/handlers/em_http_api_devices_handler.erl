@@ -98,7 +98,10 @@ add_device(Req, User) ->
   Result = emodel:from_map(em_json:decode(JsonBin), #device{}, [
     {<<"id">>, required, integer, #device.id, []},
     {<<"name">>, required, string, #device.name, []},
-    {<<"uniqueId">>, required, string, #device.uniqueId, []}
+    {<<"uniqueId">>, required, string, #device.uniqueId, []},
+    {<<"status">>, optional, string, #device.status, []},
+    {<<"lastUpdate">>, optional, string, #device.lastUpdate, []},
+    {<<"positionId">>, optional, integer, #device.positionId, []}
   ]),
   case Result of
     {ok, DeviceModel} ->
