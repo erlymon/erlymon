@@ -62,7 +62,7 @@
 -export([
   create_message/2,
   get_positions/3,
-  get_last_message/2
+  get_last_position/2
 ]).
 
 
@@ -133,14 +133,8 @@ create_message(DeviceId, Protocol, MessageParams) ->
 get_positions(DeviceId, TimeFrom, TimeTo) ->
     em_storage:get_positions(DeviceId, TimeFrom, TimeTo).
 
-get_last_message(MessageId, DeviceId) ->
-    Message = em_storage_message:get(#{<<"id">> => MessageId, <<"deviceId">> => DeviceId}),
-    case (maps:size(Message) =:= 0) of
-        true ->
-            null;
-        false ->
-          convert_date_in_message(Message)
-    end.
+get_last_position(PositionId, DeviceId) ->
+    em_storage:get_last_position(PositionId,  DeviceId).
 
 
 convert_date_in_message(Message) ->

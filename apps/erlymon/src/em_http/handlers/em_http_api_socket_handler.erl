@@ -50,11 +50,11 @@ init(Req, Opts) ->
             em_helper_process:reg({p, l, {user, User#user.id}}),
             {ok, Devices} = em_data_manager:get_devices(User#user.id),
             GetLastPosition = fun(Device, Acc) ->
-                                      case em_data_manager:get_last_message(Device#device.positionId, Device#device.id) of
-                                          null ->
+                                      case em_data_manager:get_last_position(Device#device.positionId, Device#device.id) of
+                                          {error, _Reason} ->
                                               Acc;
-                                          Message ->
-                                              [Message | Acc]
+                                          {ok, Position} ->
+                                              [Position | Acc]
                                       end
                               end,
             Positions = lists:foldl(GetLastPosition, [], Devices),
