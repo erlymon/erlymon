@@ -57,6 +57,7 @@ add_permission(Req, User) ->
   %%PermissionModel = em_json:decode(JsonBin),
   em_logger:info("ADD PERMISSION JSON: ~s", [JsonBin]),
   Result = emodel:from_map(em_json:decode(JsonBin), #permission{}, [
+    {<<"id">>, optional, integer, #permission.id, []},
     {<<"userId">>, required, integer, #permission.userId, []},
     {<<"deviceId">>, required, integer, #permission.deviceId, []}
   ]),
@@ -80,6 +81,7 @@ remove_permission(Req, User) ->
   %%PermissionModel = em_json:decode(JsonBin),
   em_logger:info("REMOVE PERMISSION JSON: ~s", [JsonBin]),
   Result = emodel:from_map(em_json:decode(JsonBin), #permission{}, [
+    {<<"id">>, optional, integer, #permission.id, []},
     {<<"userId">>, required, integer, #permission.userId, []},
     {<<"deviceId">>, required, integer, #permission.deviceId, []}
   ]),

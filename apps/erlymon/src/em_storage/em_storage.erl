@@ -632,6 +632,7 @@ from_map(server, Map) ->
       };
 from_map(permission, Map) ->
     #permission{
+       id = maps:get(<<"id">>, Map, 0),
        userId = maps:get(<<"userId">>, Map, 0),
        deviceId = maps:get(<<"deviceId">>, Map, 0)
       };
@@ -699,6 +700,7 @@ to_map(server, Rec) ->
      };
 to_map(permission, Rec) ->
     #{
+       <<"id">> => Rec#permission.id,
        <<"userId">> => Rec#permission.userId,
        <<"deviceId">> => Rec#permission.deviceId
      };

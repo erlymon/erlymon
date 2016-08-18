@@ -248,7 +248,7 @@ get_device_by_uid(UniqueId) ->
 
 
 get_all_devices() ->
-    em_model_device:get_all().
+    em_storage:get_devices().
 
 convert_date_in_device(Device) ->
   {ok, Date} = em_helper_time:format(<<"%Y-%m-%dT%H:%M:%S.000%z">>, maps:get(<<"lastUpdate">>, Device)),
