@@ -21,7 +21,8 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
+-ifndef(HTTP_HRL).
+-define(HTTP_HRL, true).
 
 -record(server, {
   id = 0 :: integer(),
@@ -96,6 +97,10 @@
   deviceId = 0 :: integer()
 }).
 
+-record(event, {
+  devices = [] :: list(),
+  positions = [] :: list()
+}).
 
 %%  Device
 -define(STATUS_UNKNOWN, <<"unknown">>).
@@ -165,3 +170,5 @@
 -define(KEY_TIMEZONE, <<"timezone">>).
 -define(KEY_DEVICE_PASSWORD, <<"devicePassword">>).
 -define(KEY_RADIUS, <<"radius">>).
+
+-endif. % HTTP_HRL

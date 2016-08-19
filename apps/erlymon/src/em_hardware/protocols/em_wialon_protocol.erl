@@ -114,7 +114,7 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
               ?KEY_IP => em_hardware:resolve(Socket)
             }
           },
-          case em_data_manager:create_message(Device, Position) of
+          case em_data_manager:create_position(Device, Position) of
             {ok, _} -> send_packet(State, <<"#AD#1">>);
             _ -> send_packet(State, <<"#AD#0">>)
           end,

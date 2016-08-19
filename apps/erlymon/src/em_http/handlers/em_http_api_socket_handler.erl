@@ -58,18 +58,16 @@ init(Req, Opts) ->
                                       end
                               end,
             Positions = lists:foldl(GetLastPosition, [], Devices),
-            notify(User#user.id, init, {[], Positions}),
+            notify(User#user.id, positions, Positions),
             {cowboy_websocket, Req2, Opts}
     end.
 
 websocket_handle(_Data, Req, State) ->
     {ok, Req, State}.
 
-websocket_info({init, {Devices, Positions}}, Req, State) ->
-    {reply, {text, em_json:encode(#{<<"devices">> => Devices, <<"positions">> => Positions})}, Req, State};
 websocket_info({devices, Devices}, Req, State) ->
-    {reply, {text, em_json:encode(#{<<"devices">> => Devices})}, Req, State};
+    {reply, {text, em_json:encode(#{<<"devices">> => em_http:str(Devices)})}, Req, State};
 websocket_info({positions, Positions}, Req, State) ->
-    {reply, {text, em_json:encode(#{<<"positions">> => Positions})}, Req, State};
+    {reply, {text, em_json:encode(#{<<"positions">> => em_http:str(Positions)})}, Req, State};
 websocket_info(_Info, Req, State) ->
     {ok, Req, State}.
