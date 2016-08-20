@@ -21,8 +21,8 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--ifndef(HTTP_HRL).
--define(HTTP_HRL, true).
+-ifndef(RECORDS_HRL).
+-define(RECORDS_HRL, true).
 
 -record(server, {
   id = 0 :: integer(),
@@ -171,4 +171,4 @@
 -define(KEY_DEVICE_PASSWORD, <<"devicePassword">>).
 -define(KEY_RADIUS, <<"radius">>).
 
--endif. % HTTP_HRL
+-endif. % RECORDS_HRL

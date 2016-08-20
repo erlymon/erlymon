@@ -31,14 +31,14 @@
 -export([init/2]).
 -export([websocket_handle/3]).
 -export([websocket_info/3]).
--export([notify/3]).
+-export([notify/2]).
 
 
 %% http://blog.dberg.org/2012/04/using-gproc-and-cowboy-to-pass-messages.html
 %% http://ninenines.eu/docs/en/cowboy/HEAD/guide/ws_handlers/
 
-notify(UserId, EventType, EventData) ->
-    em_helper_process:send({p, l, {user, UserId}}, {EventType, EventData}).
+notify(UserId, Event) ->
+    em_helper_process:send({p, l, {user, UserId}}, {event, Event}).
 
 init(Req, Opts) ->
     case cowboy_session:get(user, Req) of
@@ -58,16 +58,15 @@ init(Req, Opts) ->
                                       end
                               end,
             Positions = lists:foldl(GetLastPosition, [], Devices),
-            notify(User#user.id, positions, Positions),
+            notify(User#user.id, #event{positions = Positions}),
             {cowboy_websocket, Req2, Opts}
     end.
 
 websocket_handle(_Data, Req, State) ->
     {ok, Req, State}.
 
-websocket_info({devices, Devices}, Req, State) ->
-    {reply, {text, em_json:encode(#{<<"devices">> => em_http:str(Devices)})}, Req, State};
-websocket_info({positions, Positions}, Req, State) ->
-    {reply, {text, em_json:encode(#{<<"positions">> => em_http:str(Positions)})}, Req, State};
+websocket_info({event, Event}, Req, State) ->
+    em_logger:info("EVENT: ~w", [Event]),
+    {reply, {text, em_http:str(Event)}, Req, State};
 websocket_info(_Info, Req, State) ->
     {ok, Req, State}.

@@ -214,7 +214,7 @@ send_packet(#state{socket = Socket, transport = Transport}, Bin) ->
   Transport:send(Socket, <<Bin/binary, "\r\n">>).
 
 test() ->
-  Packet = <<"#D#030816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n">>,
+  Packet = <<"#D#110816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n">>,
   {ok, Pattern} = re:compile(?PATTERN),
   parse(<<"D">>, Packet, Pattern).
 

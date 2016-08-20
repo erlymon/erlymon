@@ -553,7 +553,7 @@ do_get_device(#state{topology = Topology}, Query) ->
 
 
 do_create_position(#state{topology = Topology}, Rec) ->
-    ServerTime = bson:unixtime_to_secs(bson:timenow()),
+    ServerTime = em_helper_time:timestamp(),
     DeviceTime = Rec#position.deviceTime,
     Map = to_map(position, Rec#position{
                              id = gen_uid(),

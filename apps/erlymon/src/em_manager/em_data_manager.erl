@@ -99,7 +99,10 @@ update_server(Server) ->
 create_position(DeviceModel, PositionModel) ->
       case em_storage:create_position(PositionModel) of
         {ok, Position} ->
-          em_storage:update_device(DeviceModel#device{positionId = Position#position.id}),
+          em_storage:update_device(DeviceModel#device{
+            positionId = Position#position.id,
+            lastUpdate = em_helper_time:timestamp()
+          }),
           case em_storage:get_device_by_id(DeviceModel#device.id) of
             {ok, Device} ->
               em_manager_event:broadcast(Device, Position),

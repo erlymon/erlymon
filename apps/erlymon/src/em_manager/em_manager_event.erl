@@ -125,8 +125,8 @@ handle_call(_Request, _From, State) ->
 handle_cast({broadcast, {Device, Position}}, State) ->
   SendNotify = fun(Permission) ->
                   em_logger:info("Permission: ~w", [Permission]),
-                  em_http_api_socket_handler:notify(Permission#permission.userId, positions, [Position]),
-                  em_http_api_socket_handler:notify(Permission#permission.userId, devices, [Device])
+                  em_http_api_socket_handler:notify(Permission#permission.userId, #event{positions = [Position]}),
+                  em_http_api_socket_handler:notify(Permission#permission.userId, #event{devices = [Device]})
                end,
   {ok, Permissions} = em_storage:get_permissions_by_device_id(Position#position.deviceId),
   lists:map(SendNotify, Permissions),
