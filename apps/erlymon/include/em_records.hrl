@@ -125,6 +125,7 @@
 -define(KEY_MCC, <<"mcc">>).
 -define(KEY_MNC, <<"mnc">>).
 -define(KEY_LAC, <<"lac">>).
+-define(KEY_CELL, <<"cell">>).
 -define(KEY_CID, <<"cid">>).
 -define(KEY_FUEL, <<"fuel">>).
 -define(KEY_RFID, <<"rfid">>).
