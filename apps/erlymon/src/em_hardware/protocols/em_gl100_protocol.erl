@@ -26,6 +26,8 @@
 
 -behaviour(ranch_protocol).
 
+-include("em_records.hrl").
+
 %% API
 -export([start_link/4]).
 -export([init/4]).
@@ -86,14 +88,21 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
   case Transport:recv(Socket, 0, 5000) of
     {ok, Data} ->
       em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
-      {Imei, Message} = parse(Data, Pattern),
+      {Imei, PositionModel} = parse(Data, Pattern),
       case em_data_manager:get_device_by_uid(Imei) of
-        null ->
+        {error, _Reason} ->
           em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
           Transport:close(Socket);
-        Object ->
-          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' message: ~s", [em_hardware:resolve(Socket), maps:get(<<"id">>, Object), Imei, em_json:encode(Message)]),
-          em_data_manager:create_message(maps:get(<<"id">>, Object), Protocol, maps:merge(#{imei => maps:get(<<"uniqueId">>, Object)}, Message)),
+        {ok, Object} ->
+          Position = PositionModel#position{
+            deviceId = Object#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            }
+          },
+          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Object#device.id, Imei, Position]),
+          em_data_manager:create_position(Object, Position),
           loop(State#state{device = Object})
       end;
     _ ->
@@ -105,16 +114,16 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
 parse(Data, Pattern) -> 
     case data_match(Data, Pattern) of
         [_, Imei, Validity, Speed, Course, Altitude, Longitude, Latitude, Year, Month, Day, Hour, Minute, Second | _] ->
-            Message = #{
-              <<"deviceTime">> => parse_date(Year, Month, Day, Hour, Minute, Second),
-              <<"latitude">> => parse_coord(Latitude),
-              <<"longitude">> => parse_coord(Longitude),
-              <<"altitude">> => parse_altitude(Altitude),
-              <<"speed">> => parse_speed(Speed),
-              <<"course">> => parse_course(Course),
-              <<"valid">> => parse_valid(Validity)
-             },
-            {Imei, Message};
+            Position = #position{
+              deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
+              latitude = parse_coord(Latitude),
+              longitude = parse_coord(Longitude),
+              speed = parse_speed(Speed),
+              course = parse_course(Course),
+              altitude = parse_altitude(Altitude),
+              valid = parse_valid(Validity)
+            },
+            {Imei, Position};
         _ ->
             {}
     end.
@@ -155,6 +164,7 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
         list_to_integer(binary_to_list(Second)) 
       }
      },
+    em_logger:info("DATE: ~w", [Date]),
     em_helper_time:datetime_to_utc(Date).
 
 data_match(Data, Pattern) ->

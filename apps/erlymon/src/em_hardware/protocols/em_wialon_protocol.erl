@@ -135,7 +135,7 @@ parse(<<"D">>, Data, Pattern) ->
     %% [_, Day, Month, Year, Hour, Minute, Second, LatDeg, LatMin, LatHem, LonDeg, LonMin, LonHem, Speed, Course, Altitude, Satellites, Hdop, Inputs, Outputs, Adc, IButton, Params | _]
     [_, Day, Month, Year, Hour, Minute, Second, LatDeg, LatMin, LatHem, LonDeg, LonMin, LonHem, Speed, Course, Altitude | _] ->
       Position = #position{
-        deviceTime = parse_date(Day, Month, Year, Hour, Minute, Second),
+        deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
         latitude = parse_coordinate(deg_min_hem, {LatDeg, LatMin, LatHem}),
         longitude = parse_coordinate(deg_min_hem, {LonDeg, LonMin, LonHem}),
         speed = parse_speed(Speed),
