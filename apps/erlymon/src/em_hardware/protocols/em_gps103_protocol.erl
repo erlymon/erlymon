@@ -26,6 +26,8 @@
 
 -behaviour(ranch_protocol).
 
+-include("em_records.hrl").
+
 %% API
 -export([start_link/4]).
 -export([init/4]).
@@ -48,14 +50,21 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport}
   case Transport:recv(Socket, 0, 5000) of
     {ok, Data} ->
       em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
-      {Imei, Message} = parse(Data),
+      {Imei, PositionModel} = parse(Data),
       case em_data_manager:get_device_by_uid(Imei) of
-        null ->
+        {error, _Reason} ->
           em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
           Transport:close(Socket);
-        Object ->
-          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' message: ~s", [em_hardware:resolve(Socket), maps:get(<<"id">>, Object), Imei, em_json:encode(Message)]),
-          em_data_manager:create_message(maps:get(<<"id">>, Object), Protocol, maps:merge(#{imei => maps:get(<<"uniqueId">>, Object)}, Message)),
+        {ok, Object} ->
+          Position = PositionModel#position{
+            deviceId = Object#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = maps:merge(PositionModel#position.attributes, #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            })
+          },
+          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Object#device.id, Imei, Position]),
+          em_data_manager:create_position(Object, Position),
           loop(State#state{device = Object})
       end;
     _ ->
@@ -66,18 +75,19 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport}
 % (echo -n -e "imei:123456789012345,help me,1201011201,,F,120100.000,A,6000.0000,N,13000.0000,E,0.00,;";) | nc -v localhost 5001
 parse(Data) when is_binary(Data) ->
   [Imei, Alarm, LocalDateTime, _, _Status, TimeUtc, Validity, Latitude, LatitudeType, Longitude, LongitudeType, Speed, _Course| _] = binary:split(Data, [<<",">>], [global]),
-  UtcTime = parse_date_time(LocalDateTime, TimeUtc),
   {LongitudeDegrees, LatitudeDegrees} = parse_coordinates({{Longitude, LongitudeType}, {Latitude, LatitudeType}}),
-  Message = #{
-    <<"deviceTime">> => UtcTime,
-    <<"latitude">> => LatitudeDegrees,
-    <<"longitude">> => LongitudeDegrees,
-    <<"speed">> => parse_speed(Speed),
-    <<"course">> => 0,
-    <<"valid">> =>parse_validity(Validity),
-    <<"alarm">> => Alarm
+  Position = #position{
+    deviceTime = parse_date_time(LocalDateTime, TimeUtc),
+    latitude = LatitudeDegrees,
+    longitude = LongitudeDegrees,
+    speed = parse_speed(Speed),
+    course = 0,
+    valid = parse_valid(Validity),
+    attributes = #{
+      ?KEY_ALARM => Alarm
+    }
   },
-  {parse_imei(Imei), Message}.
+  {parse_imei(Imei), Position}.
 
 parse_imei(ImeiData) when is_binary(ImeiData) ->
   [_, Imei|_] = binary:split(ImeiData, [<<":">>], [global]),
@@ -129,7 +139,7 @@ parse_speed(Speed) ->
 parse_course(Course) ->
   list_to_float(binary_to_list(Course)).
 
-parse_validity(Validity) when is_binary(Validity) ->
+parse_valid(Validity) when is_binary(Validity) ->
   binary_to_atom(Validity, utf8).
 
 test() ->
