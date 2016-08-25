@@ -25,6 +25,7 @@
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(ranch_protocol).
+-include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
@@ -66,135 +67,144 @@
 -define(END, <<".*\\*[0-9a-fA-F]{2}(?:\r\n)?">>).
 
 -define(PATTERN,
-  <<
-  ?FLAG/binary,
-  ?LENGTH/binary,
-  ?IMEI/binary,
-  ?COMMAND/binary,
-  ?OFFSET/binary,
-  ?EVENT/binary,
-  ?LATITUDE/binary,
-  ?LONGITUDE/binary,
-  ?DATE/binary,
-  ?TIME/binary,
-  ?VALIDITY/binary,
-  ?SATELLITES/binary,
-  ?GSM_SIGNAL/binary,
-  ?SPEED/binary,
-  ?COURSE/binary,
-  ?HDOP/binary,
-  ?ALTITUDE/binary,
-  ?ODOMETER/binary,
-  ?RUNTIME/binary,
-  ?CELL/binary,
-  ?STATE/binary,
-  ?ADC1/binary,
-  ?ADC2/binary,
-  ?ADC3/binary,
-  ?BATTERY/binary,
-  ?POWER/binary,
-  ?EVENT_SPECIFIC/binary,
-  ?RESERVED/binary,
-  ?PROTOCOL/binary,
-  ?FUEL/binary,
-  ?END/binary
-  >>
-).
+        <<
+          ?FLAG/binary,
+          ?LENGTH/binary,
+          ?IMEI/binary,
+          ?COMMAND/binary,
+          ?OFFSET/binary,
+          ?EVENT/binary,
+          ?LATITUDE/binary,
+          ?LONGITUDE/binary,
+          ?DATE/binary,
+          ?TIME/binary,
+          ?VALIDITY/binary,
+          ?SATELLITES/binary,
+          ?GSM_SIGNAL/binary,
+          ?SPEED/binary,
+          ?COURSE/binary,
+          ?HDOP/binary,
+          ?ALTITUDE/binary,
+          ?ODOMETER/binary,
+          ?RUNTIME/binary,
+          ?CELL/binary,
+          ?STATE/binary,
+          ?ADC1/binary,
+          ?ADC2/binary,
+          ?ADC3/binary,
+          ?BATTERY/binary,
+          ?POWER/binary,
+          ?EVENT_SPECIFIC/binary,
+          ?RESERVED/binary,
+          ?PROTOCOL/binary,
+          ?FUEL/binary,
+          ?END/binary
+        >>
+       ).
 
 -record(state, {protocol, transport, socket, timeout, device}).
 
 start_link(Ref, Socket, Transport, Opts) ->
-  Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Opts]),
-  {ok, Pid}.
+    Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Opts]),
+    {ok, Pid}.
 
 init(Ref, Socket, Transport, Opts) ->
-  ok = ranch:accept_ack(Ref),
-  Protocol = proplists:get_value(protocol, Opts),
-  loop(#state{protocol = Protocol, socket = Socket, transport = Transport}).
+    ok = ranch:accept_ack(Ref),
+    Protocol = proplists:get_value(protocol, Opts),
+    loop(#state{protocol = Protocol, socket = Socket, transport = Transport}).
 
 loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport}) ->
-  case Transport:recv(Socket, 0, 5000) of
-    {ok, Data} ->
-      em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
-      case parse(Data) of 
-          {Imei, Message} ->
-              em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), Imei, Message]),
-              case em_data_manager:get_device_by_uid(Imei) of
-                  null ->
-                      em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
-                      Transport:close(Socket);
-                  Object ->
-		      em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"id">>, Object), Imei, Message]),
-                      em_data_manager:create_message(maps:get(<<"id">>, Object), Protocol, maps:merge(#{imei => maps:get(<<"uniqueId">>, Object)}, Message)),
-                      loop(State#state{device = Object})
-              end;
-          _ ->
-              Transport:close(Socket)
-      end;
-    _ ->
-      Transport:close(Socket)
-  end.
+    case Transport:recv(Socket, 0, 5000) of
+        {ok, Data} ->
+            em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
+            case parse(Data) of
+                {Imei, PositionModel} ->
+                    em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), Imei, PositionModel]),
+                    case em_data_manager:get_device_by_uid(Imei) of
+                        {error, _Reason} ->
+                            em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
+                            Transport:close(Socket);
+                        {ok, Object} ->
+                            Position = PositionModel#position{
+                                         deviceId = Object#device.id,
+                                         protocol = atom_to_binary(Protocol, utf8),
+                                         attributes = maps:merge(PositionModel#position.attributes, #{
+                                                                                          ?KEY_IP => em_hardware:resolve(Socket)
+                                                                                         })
+                                        },
+                            em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Object#device.id, Imei, Position]),
+                            em_data_manager:create_position(Object, Position),
+                            loop(State#state{device = Object})
+                    end;
+                _ ->
+                    Transport:close(Socket)
+            end;
+        _ ->
+            Transport:close(Socket)
+    end.
 
 %% echo "20. meitrack"
 %% (echo -n -e "\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n";) | nc -v localhost 5020
 parse(Data) ->
-  case em_regexp:match(Data, ?PATTERN) of
-    {match, [_, Imei, _Event, Latitude, Longitude, Year, Month, Day, Hour, Minute, Second, Validity, Satellites, _GsmSignal, Speed, Course, _Hdop, Altitude, _Odometer, _Runtime, _Cell, _State, _Adc1, _Adc2, _Adc3, _Battery, Power|_]} ->
-      Message = #{
-        <<"deviceTime">> => parse_date(Year, Month, Day, Hour, Minute, Second),
-        <<"latitude">> => list_to_float(binary_to_list(Latitude)),
-        <<"longitude">> => list_to_float(binary_to_list(Longitude)),
-        <<"altitude">> => parse_altitude(Altitude),
-        <<"speed">> => parse_speed(Speed),
-        <<"course">> => parse_course(Course),
-        <<"satellites">> => parse_satellites(Satellites),
-        <<"valid">> => parse_valid(Validity),
-        <<"power">> => parse_power(Power)
-      },
-      {Imei, Message};
-    _ ->
-      {}
-  end.
+    case em_regexp:match(Data, ?PATTERN) of
+        {match, [_, Imei, _Event, Latitude, Longitude, Year, Month, Day, Hour, Minute, Second, Validity, Satellites, _GsmSignal, Speed, Course, _Hdop, Altitude, _Odometer, _Runtime, _Cell, _State, _Adc1, _Adc2, _Adc3, _Battery, Power|_]} ->
+            Position = #position{
+                          deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
+                          latitude = list_to_float(binary_to_list(Latitude)),
+                          longitude = list_to_float(binary_to_list(Longitude)),
+                          altitude = parse_altitude(Altitude),
+                          speed = parse_speed(Speed),
+                          course = parse_course(Course),
+                          valid = parse_valid(Validity),
+                          attributes = #{
+                            ?KEY_SATELLITES => parse_satellites(Satellites),
+                            ?KEY_POWER => parse_power(Power)
+                           }
+                         },
+            {Imei, Position};
+        _ ->
+            {}
+    end.
 
 parse_satellites(Satteliates) ->
-  list_to_integer(binary_to_list(Satteliates)).
+    list_to_integer(binary_to_list(Satteliates)).
 
 parse_power(Power) ->
-  list_to_integer(binary_to_list(Power)).
+    list_to_integer(binary_to_list(Power)).
 
 parse_altitude(Altitude) ->
-  list_to_integer(binary_to_list(Altitude)).
+    list_to_integer(binary_to_list(Altitude)).
 
 parse_speed(Speed) ->
-  list_to_integer(binary_to_list(Speed)).
+    list_to_integer(binary_to_list(Speed)).
 
 parse_course(Course) ->
-  list_to_integer(binary_to_list(Course)).
+    list_to_integer(binary_to_list(Course)).
 
 parse_valid(Validity) when Validity == <<"A">> ->
-  true;
+    true;
 parse_valid(Validity) when Validity == <<"V">> ->
-  false.
+    false.
 
 
-%parse_device_id(DeviceId) ->
-%    list_to_integer(binary_to_list(DeviceId)).
+                                                %parse_device_id(DeviceId) ->
+                                                %    list_to_integer(binary_to_list(DeviceId)).
 
 parse_date(Year, Month, Day, Hour, Minute, Second) ->
-  Date = {
-    {
-      list_to_integer(binary_to_list(Year)) + 2000,
-      list_to_integer(binary_to_list(Month)),
-      list_to_integer(binary_to_list(Day))
-    },
-    {
-      list_to_integer(binary_to_list(Hour)),
-      list_to_integer(binary_to_list(Minute)),
-      list_to_integer(binary_to_list(Second))
-    }
-  },
-  em_helper_time:datetime_to_utc(Date).
+    Date = {
+      {
+        list_to_integer(binary_to_list(Year)) + 2000,
+        list_to_integer(binary_to_list(Month)),
+        list_to_integer(binary_to_list(Day))
+      },
+      {
+        list_to_integer(binary_to_list(Hour)),
+        list_to_integer(binary_to_list(Minute)),
+        list_to_integer(binary_to_list(Second))
+      }
+     },
+    em_helper_time:datetime_to_utc(Date).
 
 test() ->
-  Packet = <<"\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n">>,
-  parse(Packet).
+    Packet = <<"\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n">>,
+    parse(Packet).
