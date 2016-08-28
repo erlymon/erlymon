@@ -25,112 +25,98 @@
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 
+-include("em_http.hrl").
+-include("em_records.hrl").
+
 %% API
 -export([init/2]).
--export([parse_param/2]).
 
+-record(osmand_message, {
+  id = <<"">>:: string(),
+  deviceId = <<"">>:: string(),
+  timestamp = 0 :: integer(),
+  lat = 0.0 :: float(),
+  lon = 0.0 :: float(),
+  speed = 0.0 :: float(),
+  bearing = 0.0 :: float(),
+  heading = 0.0 :: float(),
+  altitude = 0.0 :: float(),
+  batt = 0.0 :: float(),
+  hdop = 0.0 :: float(),
+  valid = false :: boolean()
+}).
 %% http://localhost:5055/?id=123456&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}
 %% id=353490069161244&timestamp=1440085518&lat=53.944019&lon=27.6468195&speed=0.0&bearing=0.0&altitude=0.0&batt=53.0
+%% httpi request => http GET localhost:5055 id==123456789012345 timestamp==1440085518 lat==53.944019 lon==27.6468195 speed==0.0 bearing==0.0 altitude==0.0 batt==53.0
 init(Req, Opts) ->
     io:format("OPTS: ~w", [Opts]),
     Method = cowboy_req:method(Req),
     em_logger:info("URL: ~s", [cowboy_req:url(Req)]),
     Qs = cowboy_req:parse_qs(Req),
-    Imei = proplists:get_value(<<"id">>, Qs, undefined),
-    Timestamp = proplists:get_value(<<"timestamp">>, Qs, undefined),
-    Lat = proplists:get_value(<<"lat">>, Qs, undefined),
-    Lon = proplists:get_value(<<"lon">>, Qs, undefined),
-    BaseParams = #{
-      <<"deviceTime">> => parse_time(Timestamp),
-      <<"latitude">> => parse_coord(Lat),
-      <<"longitude">> => parse_coord(Lon),
-      <<"valid">> => true
-     },
-    {ok, echo(Method, Imei, BaseParams, Req), Opts}.
+    {ok, request(Method, Qs, Req), Opts}.
 
-echo(<<"GET">>, Imei, BaseParams, Req) ->
-    OtherParams = lists:foldl(fun(Item, Acc) ->
-                                      try cowboy_req:match_qs([Item], Req) of
-                                          Param ->
-                                              parse_param(Acc, Param)
-                                      catch
-                                          error:_ ->
-                                              Acc
-                                      end
-                              end, #{}, [<<"speed">>, <<"bearing">>, <<"heading">>, <<"altitude">>, <<"hdop">>, <<"vacc">>, <<"hacc">>, <<"batt">>, <<"desc">>]),
-
-    Message = maps:merge(BaseParams, OtherParams),
-    em_logger:info("[packet] unit:  imei = '~s' message: ~w", [Imei, Message]),
-    case em_data_manager:get_device_by_uid(Imei) of
-        null ->
-            em_logger:info("[packet] unit: unknown device with imei = '~s'", [Imei]),
-            cowboy_req:reply(400, [], <<"Permission denide.">>, Req);
-        Object ->
-            em_data_manager:create_message(maps:get(<<"id">>, Object), protocol(), maps:merge(#{imei => maps:get(<<"uniqueId">>, Object)}, Message)),
-            cowboy_req:reply(200, Req)
-    end;
-echo(<<"GET">>, _, undefined, Req) ->
-    cowboy_req:reply(400, [], <<"Missing echo parameter.">>, Req);
-echo(_, _, _, Req) ->
-    %% Method not allowed.
-    cowboy_req:reply(405, Req).
+request(<<"GET">>, Qs, Req) ->
+  case parse(Qs) of
+    {ok, {Imei, PositionModel}} ->
+      case em_data_manager:get_device_by_uid(Imei) of
+        {error, _Reason} ->
+          em_logger:info("[packet] unit: unknown device with imei = '~s'", [Imei]),
+          cowboy_req:reply(400, [], <<"Permission denide.">>, Req);
+        {ok, Object} ->
+          Position = PositionModel#position{
+            deviceId = Object#device.id,
+            protocol = <<"osmand">>
+          },
+          em_logger:info("save message => unit: id = '~w' imei = '~s' position: ~w", [Object#device.id, Imei, Position]),
+          em_data_manager:create_position(Object, Position),
+          cowboy_req:reply(200, Req)
+      end;
+    _Reason ->
+      cowboy_req:reply(400, [], <<"Invalid format.">>, Req)
+  end;
+request(_, Req, _) ->
+  %% Method not allowed.
+  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, [], <<"Allowed GET request.">>, Req).
 
 
-parse_param(Map, #{<<"speed">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"speed">> := Value}) ->
-    maps:put(<<"speed">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"bearing">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"bearing">> := Value}) ->
-    maps:put(<<"bearing">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"heading">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"heading">> := Value}) ->
-    maps:put(<<"heading">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"altitude">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"altitude">> := Value}) ->
-    maps:put(<<"altitude">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"hdop">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"hdop">> := Value}) ->
-    maps:put(<<"hdop">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"vacc">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"vacc">> := Value}) ->
-    maps:put(<<"vacc">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"hacc">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"hacc">> := Value}) ->
-    maps:put(<<"hacc">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"batt">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"batt">> := Value}) ->
-    maps:put(<<"batt">>, bin_to_num(Value), Map);
-parse_param(Map, #{<<"desc">> := undefined}) ->
-    Map;
-parse_param(Map, #{<<"desc">> := Value}) ->
-    maps:put(<<"desc">>, Value, Map);
-parse_param(Map, _) ->
-    Map.
+parse(Qs) ->
+  Result = emodel:from_proplist(Qs, #osmand_message{}, [
+    {<<"id">>, optional, string, #osmand_message.id, []},
+    {<<"deviceId">>, optional, string, #osmand_message.deviceId, []},
+    {<<"timestamp">>, required, integer, #osmand_message.timestamp, []},
+    {<<"lat">>, required, float, #osmand_message.lat, []},
+    {<<"lon">>, required, float, #osmand_message.lon, []},
+    {<<"speed">>, required, float, #osmand_message.speed, []},
+    {<<"bearing">>, optional, float, #osmand_message.bearing, []},
+    {<<"heading">>, optional, float, #osmand_message.bearing, []},
+    {<<"altitude">>, required, float, #osmand_message.altitude, []},
+    {<<"batt">>, required, float, #osmand_message.batt, []},
+    {<<"hdop">>, optional, float, #osmand_message.hdop, []},
+    {<<"valid">>, optional, boolean, #osmand_message.valid, []}
+  ]),
+  case Result of
+    {ok, Msg} ->
+      Imei = parse_imei(Msg),
+      Position = #position{
+        deviceTime = Msg#osmand_message.timestamp,
+        latitude = Msg#osmand_message.lat,
+        longitude = Msg#osmand_message.lon,
+        speed = Msg#osmand_message.speed,
+        course = parse_course(Msg),
+        altitude = Msg#osmand_message.altitude,
+        valid = Msg#osmand_message.valid,
+        attributes = #{
+          ?KEY_BATTERY => Msg#osmand_message.batt,
+          ?KEY_HDOP => Msg#osmand_message.hdop
+        }
+      },
+      {ok, {Imei, Position}};
+    Reason ->
+      Reason
+  end.
 
-parse_time(Value) ->
-    bin_to_num(Value) * 1000000.
+parse_imei(#osmand_message{id = Id, deviceId = DeviceId}) when Id =:= <<"">> -> DeviceId;
+parse_imei(#osmand_message{id = Id, deviceId = DeviceId}) when DeviceId =:= <<"">> -> Id.
 
-parse_coord(Value) ->
-    bin_to_num(Value).
-
-bin_to_num(Bin) ->
-    N = binary_to_list(Bin),
-    case string:to_float(N) of
-        {error, no_float} ->
-            list_to_integer(N);
-        {F, _Rest} ->
-            F
-    end.
-
-protocol() ->
-    Bin = atom_to_binary(?MODULE, utf8),
-    [_, Protocol | _] = binary:split(Bin, <<"_">>, [global]),
-    binary_to_atom(Protocol, utf8).
+parse_course(#osmand_message{bearing = Bearing, heading = Heading}) when Bearing =:= 0.0 -> Heading;
+parse_course(#osmand_message{bearing = Bearing, heading = Heading}) when Heading =:= 0.0 -> Bearing.
