@@ -26,6 +26,8 @@
 
 -behaviour(ranch_protocol).
 
+-include("em_records.hrl").
+
 %% API
 -export([start_link/4]).
 -export([init/4]).
@@ -157,59 +159,89 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
         {<<"PGID">>, Imei} ->
           em_logger:info("[packet] unit: ip = '~s' imei = '~s'", [em_hardware:resolve(Socket), Imei]),
           case em_data_manager:get_device_by_uid(Imei) of
-              null ->
+            {error, _Reason} ->
                   em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
                   Transport:close(Socket);
-              Object ->
+            {ok, Object} ->
                   loop(State#state{device = Object})
           end;
         {<<"PCPTI">>, Imei} ->
           em_logger:info("[packet] unit: ip = '~s' imei = '~s'", [em_hardware:resolve(Socket), Imei]),
           case em_data_manager:get_device_by_uid(Imei) of
-              null ->
+            {error, _Reason} ->
                   em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
                   Transport:close(Socket);
-              Object ->
+            {ok, Object} ->
                   loop(State#state{device = Object})
           end;
         {<<"GPFID">>, Imei} ->
           em_logger:info("[packet] unit: ip = '~s' imei = '~s'", [em_hardware:resolve(Socket), Imei]),
           case em_data_manager:get_device_by_uid(Imei) of
-              null ->
+            {error, _Reason} ->
                   em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
                   Transport:close(Socket);
-              Object ->
+            {ok, Object} ->
                   loop(State#state{device = Object})
           end;
         {<<"IMEI">>, Imei} ->
           em_logger:info("[packet] unit: ip = '~s' imei = '~s'", [em_hardware:resolve(Socket), Imei]),
           case em_data_manager:get_device_by_uid(Imei) of
-              null ->
+            {error, _Reason} ->
                   em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
                   Transport:close(Socket);
-              Object ->
+            {ok, Object} ->
                   loop(State#state{device = Object})
           end;
-        {<<"GPRMC">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
-          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
+        {<<"GPRMC">>, {ok, PositionModel}} ->
+          Position = PositionModel#position{
+            deviceId = Device#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = maps:merge(PositionModel#position.attributes, #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            })
+          },
+          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Device#device.id, Device#device.uniqueId, Position]),
+          em_data_manager:create_position(Device, Position),
           Transport:send(Socket, <<"OK1\r\n">>),
           loop(State);
-        {<<"GPGGA">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
-          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
+        {<<"GPGGA">>, {ok, PositionModel}} ->
+          Position = PositionModel#position{
+            deviceId = Device#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = maps:merge(PositionModel#position.attributes, #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            })
+          },
+          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Device#device.id, Device#device.uniqueId, Position]),
+          em_data_manager:create_position(Device, Position),
           Transport:send(Socket, <<"OK1\r\n">>),
           loop(State);
-        {<<"GPRMA">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
-          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
+        {<<"GPRMA">>, {ok, PositionModel}} ->
+          Position = PositionModel#position{
+            deviceId = Device#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = maps:merge(PositionModel#position.attributes, #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            })
+          },
+          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Device#device.id, Device#device.uniqueId, Position]),
+          em_data_manager:create_position(Device, Position),
           Transport:send(Socket, <<"OK1\r\n">>),
           loop(State);
-        {<<"TRCCR">>, Message} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), maps:get(<<"uniqueId">>, Device), Message]),
-          em_data_manager:create_message(maps:get(<<"id">>, Device), Protocol, maps:merge(#{<<"imei">> => maps:get(<<"uniqueId">>, Device)}, Message)),
+        {<<"TRCCR">>, {ok, PositionModel}} ->
+          Position = PositionModel#position{
+            deviceId = Device#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = maps:merge(PositionModel#position.attributes, #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            })
+          },
+          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Device#device.id, Device#device.uniqueId, Position]),
+          em_data_manager:create_position(Device, Position),
           Transport:send(Socket, <<"OK1\r\n">>),
-          loop(State)
+          loop(State);
+        _ ->
+          Transport:close(Socket)
       end;
     _ ->
       Transport:close(Socket)
@@ -280,62 +312,64 @@ parse_imei(Data) ->
 parse_gprmc(Data) ->
   case em_regexp:match(Data, ?GPRMC_PATTERN) of
     {match, [_, Hour, Minute, Second, Validity, LatDD, LatMM_MMMM, LatType, LonDD, LonMM_MMMM, LonType, Speed, Course, Day, Month, Year|_]} ->
-      #{
-        <<"deviceTime">> => parse_date(Year, Month, Day, Hour, Minute, Second),
-        <<"latitude">> => parse_coord(LatDD, LatMM_MMMM, LatType),
-        <<"longitude">> => parse_coord(LonDD, LonMM_MMMM, LonType),
-        <<"speed">> => parse_speed(Speed),
-        <<"course">> => parse_course(Course),
-        <<"valid">> => parse_valid(Validity)
-      };
-    _ ->
-      null
+      {ok, #position{
+        deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
+        latitude = parse_coord(LatDD, LatMM_MMMM, LatType),
+        longitude = parse_coord(LonDD, LonMM_MMMM, LonType),
+        speed = parse_speed(Speed),
+        course = parse_course(Course),
+        valid = parse_valid(Validity)
+      }};
+    Reason ->
+      {error, Reason}
   end.
 
 
 parse_gpgga(Data) ->
   case em_regexp:match(Data, ?GPGGA_PATTERN) of
     {match, [_, _Hour, _Minute, _Second, LatDD, LatMM_MMMM, LatType, LonDD, LonMM_MMMM, LonType|_]} ->
-      #{
+      {ok, #position{
         %%time => parse_date(Year, Month, Day, Hour, Minute, Second),
-        <<"latitude">> => parse_coord(LatDD, LatMM_MMMM, LatType),
-        <<"longitude">> => parse_coord(LonDD, LonMM_MMMM, LonType)
-      };
-    _ ->
-      null
+        latitude = parse_coord(LatDD, LatMM_MMMM, LatType),
+        longitude = parse_coord(LonDD, LonMM_MMMM, LonType)
+      }};
+    Reason ->
+      {error, Reason}
   end.
 
 parse_gprma(Data) ->
   case em_regexp:match(Data, ?GPRMA_PATTERN) of
     {match, [_, Validity, LatDD, LatMM_MMMM, LatType, LonDD, LonMM_MMMM, LonType, Speed, Course|_]} ->
-      #{
+      {ok, #position{
         %%time => parse_date(Year, Month, Day, Hour, Minute, Second),
-        <<"latitude">> => parse_coord(LatDD, LatMM_MMMM, LatType),
-        <<"longitude">> => parse_coord(LonDD, LonMM_MMMM, LonType),
-        <<"speed">> => parse_speed(Speed),
-        <<"course">> => parse_course(Course),
-        <<"valid">> => parse_valid(Validity)
-      };
-    _ ->
-      null
+        latitude = parse_coord(LatDD, LatMM_MMMM, LatType),
+        longitude = parse_coord(LonDD, LonMM_MMMM, LonType),
+        speed = parse_speed(Speed),
+        course = parse_course(Course),
+        valid = parse_valid(Validity)
+      }};
+    Reason ->
+      {error, Reason}
   end.
 
 parse_trccr(Data) ->
     %% $TRCCR,20150727040136.279,A,53.897743,27.442885,0.00,0.00,0.00,34,*34
   case em_regexp:match(Data, ?TRCCR_PATTERN) of
     {match, [_, Year, Month, Day, Hour, Minute, Second, Validity, Lat, Lon, Speed, Course, Altitude, Battery|_]} ->
-      #{
-        <<"deviceTime">> => trccr_parse_date(Year, Month, Day, Hour, Minute, Second),
-        <<"latitude">> => list_to_float(binary_to_list(Lat)),
-        <<"longitude">> => list_to_float(binary_to_list(Lon)),
-        <<"speed">> => parse_speed(Speed),
-        <<"course">> => parse_course(Course),
-        <<"valid">> => parse_valid(Validity),
-        <<"altitude">> => parse_altitude(Altitude),
-        <<"battery">> => parse_battery(Battery)
-      };
-    _ ->
-      null
+      {ok, #position{
+        deviceTime = trccr_parse_date(Year, Month, Day, Hour, Minute, Second),
+        latitude = list_to_float(binary_to_list(Lat)),
+        longitude = list_to_float(binary_to_list(Lon)),
+        speed = parse_speed(Speed),
+        course = parse_course(Course),
+        valid = parse_valid(Validity),
+        altitude = parse_altitude(Altitude),
+        attributes = #{
+          ?KEY_BATTERY => parse_battery(Battery)
+        }
+      }};
+    Reason ->
+      {error, Reason}
   end.
 
 parse_battery(Battery) ->
