@@ -130,10 +130,10 @@ parse(Data, Pattern) ->
               altitude = parse_altitude(Altitude),
               valid = parse_valid(Validity),
               attributes = # {
-                ?KEY_MCC => Mcc,
-                ?KEY_MNC => Mnc,
-                ?KEY_LAC => Lac,
-                ?KEY_CELL => Cell
+                ?KEY_MCC => parse_mcc(Mcc),
+                ?KEY_MNC => parse_mnc(Mnc),
+                ?KEY_LAC => parse_lac(Lac),
+                ?KEY_CELL => parse_cell(Cell)
                 %%<<"odometer">> => parse_odometer(Odometer),
                 %%<<"battery">> => parse_battery(Battery)
               }
@@ -155,11 +155,11 @@ parse_lac(Lac) ->
 parse_cell(Cell) ->
     Cell.
 
-parse_odometer(Odometer) ->
-    Odometer.
+%%parse_odometer(Odometer) ->
+%%    Odometer.
 
-parse_battery(Battery) ->
-    Battery.
+%%parse_battery(Battery) ->
+%%    Battery.
 
 parse_altitude(Altitude) ->
     list_to_float(binary_to_list(Altitude)).
