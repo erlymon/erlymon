@@ -148,8 +148,8 @@ parse_course(Course) ->
 parse_speed(Speed) ->
     list_to_float(binary_to_list(Speed)).
 
-parse_device_id(DeviceId) ->
-    list_to_integer(binary_to_list(DeviceId)).
+%%parse_device_id(DeviceId) ->
+%%    list_to_integer(binary_to_list(DeviceId)).
 
 parse_validity(<<"A">>) -> true;
 parse_validity(_) -> false.
