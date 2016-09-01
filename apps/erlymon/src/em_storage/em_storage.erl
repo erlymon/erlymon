@@ -596,7 +596,7 @@ do_create_result({{true, #{<<"n">> := 1}}, Item}, ItemType) ->
 do_create_result({{true, #{<<"n">> := 0, <<"writeErrors">> := WriteErrors}}, _}, _ItemType) ->
     {error, lists:map(fun(#{<<"errmsg">> := ErrMsg}) -> ErrMsg end, WriteErrors)}.
 
-do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 0}}, Item, ItemType) ->
+do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 0}}, _Item, _ItemType) ->
   {warning, <<"Not update item">>};
 do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 1}}, Item, ItemType) ->
   {ok, from_map(ItemType, Item)};
