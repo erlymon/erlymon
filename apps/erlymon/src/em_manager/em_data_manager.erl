@@ -57,12 +57,15 @@
   get_last_position/2
 ]).
 
+-spec(get_server() -> {ok, #server{}} | {error, string()}).
 get_server() ->
   em_storage:get_server().
 
+-spec(update_server(Rec :: #server{}) -> {ok, #server{}} | {error, string() | [string()]}).
 update_server(Server) ->
     em_storage:update_server(Server).
 
+-spec(create_position(DeviceModel :: #device{}, PositionModel :: #position{}) -> {ok, #position{}} | {error, string()}).
 create_position(DeviceModel, PositionModel) ->
       case em_storage:create_position(PositionModel) of
         {ok, Position} ->
@@ -81,12 +84,15 @@ create_position(DeviceModel, PositionModel) ->
           Reason
       end.
 
+-spec(get_positions(DeviceId :: integer(), TimeFrom :: integer(), TimeTo :: integer()) -> {ok, [#position{}]} | {error, string()}).
 get_positions(DeviceId, TimeFrom, TimeTo) ->
     em_storage:get_positions(DeviceId, TimeFrom, TimeTo).
 
+-spec(get_last_position(PositionId :: integer(), DeviceId :: integer()) -> {ok, #position{}} | {error, string()}).
 get_last_position(PositionId, DeviceId) ->
     em_storage:get_last_position(PositionId,  DeviceId).
 
+-spec(create_user(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 create_user(User) ->
     case em_storage:get_user_by_email(User#user.email) of
       {error, _Reason} ->
@@ -95,12 +101,15 @@ create_user(User) ->
           {error, <<"Duplicate email">>}
     end.
 
+-spec(update_user(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 update_user(User) ->
   em_storage:update_user(User).
 
+-spec(delete_user(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 delete_user(User) ->
     em_storage:delete_user(User).
 
+-spec(check_user(Email :: string(), Password :: string()) -> {ok, #user{}} | {error, string()}).
 check_user(Email, Password) ->
   CheckPass = fun(CurrPassword, User = #user{hashPassword = HashPassword}) ->
                 case CurrPassword =:= HashPassword of
@@ -113,18 +122,23 @@ check_user(Email, Password) ->
     Reason -> Reason
   end.
 
+-spec(get_users() -> {ok, [#user{}]} | {error, string()}).
 get_users() ->
     em_storage:get_users().
 
+-spec(create_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 create_device(Device) ->
     em_storage:create_device(Device).
 
+-spec(update_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 update_device(Device) ->
     em_storage:update_device(Device).
 
+-spec(delete_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 delete_device(Device) ->
     em_storage:delete_device(Device).
 
+-spec(get_devices(UserId :: integer()) -> {ok, [#device{}]} | {error, string()}).
 get_devices(UserId) ->
   Callback = fun(Permission = #permission{deviceId = DeviceId}, Acc) ->
                 em_logger:info("PERMISSION: ~w", [Permission]),
@@ -139,14 +153,18 @@ get_devices(UserId) ->
   Devices = lists:foldl(Callback, [], Permissions),
   {ok, Devices}.
 
+-spec(get_device_by_uid(UniqueId :: string()) -> {ok, #device{}} | {error, string()}).
 get_device_by_uid(UniqueId) ->
   em_storage:get_device_by_uid(UniqueId).
 
+-spec(get_all_devices() -> {ok, [#device{}]} | {error, string()}).
 get_all_devices() ->
     em_storage:get_devices().
 
+-spec(link_device(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
 link_device(Permission) ->
     em_storage:create_permission(Permission).
 
+-spec(unlink_device(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
 unlink_device(Permission) ->
   em_storage:delete_permission(Permission).
