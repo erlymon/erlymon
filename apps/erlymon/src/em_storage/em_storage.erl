@@ -519,7 +519,7 @@ do_update_device(#state{topology = Topology}, Rec) ->
     Map = to_map(device, Rec),
     Callback = fun(Worker) ->
                        Key = #{<<"id">> => Rec#device.id},
-                       Command = #{<<"$set">> => Map},
+                       Command = #{<<"$set">> => maps:remove(<<"id">>, Map)},
                        mc_worker_api:update(Worker, ?COLLECTION_DEVICES, Key, Command)
                end,
     Res = mongoc:transaction(Topology, Callback),
@@ -665,7 +665,7 @@ from_map(device, Map) ->
       };
 from_map(position, Map) ->
     #position{
-       id = maps:get(<<"id"">">>, Map, 0),
+       id = maps:get(<<"id">>, Map, 0),
        type = maps:get(<<"type">>, Map, <<"">>),
        protocol = maps:get(<<"protocol">>, Map, <<"">>),
        serverTime = maps:get(<<"serverTime">>, Map, 0),
