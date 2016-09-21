@@ -572,7 +572,7 @@ do_get_position(#state{topology = Topology}, Query) ->
                        mongoc:find_one(Conf, ?COLLECTION_POSITIONS, Query, #{}, 0)
                end,
     Item = mongoc:transaction_query(Topology, Callback),
-    do_get_result(Item, device).
+    do_get_result(Item, position).
 
 do_get_positions(#state{topology = Topology}, Query) ->
     Callback = fun(Conf) ->
