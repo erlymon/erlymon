@@ -177,7 +177,7 @@ get_last_position(Id, DeviceId) ->
 
 -spec(get_positions(DeviceId :: non_neg_integer(), From :: non_neg_integer(), To :: non_neg_integer()) -> {ok, [#position{}]}).
 get_positions(DeviceId, From, To) ->
-    gen_server:call(?SERVER, {get_positions, #{<<"deviceId">> => DeviceId, <<"fixedTime">> => {'$gte', From, '$lte', To}}}).
+    gen_server:call(?SERVER, {get_positions, #{<<"deviceId">> => DeviceId, <<"fixTime">> => {'$gte', From, '$lte', To}}}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -577,7 +577,7 @@ do_get_position(#state{topology = Topology}, Query) ->
 do_get_positions(#state{topology = Topology}, Query) ->
     Callback = fun(Conf) ->
                        Cursor = mongoc:find(Conf, ?COLLECTION_POSITIONS, Query),
-                       Items = mc_cursor:map(fun(Item) -> from_map(device, Item) end, Cursor, infinity),
+                       Items = mc_cursor:map(fun(Item) -> from_map(position, Item) end, Cursor, infinity),
                        mc_cursor:close(Cursor),
                        {ok, Items}
                end,
