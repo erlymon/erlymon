@@ -86,6 +86,7 @@ create_position(DeviceModel, PositionModel) ->
 
 -spec(get_positions(DeviceId :: integer(), TimeFrom :: integer(), TimeTo :: integer()) -> {ok, [#position{}]} | {error, string()}).
 get_positions(DeviceId, TimeFrom, TimeTo) ->
+    em_logger:info("get_positions => DeviceId: ~w TimeFrom: ~w TimeTo: ~w", [DeviceId, TimeFrom, TimeTo]),
     em_storage:get_positions(DeviceId, TimeFrom, TimeTo).
 
 -spec(get_last_position(PositionId :: integer(), DeviceId :: integer()) -> {ok, #position{}} | {error, string()}).

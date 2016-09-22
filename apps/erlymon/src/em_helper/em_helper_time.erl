@@ -35,26 +35,26 @@
 ]).
 
 format(Format, Utc) when is_integer(Utc) ->
-  tempo:format_unix(Format, Utc div 1000000);
+  tempo:format_unix(Format, Utc);
 format(Format,_) ->
   tempo:format_unix(Format, 0).
 
 parse(Format, Bin) ->
   case tempo:parse_unix(Format, Bin) of
     {ok, Utc} ->
-      {ok, Utc * 1000000};
+      {ok, Utc};
     Reason ->
       Reason
   end.
 
 datetime_to_utc({{Year, Month, Day}, Time}) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
-  (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate) * 1000000.
+  (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate).
 
 
-utc_to_datetime(Milliseconds) when is_integer(Milliseconds) ->
+utc_to_datetime(Seconds) when is_integer(Seconds) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
-  Seconds = BaseDate + (Milliseconds div 1000000),
+  Seconds = BaseDate + Seconds,
   {{Year, Month, Day}, Time} = calendar:gregorian_seconds_to_datetime(Seconds),
   {{Year, Month, Day}, Time}.
 
@@ -65,4 +65,4 @@ utc_to_datetime(Milliseconds) when is_integer(Milliseconds) ->
 %% @end
 %%--------------------------------------------------------------------
 timestamp() ->
-  timer:now_diff(os:timestamp(), {0, 0, 0}).
+  timer:now_diff(os:timestamp(), {0, 0, 0}) div 1000000.

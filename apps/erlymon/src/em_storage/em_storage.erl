@@ -374,7 +374,7 @@ do_create_indexses(#state{topology = Topology}) ->
                                  {?COLLECTION_DEVICES, #{<<"key">> => #{<<"uniqueId">> => 1}, <<"name">> => <<"uniqueId_1">>, <<"unique">> => true}},
 
                                  {?COLLECTION_POSITIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
-                                 {?COLLECTION_POSITIONS, #{<<"key">> => #{<<"deviceId">> => 1, <<"fixTime">> => 1, <<"imei">> => 1}, <<"name">> => <<"deviceId_1_fixTime_1_imei_1">>, <<"unique">> => true}}
+                                 {?COLLECTION_POSITIONS, #{<<"key">> => #{<<"deviceId">> => 1, <<"fixTime">> => 1}, <<"name">> => <<"deviceId_1_fixTime_1">>, <<"unique">> => true}}
                                 ],
                        lists:map(fun({Collection, Index}) -> mc_worker_api:ensure_index(Worker, Collection, Index) end, Indexs)
                end,

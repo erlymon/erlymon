@@ -83,7 +83,7 @@ parse(Qs) ->
   Result = emodel:from_proplist(Qs, #osmand_message{}, [
     {<<"id">>, optional, string, #osmand_message.id, []},
     {<<"deviceId">>, optional, string, #osmand_message.deviceId, []},
-    {<<"timestamp">>, required, integer, #osmand_message.timestamp, []},
+    {<<"timestamp">>, required, integer, #osmand_message.timestamp, []}, %% seconds or ISO8604
     {<<"lat">>, required, float, #osmand_message.lat, []},
     {<<"lon">>, required, float, #osmand_message.lon, []},
     {<<"speed">>, required, float, #osmand_message.speed, []},
@@ -98,7 +98,7 @@ parse(Qs) ->
     {ok, Msg} ->
       Imei = parse_imei(Msg),
       Position = #position{
-        deviceTime = Msg#osmand_message.timestamp * 1000, %% convert time to microseconds
+        deviceTime = Msg#osmand_message.timestamp * 1000, %% seconds
         latitude = Msg#osmand_message.lat,
         longitude = Msg#osmand_message.lon,
         speed = Msg#osmand_message.speed,

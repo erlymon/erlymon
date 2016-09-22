@@ -70,9 +70,9 @@
   id = 0 :: integer(),
   type = <<"">> :: string(),
   protocol = <<"">> :: string(),
-  serverTime = 0 :: integer(),
-  deviceTime = 0 :: integer(),
-  fixTime = 0 :: integer(),
+  serverTime = 0 :: integer(),  %% seconds
+  deviceTime = 0 :: integer(),  %% seconds
+  fixTime = 0 :: integer(),  %% seconds
   deviceId = 0 :: integer(),
   outdated = false :: boolean(),
   valid = false :: boolean(),
