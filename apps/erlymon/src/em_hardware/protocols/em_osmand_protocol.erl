@@ -98,7 +98,7 @@ parse(Qs) ->
     {ok, Msg} ->
       Imei = parse_imei(Msg),
       Position = #position{
-        deviceTime = Msg#osmand_message.timestamp * 1000, %% seconds
+        deviceTime = Msg#osmand_message.timestamp, %% seconds
         latitude = Msg#osmand_message.lat,
         longitude = Msg#osmand_message.lon,
         speed = Msg#osmand_message.speed,
