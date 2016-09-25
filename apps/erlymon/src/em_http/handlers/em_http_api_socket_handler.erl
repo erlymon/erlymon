@@ -45,20 +45,9 @@ init(Req, Opts) ->
         {undefined, Req2} ->
             {cowboy_websocket, Req2, Opts};
         {User, Req2} ->
-            %%UserId = maps:get(<<"id">>, User),
             em_logger:info("Process reg for user: ~w", [User#user.id]),
             em_helper_process:reg({p, l, {user, User#user.id}}),
-            {ok, Devices} = em_data_manager:get_devices(User#user.id),
-            GetLastPosition = fun(Device, Acc) ->
-                                      case em_data_manager:get_last_position(Device#device.positionId, Device#device.id) of
-                                          {error, _Reason} ->
-                                              Acc;
-                                          {ok, Position} ->
-                                              [Position | Acc]
-                                      end
-                              end,
-            Positions = lists:foldl(GetLastPosition, [], Devices),
-            notify(User#user.id, #event{positions = Positions}),
+            erlang:start_timer(1000, self(), User),
             {cowboy_websocket, Req2, Opts}
     end.
 
@@ -66,7 +55,20 @@ websocket_handle(_Data, Req, State) ->
     {ok, Req, State}.
 
 websocket_info({event, Event}, Req, State) ->
-    em_logger:info("EVENT: ~w", [Event]),
+    em_logger:info("WS EVENT: ~w", [Event]),
     {reply, {text, em_http:str(Event)}, Req, State};
+websocket_info({timeout, _Ref, User}, Req, State) ->
+    em_logger:info("WS INIT: ~w", [User]),
+    {ok, Devices} = em_data_manager:get_devices(User#user.id),
+    GetLastPosition = fun(Device, Acc) ->
+                              case em_data_manager:get_last_position(Device#device.positionId, Device#device.id) of
+                                  {error, _Reason} ->
+                                      Acc;
+                                  {ok, Position} ->
+                                      [Position | Acc]
+                              end
+                      end,
+    Positions = lists:foldl(GetLastPosition, [], Devices),
+    {reply, {text, em_http:str(#event{positions = Positions})}, Req, State};
 websocket_info(_Info, Req, State) ->
     {ok, Req, State}.
