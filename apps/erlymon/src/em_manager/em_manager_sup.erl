@@ -62,10 +62,13 @@ init([]) ->
 
   SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
+  ServerManager = {em_manager_server,{em_manager_server, start_link,[]},
+    permanent,2000,worker,dynamic},
+
   EventManager = {em_manager_event,{em_manager_event, start_link,[]},
     permanent,2000,worker,dynamic},
 
-  {ok, {SupFlags, [EventManager]}}.
+  {ok, {SupFlags, [ServerManager, EventManager]}}.
 
 %%%===================================================================
 %%% Internal functions
