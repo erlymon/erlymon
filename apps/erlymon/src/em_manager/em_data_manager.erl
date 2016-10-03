@@ -59,11 +59,11 @@
 
 -spec(get_server() -> {ok, #server{}} | {error, string()}).
 get_server() ->
-  em_storage:get_server().
+  em_manager_server:get().
 
 -spec(update_server(Rec :: #server{}) -> {ok, #server{}} | {error, string() | [string()]}).
 update_server(Server) ->
-    em_storage:update_server(Server).
+  em_manager_server:update(Server).
 
 -spec(create_position(DeviceModel :: #device{}, PositionModel :: #position{}) -> {ok, #position{}} | {error, string()}).
 create_position(DeviceModel, PositionModel) ->

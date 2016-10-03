@@ -59,5 +59,11 @@ check_device(UserId, DeviceId) ->
             true
     end.
 
-check_registration() -> true.
+check_registration() ->
+  case em_manager_server:get() of
+    {ok, #server{registration = true}} ->
+      true;
+    _ ->
+      false
+  end.
 
