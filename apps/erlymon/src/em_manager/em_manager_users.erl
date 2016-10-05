@@ -16,6 +16,11 @@
 %% API
 -export([start_link/0]).
 
+-export([
+  get/0
+]).
+
+
 %% gen_server callbacks
 -export([init/1,
   handle_call/3,
@@ -31,6 +36,10 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+
+-spec(get() -> {ok, [Rec :: #user{}]} | {error, string()}).
+get() ->
+  gen_server:call(?SERVER, {get}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -84,6 +93,8 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+handle_call({get}, _From, State) ->
+  do_get_users(State);
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -131,7 +142,8 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{cache = Cache}) ->
+  ets:delete(Cache),
   ok.
 
 %%--------------------------------------------------------------------
@@ -151,3 +163,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+do_get_users(State = #state{cache = Cache}) ->
+  {reply, ets:tab2list(Cache), State}.
