@@ -20,7 +20,10 @@
 
 -export([
          get/0,
-         check/2
+         check/2,
+         create/1,
+         update/1,
+         delete/1
         ]).
 
 
@@ -44,6 +47,17 @@
 get() ->
     gen_server:call(?SERVER, {get}).
 
+-spec(create(User :: #user{}) -> {ok, #user{}} | {error, string()}).
+create(User) ->
+    gen_server:call(?SERVER, {create, User}).
+
+-spec(update(User :: #user{}) -> {ok, #user{}} | {error, string()}).
+update(User) ->
+  gen_server:call(?SERVER, {update, User}).
+
+-spec(delete(User :: #user{}) -> {ok, #user{}} | {error, string()}).
+delete(User) ->
+  gen_server:call(?SERVER, {delete, User}).
 
 -spec(check(Email :: string(), Password :: string()) -> {ok, Rec :: #user{}} | {error, string()}).
 check(Email, Password) ->
@@ -80,9 +94,12 @@ start_link() ->
              {stop, Reason :: term()} | ignore).
 init([]) ->
     em_logger:info("Init users manager"),
-    Cache = ets:new(users, [set, private, {keypos, 1}]),
+    Cache = ets:new(users, [set, private, {keypos, 2}]),
     {ok, Users} = em_storage:get_users(),
-    lists:foreach(fun(User) -> ets:insert(Cache, User) end, Users),
+    lists:foreach(fun(User) ->
+                    %%em_logger:info("Loading user ~s", [User#user.name]),
+                    ets:insert(Cache, User)
+                  end, Users),
     em_logger:info("Loaded ~w user(s)", [length(ets:tab2list(Cache))]),
     {ok, #state{cache = Cache}}.
 
@@ -103,6 +120,12 @@ init([]) ->
              {stop, Reason :: term(), NewState :: #state{}}).
 handle_call({get}, _From, State) ->
     do_get_users(State);
+handle_call({create, User}, _From, State) ->
+  do_create_user(State, User);
+handle_call({update, User}, _From, State) ->
+  do_update_user(State, User);
+handle_call({delete, User}, _From, State) ->
+  do_delete_user(State, User);
 handle_call({check, Email, Password}, _From, State) ->
     do_check_user(State, Email, Password);
 handle_call(_Request, _From, State) ->
@@ -176,6 +199,39 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_get_users(State = #state{cache = Cache}) ->
     {reply, ets:tab2list(Cache), State}.
+
+do_create_user(State = #state{cache = Cache}, User) ->
+  case em_storage:create_user(User) of
+    {ok, User} ->
+      case ets:insert(Cache, User) of
+        true -> {reply, {ok, User}, State};
+        false -> {reply, {error, <<"Error sync in users cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
+
+do_update_user(State = #state{cache = Cache}, User) ->
+  case em_storage:update_user(User) of
+    {ok, User} ->
+      case ets:insert(Cache, User) of
+        true -> {reply, {ok, User}, State};
+        false -> {reply, {error, <<"Error sync in users cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
+
+do_delete_user(State = #state{cache = Cache}, User) ->
+  case em_storage:delete_user(User) of
+    {ok, User} ->
+      case ets:delete_object(Cache, User) of
+        true -> {reply, {ok, User}, State};
+        false -> {reply, {error, <<"Error sync in users cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
 
 %% em_manager_users:check(<<"demo">>, <<"demo">>).
 do_check_user(State = #state{cache = Cache}, Email, Password) ->
