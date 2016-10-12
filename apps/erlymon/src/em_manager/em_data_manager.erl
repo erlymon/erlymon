@@ -95,37 +95,23 @@ get_last_position(PositionId, DeviceId) ->
 
 -spec(create_user(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 create_user(User) ->
-    case em_storage:get_user_by_email(User#user.email) of
-      {error, _Reason} ->
-            em_storage:create_user(User);
-        _ ->
-          {error, <<"Duplicate email">>}
-    end.
+    em_manager_users:create(User).
 
 -spec(update_user(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 update_user(User) ->
-  em_storage:update_user(User).
+    em_manager_users:update(User).
 
 -spec(delete_user(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 delete_user(User) ->
-    em_storage:delete_user(User).
+    em_manager_users:delete(User).
 
 -spec(check_user(Email :: string(), Password :: string()) -> {ok, #user{}} | {error, string()}).
 check_user(Email, Password) ->
-  CheckPass = fun(CurrPassword, User = #user{hashPassword = HashPassword}) ->
-                case CurrPassword =:= HashPassword of
-                  true -> {ok, User};
-                  false -> {error, <<"Access is denied">>}
-                end
-              end,
-  case em_storage:get_user_by_email(Email) of
-    {ok, User} -> CheckPass(em_password:hash(Password), User);
-    Reason -> Reason
-  end.
+  em_manager_users:check(Email, Password).
 
 -spec(get_users() -> {ok, [#user{}]} | {error, string()}).
 get_users() ->
-    em_storage:get_users().
+    em_manager_users:get().
 
 -spec(create_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 create_device(Device) ->
