@@ -36,7 +36,8 @@
 -export([start_link/0]).
 
 -export([
-  get/0
+  get/0,
+  create/1
 ]).
 
 %% gen_server callbacks
@@ -57,6 +58,10 @@
 -spec(get() -> {ok, [Rec :: #device{}]} | {error, string()}).
 get() ->
   gen_server:call(?SERVER, {get}).
+
+-spec(create(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
+create(Device) ->
+  gen_server:call(?SERVER, {create, Device}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -114,6 +119,8 @@ init([]) ->
   {stop, Reason :: term(), NewState :: #state{}}).
 handle_call({get}, _From, State) ->
   do_get_devices(State);
+handle_call({create, User}, _From, State) ->
+  do_create_device(State, User);
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -185,3 +192,16 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_get_devices(State = #state{cache = Cache}) ->
   {reply, {ok, ets:tab2list(Cache)}, State}.
+
+do_create_device(State = #state{cache = Cache}, DeviceModel) ->
+  case em_storage:create_device(DeviceModel) of
+    {ok, Device} ->
+      case ets:insert_new(Cache, Device) of
+        true ->
+          {reply, {ok, Device}, State};
+        false ->
+          {reply, {error, <<"Error sync in devices cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
