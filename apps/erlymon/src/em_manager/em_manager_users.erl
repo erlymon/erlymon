@@ -97,8 +97,7 @@ init([]) ->
     Cache = ets:new(users, [set, private, {keypos, 2}]),
     {ok, Users} = em_storage:get_users(),
     lists:foreach(fun(User) ->
-                    %%em_logger:info("Loading user ~s", [User#user.name]),
-                    ets:insert(Cache, User)
+                    ets:insert_new(Cache, User)
                   end, Users),
     em_logger:info("Loaded ~w user(s)", [length(ets:tab2list(Cache))]),
     {ok, #state{cache = Cache}}.
@@ -198,35 +197,39 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 do_get_users(State = #state{cache = Cache}) ->
-    {reply, ets:tab2list(Cache), State}.
+    {reply, {ok, ets:tab2list(Cache)}, State}.
 
-do_create_user(State = #state{cache = Cache}, User) ->
-  case em_storage:create_user(User) of
+do_create_user(State = #state{cache = Cache}, UserModel) ->
+  case em_storage:create_user(UserModel) of
+    {ok, User} ->
+      case ets:insert_new(Cache, User) of
+        true ->
+          {reply, {ok, User}, State};
+        false ->
+          {reply, {error, <<"Error sync in users cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
+
+do_update_user(State = #state{cache = Cache}, UserModel) ->
+  case em_storage:update_user(UserModel) of
     {ok, User} ->
       case ets:insert(Cache, User) of
-        true -> {reply, {ok, User}, State};
+        true ->
+          {reply, {ok, User}, State};
         false -> {reply, {error, <<"Error sync in users cache">>}, State}
       end;
     Reason ->
       {reply, Reason, State}
   end.
 
-do_update_user(State = #state{cache = Cache}, User) ->
-  case em_storage:update_user(User) of
+do_delete_user(State = #state{cache = Cache}, UserModel) ->
+  case em_storage:delete_user(UserModel) of
     {ok, User} ->
-      case ets:insert(Cache, User) of
-        true -> {reply, {ok, User}, State};
-        false -> {reply, {error, <<"Error sync in users cache">>}, State}
-      end;
-    Reason ->
-      {reply, Reason, State}
-  end.
-
-do_delete_user(State = #state{cache = Cache}, User) ->
-  case em_storage:delete_user(User) of
-    {ok, User} ->
-      case ets:delete_object(Cache, User) of
-        true -> {reply, {ok, User}, State};
+      case ets:delete(Cache, User#user.id) of
+        true ->
+          {reply, {ok, User}, State};
         false -> {reply, {error, <<"Error sync in users cache">>}, State}
       end;
     Reason ->
