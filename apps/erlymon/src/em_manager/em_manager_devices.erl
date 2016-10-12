@@ -38,7 +38,8 @@
 -export([
   get/0,
   create/1,
-  update/1
+  update/1,
+  delete/1
 ]).
 
 %% gen_server callbacks
@@ -67,6 +68,10 @@ create(Device) ->
 -spec(update(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 update(Device) ->
   gen_server:call(?SERVER, {update, Device}).
+
+-spec(delete(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
+delete(Device) ->
+  gen_server:call(?SERVER, {delete, Device}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -128,6 +133,8 @@ handle_call({create, Device}, _From, State) ->
   do_create_device(State, Device);
 handle_call({update, Device}, _From, State) ->
   do_update_device(State, Device);
+handle_call({delete, Device}, _From, State) ->
+  do_delete_device(State, Device);
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -217,6 +224,18 @@ do_update_device(State = #state{cache = Cache}, DeviceModel) ->
   case em_storage:update_device(DeviceModel) of
     {ok, Device} ->
       case ets:insert(Cache, Device) of
+        true ->
+          {reply, {ok, Device}, State};
+        false -> {reply, {error, <<"Error sync in devices cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
+
+do_delete_device(State = #state{cache = Cache}, DeviceModel) ->
+  case em_storage:delete_device(DeviceModel) of
+    {ok, Device} ->
+      case ets:delete(Cache, Device#device.id) of
         true ->
           {reply, {ok, Device}, State};
         false -> {reply, {error, <<"Error sync in devices cache">>}, State}
