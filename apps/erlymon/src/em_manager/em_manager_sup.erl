@@ -68,10 +68,13 @@ init([]) ->
   UsersManager = {em_manager_users,{em_manager_users, start_link,[]},
     permanent,2000,worker,dynamic},
 
+  DevicesManager = {em_manager_devices,{em_manager_devices, start_link,[]},
+    permanent,2000,worker,dynamic},
+
   EventManager = {em_manager_event,{em_manager_event, start_link,[]},
     permanent,2000,worker,dynamic},
 
-  {ok, {SupFlags, [ServerManager, UsersManager, EventManager]}}.
+  {ok, {SupFlags, [ServerManager, UsersManager, DevicesManager, EventManager]}}.
 
 %%%===================================================================
 %%% Internal functions
