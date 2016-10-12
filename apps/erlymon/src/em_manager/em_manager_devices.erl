@@ -26,8 +26,18 @@
 
 -behaviour(gen_server).
 
+
+-include("em_records.hrl").
+
+-include_lib("stdlib/include/ms_transform.hrl").
+
+
 %% API
 -export([start_link/0]).
+
+-export([
+  get/0
+]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -44,6 +54,9 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec(get() -> {ok, [Rec :: #device{}]} | {error, string()}).
+get() ->
+  gen_server:call(?SERVER, {get}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -99,6 +112,8 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+handle_call({get}, _From, State) ->
+  do_get_devices(State);
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -167,3 +182,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+do_get_devices(State = #state{cache = Cache}) ->
+  {reply, {ok, ets:tab2list(Cache)}, State}.
