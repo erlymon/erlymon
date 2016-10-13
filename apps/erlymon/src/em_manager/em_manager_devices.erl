@@ -37,6 +37,7 @@
 
 -export([
   get/0,
+  get_by_uid/1,
   create/1,
   update/1,
   delete/1
@@ -60,6 +61,10 @@
 -spec(get() -> {ok, [Rec :: #device{}]} | {error, string()}).
 get() ->
   gen_server:call(?SERVER, {get}).
+
+-spec(get_by_uid(UniqueId :: string()) -> {ok, Rec :: #device{}} | {error, string()}).
+get_by_uid(UniquiId) ->
+  gen_server:call(?SERVER, {get, UniquiId}).
 
 -spec(create(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 create(Device) ->
@@ -129,6 +134,8 @@ init([]) ->
   {stop, Reason :: term(), NewState :: #state{}}).
 handle_call({get}, _From, State) ->
   do_get_devices(State);
+handle_call({get, UniqueId}, _From, State) ->
+  do_get_device_by_uid(State, UniqueId);
 handle_call({create, Device}, _From, State) ->
   do_create_device(State, Device);
 handle_call({update, Device}, _From, State) ->
@@ -206,6 +213,15 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_get_devices(State = #state{cache = Cache}) ->
   {reply, {ok, ets:tab2list(Cache)}, State}.
+
+do_get_device_by_uid(State = #state{cache = Cache}, Uid) ->
+  Match = ets:fun2ms(fun(Device = #device{uniqueId = UniqueId}) when UniqueId =:= Uid -> Device end),
+  case ets:select(Cache, Match) of
+    [] ->
+      {reply, {error, <<"Access is denied">>}, State};
+    [Item|_] ->
+      {reply, {ok, Item}, State}
+  end.
 
 do_create_device(State = #state{cache = Cache}, DeviceModel) ->
   case em_storage:create_device(DeviceModel) of
