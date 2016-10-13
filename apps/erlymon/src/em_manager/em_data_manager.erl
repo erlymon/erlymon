@@ -69,11 +69,11 @@ update_server(Server) ->
 create_position(DeviceModel, PositionModel) ->
       case em_storage:create_position(PositionModel) of
         {ok, Position} ->
-          em_storage:update_device(DeviceModel#device{
+          em_manager_devices:update(DeviceModel#device{
             positionId = Position#position.id,
             lastUpdate = em_helper_time:timestamp()
           }),
-          case em_storage:get_device_by_id(DeviceModel#device.id) of
+          case em_manager_devices:get_by_id(DeviceModel#device.id) of
             {ok, Device} ->
               em_manager_event:broadcast(Device, Position),
               {ok, Position};
@@ -115,21 +115,21 @@ get_users() ->
 
 -spec(create_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 create_device(Device) ->
-    em_storage:create_device(Device).
+  em_manager_devices:create(Device).
 
 -spec(update_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 update_device(Device) ->
-    em_storage:update_device(Device).
+  em_manager_devices:update(Device).
 
 -spec(delete_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 delete_device(Device) ->
-    em_storage:delete_device(Device).
+  em_manager_devices:delete(Device).
 
 -spec(get_devices(UserId :: integer()) -> {ok, [#device{}]} | {error, string()}).
 get_devices(UserId) ->
   Callback = fun(Permission = #permission{deviceId = DeviceId}, Acc) ->
                 em_logger:info("PERMISSION: ~w", [Permission]),
-                case em_storage:get_device_by_id(DeviceId) of
+                case em_manager_devices:get_by_id(DeviceId) of
                   {ok, Device} ->
                     [Device | Acc];
                   {error, _Reason} ->
@@ -142,11 +142,11 @@ get_devices(UserId) ->
 
 -spec(get_device_by_uid(UniqueId :: string()) -> {ok, #device{}} | {error, string()}).
 get_device_by_uid(UniqueId) ->
-  em_storage:get_device_by_uid(UniqueId).
+  em_manager_devices:get_by_uid(UniqueId).
 
 -spec(get_all_devices() -> {ok, [#device{}]} | {error, string()}).
 get_all_devices() ->
-    em_storage:get_devices().
+    em_manager_devices:get().
 
 -spec(link_device(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
 link_device(Permission) ->
