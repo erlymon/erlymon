@@ -34,6 +34,7 @@
 -export([start_link/0]).
 
 -export([
+  get/0,
   get_by_user_id/1,
   create/1,
   delete/1
@@ -54,6 +55,10 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec(get() -> {ok, [Rec :: #permission{}]} | {error, string()}).
+get() ->
+  gen_server:call(?SERVER, {get}).
+
 -spec(get_by_user_id(Id :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
 get_by_user_id(Id) ->
   gen_server:call(?SERVER, {get, Id}).
@@ -120,6 +125,8 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+handle_call({get}, _From, State) ->
+  do_get_permissions(State);
 handle_call({get, Id}, _From, State) when is_integer(Id) ->
   do_get_permissions_by_user_id(State, Id);
 handle_call({create, Permission}, _From, State) ->
@@ -194,6 +201,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_get_permissions(State = #state{cache = Cache}) ->
+  {reply, {ok, ets:tab2list(Cache)}, State}.
+
 do_get_permissions_by_user_id(State = #state{cache = Cache}, SearchUserId) ->
   Match = ets:fun2ms(fun(Permission = #permission{userId = UserId}) when UserId =:= SearchUserId -> Permission end),
   {reply, {ok, ets:select(Cache, Match)}, State}.
@@ -214,10 +224,12 @@ do_create_permission(State = #state{cache = Cache}, PermissionModel) ->
 do_delete_permission(State = #state{cache = Cache}, PermissionModel) ->
   case em_storage:delete_permission(PermissionModel) of
     {ok, Permission} ->
-      case ets:delete(Cache, Permission#permission.id) of
-        true ->
-          {reply, {ok, Permission}, State};
-        false -> {reply, {error, <<"Error sync in permissions cache">>}, State}
+      Match = ets:fun2ms(fun(#permission{userId = UserId, deviceId = DeviceId}) when (UserId =:= Permission#permission.userId) and (DeviceId =:= Permission#permission.deviceId) -> true end),
+      case ets:select_delete(Cache, Match) of
+        0 ->
+          {reply, {error, <<"Error sync in permissions cache">>}, State};
+        _ ->
+          {reply, {ok, Permission}, State}
       end;
     Reason ->
       {reply, Reason, State}
