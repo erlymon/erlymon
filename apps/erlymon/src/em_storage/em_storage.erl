@@ -429,7 +429,7 @@ do_delete_permission(#state{topology = Topology}, Rec = #permission{userId = Use
     do_delete_result(Res, to_map(permission, Rec), permission);
 do_delete_permission(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, to_map(permission, Rec))
+                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"userId">> => Rec#permission.userId, <<"deviceId">> => Rec#permission.deviceId})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission).
