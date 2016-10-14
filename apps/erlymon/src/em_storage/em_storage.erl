@@ -38,6 +38,7 @@
 
          create_permission/1,
          delete_permission/1,
+         get_permissions/0,
          get_permission/2,
          get_permissions_by_user_id/1,
          get_permissions_by_device_id/1,
@@ -109,6 +110,11 @@ get_permissions_by_user_id(UserId) ->
 -spec(get_permissions_by_device_id(DeviceId :: non_neg_integer()) -> {ok, [#permission{}]} | {error, string() | [string()]}).
 get_permissions_by_device_id(DeviceId) ->
   gen_server:call(?SERVER, {get_permissions, #{<<"deviceId">> => DeviceId}}).
+
+-spec(get_permissions() -> {ok, [#permission{}]} | {error, string() | [string()]}).
+get_permissions() ->
+  gen_server:call(?SERVER, {get_permissions, #{}}).
+
 
 -spec(get_permission(UserId :: non_neg_integer(), DeviceId :: non_neg_integer()) -> {ok, #permission{}} | {error, string() | [string()]}).
 get_permission(UserId, DeviceId) ->
