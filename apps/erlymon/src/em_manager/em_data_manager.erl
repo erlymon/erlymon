@@ -136,7 +136,7 @@ get_devices(UserId) ->
                     Acc
                 end
              end,
-  {ok, Permissions} = em_storage:get_permissions_by_user_id(UserId),
+  {ok, Permissions} = em_manager_permissions:get_by_user_id(UserId),
   Devices = lists:foldl(Callback, [], Permissions),
   {ok, Devices}.
 
@@ -150,8 +150,8 @@ get_all_devices() ->
 
 -spec(link_device(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
 link_device(Permission) ->
-    em_storage:create_permission(Permission).
+  em_manager_permissions:create(Permission).
 
 -spec(unlink_device(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
 unlink_device(Permission) ->
-  em_storage:delete_permission(Permission).
+  em_manager_permissions:delete(Permission).
