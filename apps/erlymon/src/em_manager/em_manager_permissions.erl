@@ -33,6 +33,12 @@
 %% API
 -export([start_link/0]).
 
+-export([
+  get_by_user_id/1,
+  create/1,
+  delete/1
+]).
+
 %% gen_server callbacks
 -export([init/1,
   handle_call/3,
@@ -48,6 +54,17 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec(get_by_user_id(Id :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
+get_by_user_id(Id) ->
+  gen_server:call(?SERVER, {get, Id}).
+
+-spec(create(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
+create(Permission) ->
+  gen_server:call(?SERVER, {create, Permission}).
+
+-spec(delete(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
+delete(Permission) ->
+  gen_server:call(?SERVER, {delete, Permission}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -103,6 +120,12 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+handle_call({get, Id}, _From, State) when is_integer(Id) ->
+  do_get_permissions_by_user_id(State, Id);
+handle_call({create, Permission}, _From, State) ->
+  do_create_permission(State, Permission);
+handle_call({delete, Permission}, _From, State) ->
+  do_delete_permission(State, Permission);
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -171,3 +194,31 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_get_permissions_by_user_id(State = #state{cache = Cache}, SearchUserId) ->
+  Match = ets:fun2ms(fun(Permission = #permission{userId = UserId}) when UserId =:= SearchUserId -> Permission end),
+  {reply, {ok, ets:select(Cache, Match)}, State}.
+
+do_create_permission(State = #state{cache = Cache}, PermissionModel) ->
+  case em_storage:create_permission(PermissionModel) of
+    {ok, Permission} ->
+      case ets:insert_new(Cache, Permission) of
+        true ->
+          {reply, {ok, Permission}, State};
+        false ->
+          {reply, {error, <<"Error sync in permissions cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
+
+do_delete_permission(State = #state{cache = Cache}, PermissionModel) ->
+  case em_storage:delete_permission(PermissionModel) of
+    {ok, Permission} ->
+      case ets:delete(Cache, Permission#permission.id) of
+        true ->
+          {reply, {ok, Permission}, State};
+        false -> {reply, {error, <<"Error sync in permissions cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
