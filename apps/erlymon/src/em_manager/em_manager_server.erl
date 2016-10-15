@@ -22,7 +22,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(em_manager_server).
--author("sergey").
+-author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(gen_server).
 
