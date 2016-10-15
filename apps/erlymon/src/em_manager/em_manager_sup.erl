@@ -74,10 +74,13 @@ init([]) ->
   DevicesManager = {em_manager_devices,{em_manager_devices, start_link,[]},
     permanent,2000,worker,dynamic},
 
+  PositionsManager = {em_manager_positions,{em_manager_positions, start_link,[]},
+    permanent,2000,worker,dynamic},
+
   EventManager = {em_manager_event,{em_manager_event, start_link,[]},
     permanent,2000,worker,dynamic},
 
-  {ok, {SupFlags, [ServerManager, PermissionsManager, UsersManager, DevicesManager, EventManager]}}.
+  {ok, {SupFlags, [ServerManager, PermissionsManager, UsersManager, DevicesManager, PositionsManager, EventManager]}}.
 
 %%%===================================================================
 %%% Internal functions
