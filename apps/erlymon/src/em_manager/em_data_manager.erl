@@ -67,7 +67,7 @@ update_server(Server) ->
 
 -spec(create_position(DeviceModel :: #device{}, PositionModel :: #position{}) -> {ok, #position{}} | {error, string()}).
 create_position(DeviceModel, PositionModel) ->
-      case em_storage:create_position(PositionModel) of
+      case em_manager_positions:create(PositionModel) of
         {ok, Position} ->
           em_manager_devices:update(DeviceModel#device{
             positionId = Position#position.id,
@@ -91,7 +91,7 @@ get_positions(DeviceId, TimeFrom, TimeTo) ->
 
 -spec(get_last_position(PositionId :: integer(), DeviceId :: integer()) -> {ok, #position{}} | {error, string()}).
 get_last_position(PositionId, DeviceId) ->
-    em_storage:get_last_position(PositionId,  DeviceId).
+    em_manager_positions:get(PositionId,  DeviceId).
 
 -spec(create_user(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 create_user(User) ->
