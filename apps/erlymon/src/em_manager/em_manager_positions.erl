@@ -33,6 +33,12 @@
 %% API
 -export([start_link/0]).
 
+-export([
+  get/0,
+  get/2,
+  create/1
+]).
+
 %% gen_server callbacks
 -export([init/1,
   handle_call/3,
@@ -48,7 +54,17 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec(get() -> {ok, [Rec :: #position{}]} | {error, string()}).
+get() ->
+  gen_server:call(?SERVER, {get}).
 
+-spec(get(PositionId :: integer(), DeviceId :: integer()) -> {ok, Rec :: #position{}} | {error, string()}).
+get(PositionId, DeviceId) ->
+  gen_server:call(?SERVER, {get, PositionId, DeviceId}).
+
+-spec(create(Position :: #position{}) -> {ok, #position{}} | {error, string()}).
+create(Position) ->
+  gen_server:call(?SERVER, {create, Position}).
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
@@ -80,7 +96,7 @@ start_link() ->
   {stop, Reason :: term()} | ignore).
 init([]) ->
   em_logger:info("Init positions manager"),
-  Cache = ets:new(positions, [set, private, {keypos, 2}]),
+  Cache = ets:new(positions, [set, private, {keypos, 8}]),
   {ok, Items} = em_storage:get_devices(),
   lists:foreach(fun(#device{id = DeviceId, positionId = PositionId}) ->
     case em_storage:get_last_position(PositionId, DeviceId) of
@@ -108,6 +124,12 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
+handle_call({get}, _From, State) ->
+  do_get_positions(State);
+handle_call({get, PositionId, DeviceId}, _From, State) ->
+  do_get_last_position(State, PositionId, DeviceId);
+handle_call({create, Position}, _From, State) ->
+  do_create_position(State, Position);
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -176,3 +198,22 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_get_positions(State = #state{cache = Cache}) ->
+  {reply, {ok, ets:tab2list(Cache)}, State}.
+
+do_get_last_position(State = #state{cache = Cache}, SearchPositionId, SearchDeviceId) ->
+  Match = ets:fun2ms(fun(Position = #position{id = Id, deviceId = DeviceId}) when (Id =:= SearchPositionId) and (DeviceId =:= SearchDeviceId) -> Position end),
+  {reply, {ok, ets:select(Cache, Match)}, State}.
+
+do_create_position(State = #state{cache = Cache}, PositionModel) ->
+  case em_storage:create_position(PositionModel) of
+    {ok, Position} ->
+      case ets:insert(Cache, Position) of
+        true ->
+          {reply, {ok, Position}, State};
+        false ->
+          {reply, {error, <<"Error sync in positions cache">>}, State}
+      end;
+    Reason ->
+      {reply, Reason, State}
+  end.
