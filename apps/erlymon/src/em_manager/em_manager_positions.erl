@@ -203,7 +203,12 @@ do_get_positions(State = #state{cache = Cache}) ->
 
 do_get_last_position(State = #state{cache = Cache}, SearchPositionId, SearchDeviceId) ->
   Match = ets:fun2ms(fun(Position = #position{id = Id, deviceId = DeviceId}) when (Id =:= SearchPositionId) and (DeviceId =:= SearchDeviceId) -> Position end),
-  {reply, {ok, ets:select(Cache, Match)}, State}.
+  case ets:select(Cache, Match) of
+    [] ->
+      {reply, {error, <<"Not search position">>}, State};
+    [Item|_] ->
+      {reply, {ok, Item}, State}
+  end.
 
 do_create_position(State = #state{cache = Cache}, PositionModel) ->
   case em_storage:create_position(PositionModel) of
