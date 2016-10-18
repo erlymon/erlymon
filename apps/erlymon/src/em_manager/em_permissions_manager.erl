@@ -36,12 +36,12 @@
 
 check_admin(UserId) ->
     em_logger:info("check_admin: ~w", [UserId]),
-    case em_storage:get_user_by_id(UserId) of
-      {error, _Reason} ->
-            false;
-      {ok, User} ->
-            em_logger:info("check_admin user: ~w", [User]),
-            true
+    case em_manager_users:get(UserId) of
+      {ok, #user{admin = true}} ->
+            %%em_logger:info("check_admin user: ~w", [User]),
+            true;
+      _ ->
+        false
     end.
 
 check_user(UserId, OtherUserId) when UserId == OtherUserId ->
