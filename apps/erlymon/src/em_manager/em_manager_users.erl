@@ -35,6 +35,7 @@
 
 -export([
          get/0,
+         get/1,
          check/2,
          create/1,
          update/1,
@@ -61,6 +62,10 @@
 -spec(get() -> {ok, [Rec :: #user{}]} | {error, string()}).
 get() ->
     gen_server:call(?SERVER, {get}).
+
+-spec(get(Id :: integer()) -> {ok, [Rec :: #user{}]} | {error, string()}).
+get(Id) ->
+  gen_server:call(?SERVER, {get, Id}).
 
 -spec(create(User :: #user{}) -> {ok, #user{}} | {error, string()}).
 create(User) ->
@@ -134,6 +139,8 @@ init([]) ->
              {stop, Reason :: term(), NewState :: #state{}}).
 handle_call({get}, _From, State) ->
     do_get_users(State);
+handle_call({get, Id}, _From, State) ->
+  do_get_user_by_id(State, Id);
 handle_call({create, User}, _From, State) ->
   do_create_user(State, User);
 handle_call({update, User}, _From, State) ->
@@ -213,6 +220,14 @@ code_change(_OldVsn, State, _Extra) ->
 
 do_get_users(State = #state{cache = Cache}) ->
     {reply, {ok, ets:tab2list(Cache)}, State}.
+
+do_get_user_by_id(State = #state{cache = Cache}, Id) ->
+  case ets:lookup(Cache, Id) of
+    [] ->
+      {reply, {error, <<"Error find user by id">>}, State};
+    [User|_] ->
+      {reply, {ok, User}, State}
+  end.
 
 do_create_user(State = #state{cache = Cache}, UserModel) ->
   case em_storage:create_user(UserModel) of
