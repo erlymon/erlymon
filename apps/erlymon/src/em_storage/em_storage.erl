@@ -105,11 +105,11 @@ delete_permission(Rec) ->
 
 -spec(get_permissions_by_user_id(UserId :: non_neg_integer()) -> {ok, [#permission{}]} | {error, string() | [string()]}).
 get_permissions_by_user_id(UserId) ->
-    gen_server:call(?SERVER, {get_permissions, #{<<"userId">> => UserId}}).
+    gen_server:call(?SERVER, {get_permissions, #{<<"userId">> => id_to_objectid(UserId)}}).
 
 -spec(get_permissions_by_device_id(DeviceId :: non_neg_integer()) -> {ok, [#permission{}]} | {error, string() | [string()]}).
 get_permissions_by_device_id(DeviceId) ->
-  gen_server:call(?SERVER, {get_permissions, #{<<"deviceId">> => DeviceId}}).
+  gen_server:call(?SERVER, {get_permissions, #{<<"deviceId">> => id_to_objectid(DeviceId)}}).
 
 -spec(get_permissions() -> {ok, [#permission{}]} | {error, string() | [string()]}).
 get_permissions() ->
@@ -118,7 +118,7 @@ get_permissions() ->
 
 -spec(get_permission(UserId :: non_neg_integer(), DeviceId :: non_neg_integer()) -> {ok, #permission{}} | {error, string() | [string()]}).
 get_permission(UserId, DeviceId) ->
-  gen_server:call(?SERVER, {get_permission, #{<<"userId">> => UserId, <<"deviceId">> => DeviceId}}).
+  gen_server:call(?SERVER, {get_permission, #{<<"userId">> => id_to_objectid(UserId), <<"deviceId">> => id_to_objectid(DeviceId)}}).
 
 
 
@@ -136,7 +136,7 @@ update_user(Rec) ->
 
 -spec(get_user_by_id(Id :: non_neg_integer()) -> {ok, #user{}} | {error, string() | [string()]}).
 get_user_by_id(Id) ->
-    gen_server:call(?SERVER, {get_user, #{<<"id">> => Id}}).
+    gen_server:call(?SERVER, {get_user, #{<<"_id">> => id_to_objectid(Id)}}).
 
 -spec(get_user_by_email(Email :: string()) -> {ok, #user{}} | {error, string() | [string()]}).
 get_user_by_email(Email) ->
@@ -162,7 +162,7 @@ update_device(Rec) ->
 
 -spec(get_device_by_id(Id :: non_neg_integer()) -> {ok, #device{}} | {error, string() | [string()]}).
 get_device_by_id(Id) ->
-    gen_server:call(?SERVER, {get_device, #{<<"id">> => Id}}).
+    gen_server:call(?SERVER, {get_device, #{<<"_id">> => id_to_objectid(Id)}}).
 
 -spec(get_device_by_uid(UniqueId :: string()) -> {ok, #device{}} | {error, string() | [string()]}).
 get_device_by_uid(UniqueId) ->
@@ -179,11 +179,11 @@ create_position(Rec) ->
 
 -spec(get_last_position(Id :: non_neg_integer(), DeviceId :: non_neg_integer()) -> {ok, #position{}} | {error, string() | [string()]}).
 get_last_position(Id, DeviceId) ->
-    gen_server:call(?SERVER, {get_position, #{<<"id">> => Id, <<"deviceId">> => DeviceId}}).
+    gen_server:call(?SERVER, {get_position, #{<<"_id">> => id_to_objectid(Id), <<"deviceId">> => id_to_objectid(DeviceId)}}).
 
 -spec(get_positions(DeviceId :: non_neg_integer(), From :: non_neg_integer(), To :: non_neg_integer()) -> {ok, [#position{}]}).
 get_positions(DeviceId, From, To) ->
-    gen_server:call(?SERVER, {get_positions, #{<<"deviceId">> => DeviceId, <<"fixTime">> => {'$gte', From, '$lte', To}}}).
+    gen_server:call(?SERVER, {get_positions, #{<<"deviceId">> => id_to_objectid(DeviceId), <<"fixTime">> => {'$gte', From, '$lte', To}}}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -220,7 +220,7 @@ init([Seed, Options, WorkerOptions]) ->
     do_create_indexses(State),
     case do_get_server(State) of
         {error, _Reason} ->
-            do_create_server(State, #server{id = gen_uid()});
+            do_create_server(State, #server{id = gen_id()});
         {ok, _Server} -> void
     end,
     case do_count_users(State) of
@@ -368,18 +368,18 @@ code_change(_OldVsn, State, _Extra) ->
 do_create_indexses(#state{topology = Topology}) ->
     Callback = fun(Worker) ->
                        Indexs = [
-                                 {?COLLECTION_SERVERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
+                                 %%{?COLLECTION_SERVERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
 
-                                 {?COLLECTION_PERMISSIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
+                                 %%%{?COLLECTION_PERMISSIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
                                  {?COLLECTION_PERMISSIONS, #{<<"key">> => #{<<"userId">> => 1, <<"deviceId">> => 1}, <<"name">> => <<"userId_1_deviceId_1">>, <<"unique">> => true}},
 
-                                 {?COLLECTION_USERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
+                                 %%{?COLLECTION_USERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
                                  {?COLLECTION_USERS, #{<<"key">> => #{<<"email">> => 1}, <<"name">> => <<"email_1">>, <<"unique">> => true}},
 
-                                 {?COLLECTION_DEVICES, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
+                                 %%{?COLLECTION_DEVICES, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
                                  {?COLLECTION_DEVICES, #{<<"key">> => #{<<"uniqueId">> => 1}, <<"name">> => <<"uniqueId_1">>, <<"unique">> => true}},
 
-                                 {?COLLECTION_POSITIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
+                                 %%{?COLLECTION_POSITIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
                                  {?COLLECTION_POSITIONS, #{<<"key">> => #{<<"deviceId">> => 1, <<"fixTime">> => 1}, <<"name">> => <<"deviceId_1_fixTime_1">>, <<"unique">> => true}}
                                 ],
                        lists:map(fun({Collection, Index}) -> mc_worker_api:ensure_index(Worker, Collection, Index) end, Indexs)
@@ -396,8 +396,8 @@ do_get_server(#state{topology = Topology}) ->
 do_update_server(#state{topology = Topology}, Rec) ->
     Map = to_map(server, Rec),
     Callback = fun(Worker) ->
-                       Key = #{<<"id">> => Rec#server.id},
-                       Command = #{<<"$set">> => maps:remove(<<"id">>, Map)},
+                       Key = #{<<"_id">> => id_to_objectid(Rec#server.id)},
+                       Command = #{<<"$set">> => maps:remove(<<"_id">>, Map)},
                        mc_worker_api:update(Worker, ?COLLECTION_SERVERS, Key, Command)
                end,
     Res = mongoc:transaction(Topology, Callback),
@@ -414,7 +414,7 @@ do_create_server(#state{topology = Topology}, Rec) ->
 
 
 do_create_permission(#state{topology = Topology}, Rec) ->
-    Map = to_map(permission, Rec#permission{id = gen_uid()}),
+    Map = to_map(permission, Rec#permission{id = gen_id()}),
     Callback = fun(Worker) ->
                        mc_worker_api:insert(Worker, ?COLLECTION_PERMISSIONS, Map)
                end,
@@ -423,13 +423,13 @@ do_create_permission(#state{topology = Topology}, Rec) ->
 
 do_delete_permission(#state{topology = Topology}, Rec = #permission{userId = UserId}) when UserId == 0 ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"deviceId">> => Rec#permission.deviceId})
+                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"deviceId">> => id_to_objectid(Rec#permission.deviceId)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission);
 do_delete_permission(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"userId">> => Rec#permission.userId, <<"deviceId">> => Rec#permission.deviceId})
+                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"userId">> => id_to_objectid(Rec#permission.userId), <<"deviceId">> => id_to_objectid(Rec#permission.deviceId)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission).
@@ -456,7 +456,7 @@ do_count_users(#state{topology = Topology}) ->
     mongoc:transaction(Topology, fun(Worker) -> mc_worker_api:count(Worker, ?COLLECTION_USERS, #{}) end).
 
 do_create_user(#state{topology = Topology}, Rec) ->
-    Map = to_map(user, Rec#user{id = gen_uid(), hashPassword = hash(Rec#user.password)}),
+    Map = to_map(user, Rec#user{id = gen_id(), hashPassword = hash(Rec#user.password)}),
     Callback = fun(Worker) ->
                        mc_worker_api:insert(Worker, ?COLLECTION_USERS, Map)
                end,
@@ -480,7 +480,7 @@ do_update_user(#state{topology = Topology}, Rec) ->
 
     Map = FixUser(Rec),
     Callback = fun(Worker) ->
-                       Key = #{<<"id">> => Rec#user.id},
+                       Key = #{<<"_id">> => id_to_objectid(Rec#user.id)},
                        Command = #{<<"$set">> => Map},
                        mc_worker_api:update(Worker, ?COLLECTION_USERS, Key, Command)
                end,
@@ -489,7 +489,7 @@ do_update_user(#state{topology = Topology}, Rec) ->
 
 do_delete_user(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_USERS, #{<<"id">> => Rec#user.id})
+                       mc_worker_api:delete(Worker, ?COLLECTION_USERS, #{<<"_id">> => id_to_objectid(Rec#user.id)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(user, Rec), user).
@@ -514,7 +514,7 @@ do_get_user(#state{topology = Topology}, Query) ->
 
 
 do_create_device(#state{topology = Topology}, Rec) ->
-    Map = to_map(device, Rec#device{id = gen_uid(), status = <<"">>, lastUpdate = 0, positionId = 0}),
+    Map = to_map(device, Rec#device{id = gen_id(), status = <<"">>, lastUpdate = 0, positionId = 0}),
     Callback = fun(Worker) ->
                        mc_worker_api:insert(Worker, ?COLLECTION_DEVICES, Map)
                end,
@@ -524,8 +524,8 @@ do_create_device(#state{topology = Topology}, Rec) ->
 do_update_device(#state{topology = Topology}, Rec) ->
     Map = to_map(device, Rec),
     Callback = fun(Worker) ->
-                       Key = #{<<"id">> => Rec#device.id},
-                       Command = #{<<"$set">> => maps:remove(<<"id">>, Map)},
+                       Key = #{<<"_id">> => id_to_objectid(Rec#device.id)},
+                       Command = #{<<"$set">> => maps:remove(<<"_id">>, Map)},
                        mc_worker_api:update(Worker, ?COLLECTION_DEVICES, Key, Command)
                end,
     Res = mongoc:transaction(Topology, Callback),
@@ -534,7 +534,7 @@ do_update_device(#state{topology = Topology}, Rec) ->
 
 do_delete_device(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_DEVICES, #{<<"id">> => Rec#device.id})
+                       mc_worker_api:delete(Worker, ?COLLECTION_DEVICES, #{<<"_id">> => id_to_objectid(Rec#device.id)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(device, Rec), device).
@@ -562,7 +562,7 @@ do_create_position(#state{topology = Topology}, Rec) ->
     ServerTime = em_helper_time:timestamp(),
     DeviceTime = Rec#position.deviceTime,
     Map = to_map(position, Rec#position{
-                             id = gen_uid(),
+                             id = gen_id(),
                              type = <<>>,
                              serverTime = ServerTime,
                              fixTime = fix_time(ServerTime, DeviceTime)
@@ -590,7 +590,7 @@ do_get_positions(#state{topology = Topology}, Query) ->
     mongoc:transaction_query(Topology, Callback).
 
 do_get_result(Item, ItemType) ->
-    do_get_result(maps:is_key(<<"id">>, Item), Item, ItemType).
+    do_get_result(maps:is_key(<<"_id">>, Item), Item, ItemType).
 
 do_get_result(true, Item, ItemType) ->
     {ok, from_map(ItemType, Item)};
@@ -623,7 +623,7 @@ fix_time(_, DeviceTime) ->
 
 from_map(server, Map) ->
     #server{
-       id = maps:get(<<"id">>, Map, 0),
+       id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
        registration = maps:get(<<"registration">>, Map, true),
        readonly = maps:get(<<"readonly">>, Map, false),
        map = maps:get(<<"map">>, Map, <<"">>),
@@ -638,13 +638,13 @@ from_map(server, Map) ->
       };
 from_map(permission, Map) ->
     #permission{
-       id = maps:get(<<"id">>, Map, 0),
-       userId = maps:get(<<"userId">>, Map, 0),
-       deviceId = maps:get(<<"deviceId">>, Map, 0)
+       id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
+       userId = objectid_to_id(maps:get(<<"userId">>, Map, 0)),
+       deviceId = objectid_to_id(maps:get(<<"deviceId">>, Map, 0))
       };
 from_map(user, Map) ->
     #user{
-       id = maps:get(<<"id">>, Map, 0),
+       id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
        name = maps:get(<<"name">>, Map, <<"">>),
        email = maps:get(<<"email">>, Map, <<"">>),
        readonly = maps:get(<<"readonly">>, Map, false),
@@ -662,7 +662,7 @@ from_map(user, Map) ->
       };
 from_map(device, Map) ->
     #device{
-       id = maps:get(<<"id">>, Map, 0),
+       id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
        name = maps:get(<<"name">>, Map, <<"">>),
        uniqueId = maps:get(<<"uniqueId">>, Map, <<"">>),
        status = maps:get(<<"status">>, Map, <<"">>),
@@ -671,13 +671,13 @@ from_map(device, Map) ->
       };
 from_map(position, Map) ->
     #position{
-       id = maps:get(<<"id">>, Map, 0),
+       id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
        type = maps:get(<<"type">>, Map, <<"">>),
        protocol = maps:get(<<"protocol">>, Map, <<"">>),
        serverTime = maps:get(<<"serverTime">>, Map, 0),
        deviceTime = maps:get(<<"deviceTime">>, Map, 0),
        fixTime = maps:get(<<"fixTime">>, Map, 0),
-       deviceId = maps:get(<<"deviceId">>, Map, 0),
+       deviceId = objectid_to_id(maps:get(<<"deviceId">>, Map, 0)),
        outdated = maps:get(<<"outdated">>, Map, false),
        valid = maps:get(<<"valid">>, Map, false),
        latitude = maps:get(<<"latitude">>, Map, 0.0),
@@ -691,7 +691,7 @@ from_map(position, Map) ->
 
 to_map(server, Rec) ->
     #{
-       <<"id">> => Rec#server.id,
+       <<"_id">> => id_to_objectid(Rec#server.id),
        <<"registration">> => Rec#server.registration,
        <<"readonly">> => Rec#server.readonly,
        <<"map">> => Rec#server.map,
@@ -706,13 +706,13 @@ to_map(server, Rec) ->
      };
 to_map(permission, Rec) ->
     #{
-       <<"id">> => Rec#permission.id,
-       <<"userId">> => Rec#permission.userId,
-       <<"deviceId">> => Rec#permission.deviceId
+       <<"_id">> => id_to_objectid(Rec#permission.id),
+       <<"userId">> => id_to_objectid(Rec#permission.userId),
+       <<"deviceId">> => id_to_objectid(Rec#permission.deviceId)
      };
 to_map(user, Rec) ->
     #{
-       <<"id">> => Rec#user.id,
+       <<"_id">> => id_to_objectid(Rec#user.id),
        <<"name">> => Rec#user.name,
        <<"email">> => Rec#user.email,
        <<"readonly">> => Rec#user.readonly,
@@ -730,7 +730,7 @@ to_map(user, Rec) ->
      };
 to_map(device, Rec) ->
     #{
-       <<"id">> => Rec#device.id,
+       <<"_id">> => id_to_objectid(Rec#device.id),
        <<"name">> => Rec#device.name,
        <<"uniqueId">> => Rec#device.uniqueId,
        <<"status">> => Rec#device.status,
@@ -739,13 +739,13 @@ to_map(device, Rec) ->
      };
 to_map(position, Rec) ->
     #{
-       <<"id">> => Rec#position.id,
+       <<"_id">> => id_to_objectid(Rec#position.id),
        <<"type">> => Rec#position.type,
        <<"protocol">> => Rec#position.protocol,
        <<"serverTime">> => Rec#position.serverTime,
        <<"deviceTime">> => Rec#position.deviceTime,
        <<"fixTime">> => Rec#position.fixTime,
-       <<"deviceId">> => Rec#position.deviceId,
+       <<"deviceId">> => id_to_objectid(Rec#permission.deviceId),
        <<"outdated">> => Rec#position.outdated,
        <<"valid">> => Rec#position.valid,
        <<"latitude">> => Rec#position.latitude,
@@ -757,9 +757,33 @@ to_map(position, Rec) ->
        <<"attributes">> => Rec#position.attributes
      }.
 
-gen_uid() -> bson:unixtime_to_secs(bson:timenow()).
-
 hash(V) -> em_password:hash(V).
+
+
+gen_id() ->
+  {<<FirstPart:4/bytes, _:4/bytes, SecondPart:4/bytes>>} = gen_oid(),
+  <<Id:64/big>> = <<SecondPart:4/bytes, FirstPart:4/bytes>>,
+  Id.
+
+%% new_objectid returns a dummy ObjectId with the timestamp  part
+%% filled with the provided number of seconds from epoch UTC,
+%% and all other parts filled with zeroes.
+%% It's not safe to insert a document with an id generated by this method,
+%% it is useful only for queries to find documents with ids generated before or
+%% after the specified timestamp.
+gen_oid() ->
+  {Mega, Sec, Micro} = os:timestamp(),
+  Seconds = (Mega*1000000 + Sec),
+  {<<Seconds:32/big, 0:32/big, Micro:32/big>>}.
+
+id_to_objectid(Id) ->
+  <<SecondPart:4/bytes, FirstPart:4/bytes>> = <<Id:64/big>>,
+  {<<FirstPart:4/bytes, 0:32/big, SecondPart:4/bytes>>}.
+
+objectid_to_id(ObjectId) ->
+  {<<FirstPart:4/bytes, _:32/big, SecondPart:4/bytes>>} = ObjectId,
+  <<Id:64/big>> = <<SecondPart:4/bytes, FirstPart:4/bytes>>,
+  Id.
 
 
 %%test() ->
