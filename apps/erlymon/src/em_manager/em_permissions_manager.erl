@@ -52,7 +52,7 @@ check_user(UserId, _) ->
 
 
 check_device(UserId, DeviceId) ->
-    case em_storage:get_permission(UserId, DeviceId) of
+    case em_manager_permissions:get(UserId, DeviceId) of
       {error, _Reason} ->
             false;
       {ok, _Permission} ->
