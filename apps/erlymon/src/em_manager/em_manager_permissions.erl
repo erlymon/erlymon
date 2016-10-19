@@ -35,6 +35,7 @@
 
 -export([
   get/0,
+  get/2,
   get_by_user_id/1,
   create/1,
   delete/1
@@ -58,6 +59,10 @@
 -spec(get() -> {ok, [Rec :: #permission{}]} | {error, string()}).
 get() ->
   gen_server:call(?SERVER, {get}).
+
+-spec(get(UserId :: integer(), DeviceId :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
+get(UserId, DeviceId) ->
+  gen_server:call(?SERVER, {get, UserId, DeviceId}).
 
 -spec(get_by_user_id(Id :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
 get_by_user_id(Id) ->
@@ -127,6 +132,8 @@ init([]) ->
   {stop, Reason :: term(), NewState :: #state{}}).
 handle_call({get}, _From, State) ->
   do_get_permissions(State);
+handle_call({get, UserId, DeviceId}, _From, State) ->
+  do_get_permission(State, UserId, DeviceId);
 handle_call({get, Id}, _From, State) when is_integer(Id) ->
   do_get_permissions_by_user_id(State, Id);
 handle_call({create, Permission}, _From, State) ->
@@ -203,6 +210,15 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 do_get_permissions(State = #state{cache = Cache}) ->
   {reply, {ok, ets:tab2list(Cache)}, State}.
+
+do_get_permission(State = #state{cache = Cache}, SearchUserId, SearchDeviceId) ->
+  Match = ets:fun2ms(fun(Permission = #permission{userId = UserId, deviceId = DeviceId}) when (UserId =:= SearchUserId) and (DeviceId =:= SearchDeviceId) -> Permission end),
+  case ets:select(Cache, Match) of
+    [] ->
+      {reply, {error, <<"Not find permission">>}, State};
+    [Item|_] ->
+      {reply, {ok, Item}, State}
+  end.
 
 do_get_permissions_by_user_id(State = #state{cache = Cache}, SearchUserId) ->
   Match = ets:fun2ms(fun(Permission = #permission{userId = UserId}) when UserId =:= SearchUserId -> Permission end),
