@@ -183,7 +183,7 @@ get_last_position(Id, DeviceId) ->
 
 -spec(get_positions(DeviceId :: non_neg_integer(), From :: non_neg_integer(), To :: non_neg_integer()) -> {ok, [#position{}]}).
 get_positions(DeviceId, From, To) ->
-    gen_server:call(?SERVER, {get_positions, #{<<"deviceId">> => id_to_objectid(DeviceId), <<"fixTime">> => {'$gte', From, '$lte', To}}}).
+    gen_server:call(?SERVER, {get_positions, #{<<"deviceId">> => id_to_objectid(DeviceId), <<"fixTime">> => {'$gte', seconds_to_timestamp(From), '$lte', seconds_to_timestamp(To)}}}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -666,17 +666,18 @@ from_map(device, Map) ->
        name = maps:get(<<"name">>, Map, <<"">>),
        uniqueId = maps:get(<<"uniqueId">>, Map, <<"">>),
        status = maps:get(<<"status">>, Map, <<"">>),
-       lastUpdate = maps:get(<<"lastUpdate">>, Map, 0),
+       lastUpdate = timestamp_to_seconds(maps:get(<<"lastUpdate">>, Map, {timestamp, {0,0,0}})),
        positionId = maps:get(<<"positionId">>, Map, 0)
       };
 from_map(position, Map) ->
+    %%em_logger:info("# DUMP POS => ~w", [Map]),
     #position{
        id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
        type = maps:get(<<"type">>, Map, <<"">>),
        protocol = maps:get(<<"protocol">>, Map, <<"">>),
-       serverTime = maps:get(<<"serverTime">>, Map, 0),
-       deviceTime = maps:get(<<"deviceTime">>, Map, 0),
-       fixTime = maps:get(<<"fixTime">>, Map, 0),
+       serverTime = timestamp_to_seconds(maps:get(<<"serverTime">>, Map, {timestamp, {0,0,0}})),
+       deviceTime = timestamp_to_seconds(maps:get(<<"deviceTime">>, Map, {timestamp, {0, 0, 0}})),
+       fixTime = timestamp_to_seconds(maps:get(<<"fixTime">>, Map, {timestamp, {0, 0, 0}})),
        deviceId = objectid_to_id(maps:get(<<"deviceId">>, Map, 0)),
        outdated = maps:get(<<"outdated">>, Map, false),
        valid = maps:get(<<"valid">>, Map, false),
@@ -734,7 +735,7 @@ to_map(device, Rec) ->
        <<"name">> => Rec#device.name,
        <<"uniqueId">> => Rec#device.uniqueId,
        <<"status">> => Rec#device.status,
-       <<"lastUpdate">> => Rec#device.lastUpdate,
+       <<"lastUpdate">> => seconds_to_timestamp(Rec#device.lastUpdate),
        <<"positionId">> => Rec#device.positionId
      };
 to_map(position, Rec) ->
@@ -742,10 +743,10 @@ to_map(position, Rec) ->
        <<"_id">> => id_to_objectid(Rec#position.id),
        <<"type">> => Rec#position.type,
        <<"protocol">> => Rec#position.protocol,
-       <<"serverTime">> => Rec#position.serverTime,
-       <<"deviceTime">> => Rec#position.deviceTime,
-       <<"fixTime">> => Rec#position.fixTime,
-       <<"deviceId">> => id_to_objectid(Rec#permission.deviceId),
+       <<"serverTime">> => seconds_to_timestamp(Rec#position.serverTime),
+       <<"deviceTime">> => seconds_to_timestamp(Rec#position.deviceTime),
+       <<"fixTime">> => seconds_to_timestamp(Rec#position.fixTime),
+       <<"deviceId">> => id_to_objectid(Rec#position.deviceId),
        <<"outdated">> => Rec#position.outdated,
        <<"valid">> => Rec#position.valid,
        <<"latitude">> => Rec#position.latitude,
@@ -785,6 +786,16 @@ objectid_to_id(ObjectId) ->
   <<Id:64/big>> = <<SecondPart:4/bytes, FirstPart:4/bytes>>,
   Id.
 
+
+seconds_to_timestamp(Seconds) ->
+  {timestamp, bson:secs_to_unixtime(Seconds)};
+seconds_to_timestamp(_) ->
+  {timestamp, {0, 0, 0}}.
+
+timestamp_to_seconds({timestamp, Timestamp}) ->
+  bson:unixtime_to_secs(Timestamp);
+timestamp_to_seconds(_) ->
+  0.
 
 %%test() ->
 %%em_storage_mongo:create_device(#device{name = <<"auto5">>, uniqueId =  <<"005">>}).
