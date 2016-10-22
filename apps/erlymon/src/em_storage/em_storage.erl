@@ -233,7 +233,7 @@ init([Seed, Options, WorkerOptions]) ->
                                     });
         _ -> void
     end,
-    em_logger:info("COUNT: ~w", [do_count_users(State)]),
+    %%em_logger:info("COUNT: ~w", [do_count_users(State)]),
     {ok, State}.
 
 %%--------------------------------------------------------------------
@@ -440,7 +440,6 @@ do_get_permission(#state{topology = Topology}, Query) ->
                 mongoc:find_one(Conf, ?COLLECTION_PERMISSIONS, Query, #{}, 0)
              end,
   Item = mongoc:transaction_query(Topology, Callback),
-  em_logger:info("RESULT: ~w", [Item]),
   do_get_result(Item, permission).
 
 do_get_permissions(#state{topology = Topology}, Query) ->
@@ -666,18 +665,17 @@ from_map(device, Map) ->
        name = maps:get(<<"name">>, Map, <<"">>),
        uniqueId = maps:get(<<"uniqueId">>, Map, <<"">>),
        status = maps:get(<<"status">>, Map, <<"">>),
-       lastUpdate = timestamp_to_seconds(maps:get(<<"lastUpdate">>, Map, {timestamp, {0,0,0}})),
+       lastUpdate = timestamp_to_seconds(maps:get(<<"lastUpdate">>, Map, null)),
        positionId = maps:get(<<"positionId">>, Map, 0)
       };
 from_map(position, Map) ->
-    %%em_logger:info("# DUMP POS => ~w", [Map]),
     #position{
        id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
        type = maps:get(<<"type">>, Map, <<"">>),
        protocol = maps:get(<<"protocol">>, Map, <<"">>),
-       serverTime = timestamp_to_seconds(maps:get(<<"serverTime">>, Map, {timestamp, {0,0,0}})),
-       deviceTime = timestamp_to_seconds(maps:get(<<"deviceTime">>, Map, {timestamp, {0, 0, 0}})),
-       fixTime = timestamp_to_seconds(maps:get(<<"fixTime">>, Map, {timestamp, {0, 0, 0}})),
+       serverTime = timestamp_to_seconds(maps:get(<<"serverTime">>, Map, null)),
+       deviceTime = timestamp_to_seconds(maps:get(<<"deviceTime">>, Map, null)),
+       fixTime = timestamp_to_seconds(maps:get(<<"fixTime">>, Map, null)),
        deviceId = objectid_to_id(maps:get(<<"deviceId">>, Map, 0)),
        outdated = maps:get(<<"outdated">>, Map, false),
        valid = maps:get(<<"valid">>, Map, false),
@@ -788,11 +786,11 @@ objectid_to_id(ObjectId) ->
 
 
 seconds_to_timestamp(Seconds) ->
-  {timestamp, bson:secs_to_unixtime(Seconds)};
+  #{<<"timestamp">> => bson:secs_to_unixtime(Seconds)};
 seconds_to_timestamp(_) ->
-  {timestamp, {0, 0, 0}}.
+  #{<<"timestamp">> => {0, 0, 0}}.
 
-timestamp_to_seconds({timestamp, Timestamp}) ->
+timestamp_to_seconds(#{<<"timestamp">> := Timestamp}) ->
   bson:unixtime_to_secs(Timestamp);
 timestamp_to_seconds(_) ->
   0.
