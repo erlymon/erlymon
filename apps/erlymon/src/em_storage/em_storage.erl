@@ -773,15 +773,15 @@ gen_id() ->
 gen_oid() ->
   {Mega, Sec, Micro} = os:timestamp(),
   Seconds = (Mega*1000000 + Sec),
-  {<<Seconds:32/big, 0:32/big, Micro:32/big>>}.
+  {<<Seconds:32/big, 0:40/big, Micro:24/big>>}.
 
 id_to_objectid(Id) ->
-  <<SecondPart:4/bytes, FirstPart:4/bytes>> = <<Id:64/big>>,
-  {<<FirstPart:4/bytes, 0:32/big, SecondPart:4/bytes>>}.
+  <<SecondPart:3/bytes, FirstPart:4/bytes>> = <<Id:56/big>>,
+  {<<FirstPart:4/bytes, 0:40/big, SecondPart:3/bytes>>}.
 
 objectid_to_id(ObjectId) ->
-  {<<FirstPart:4/bytes, _:32/big, SecondPart:4/bytes>>} = ObjectId,
-  <<Id:64/big>> = <<SecondPart:4/bytes, FirstPart:4/bytes>>,
+  {<<FirstPart:4/bytes, _:40/big, SecondPart:3/bytes>>} = ObjectId,
+  <<Id:56/big>> = <<SecondPart:3/bytes, FirstPart:4/bytes>>,
   Id.
 
 
