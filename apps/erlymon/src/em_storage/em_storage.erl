@@ -39,22 +39,15 @@
          create_permission/1,
          delete_permission/1,
          get_permissions/0,
-         get_permission/2,
-         get_permissions_by_user_id/1,
-         get_permissions_by_device_id/1,
 
          create_user/1,
          update_user/1,
          delete_user/1,
-         get_user_by_id/1,
-         get_user_by_email/1,
          get_users/0,
 
          create_device/1,
          update_device/1,
          delete_device/1,
-         get_device_by_id/1,
-         get_device_by_uid/1,
          get_devices/0,
 
          create_position/1,
@@ -103,24 +96,9 @@ create_permission(Rec) ->
 delete_permission(Rec) ->
     gen_server:call(?SERVER, {delete_permission, Rec}).
 
--spec(get_permissions_by_user_id(UserId :: non_neg_integer()) -> {ok, [#permission{}]} | {error, string() | [string()]}).
-get_permissions_by_user_id(UserId) ->
-    gen_server:call(?SERVER, {get_permissions, #{<<"userId">> => id_to_objectid(UserId)}}).
-
--spec(get_permissions_by_device_id(DeviceId :: non_neg_integer()) -> {ok, [#permission{}]} | {error, string() | [string()]}).
-get_permissions_by_device_id(DeviceId) ->
-  gen_server:call(?SERVER, {get_permissions, #{<<"deviceId">> => id_to_objectid(DeviceId)}}).
-
 -spec(get_permissions() -> {ok, [#permission{}]} | {error, string() | [string()]}).
 get_permissions() ->
   gen_server:call(?SERVER, {get_permissions, #{}}).
-
-
--spec(get_permission(UserId :: non_neg_integer(), DeviceId :: non_neg_integer()) -> {ok, #permission{}} | {error, string() | [string()]}).
-get_permission(UserId, DeviceId) ->
-  gen_server:call(?SERVER, {get_permission, #{<<"userId">> => id_to_objectid(UserId), <<"deviceId">> => id_to_objectid(DeviceId)}}).
-
-
 
 -spec(create_user(Rec :: #user{}) -> {ok, #user{}} | {error, string() | [string()]}).
 create_user(Rec) ->
@@ -133,14 +111,6 @@ delete_user(Rec) ->
 -spec(update_user(Rec :: #user{}) -> {ok, #user{}} | {error, string() | [string()]}).
 update_user(Rec) ->
     gen_server:call(?SERVER, {update_user, Rec}).
-
--spec(get_user_by_id(Id :: non_neg_integer()) -> {ok, #user{}} | {error, string() | [string()]}).
-get_user_by_id(Id) ->
-    gen_server:call(?SERVER, {get_user, #{<<"_id">> => id_to_objectid(Id)}}).
-
--spec(get_user_by_email(Email :: string()) -> {ok, #user{}} | {error, string() | [string()]}).
-get_user_by_email(Email) ->
-    gen_server:call(?SERVER, {get_user, #{<<"email">> => Email}}).
 
 -spec(get_users() -> {ok, [#user{}]} | {error, string() | [string()]}).
 get_users() ->
@@ -159,14 +129,6 @@ delete_device(Rec) ->
 -spec(update_device(Rec :: #device{}) -> {ok, #device{}} | {error, string() | [string()]}).
 update_device(Rec) ->
     gen_server:call(?SERVER, {update_device, Rec}).
-
--spec(get_device_by_id(Id :: non_neg_integer()) -> {ok, #device{}} | {error, string() | [string()]}).
-get_device_by_id(Id) ->
-    gen_server:call(?SERVER, {get_device, #{<<"_id">> => id_to_objectid(Id)}}).
-
--spec(get_device_by_uid(UniqueId :: string()) -> {ok, #device{}} | {error, string() | [string()]}).
-get_device_by_uid(UniqueId) ->
-    gen_server:call(?SERVER, {get_device, #{<<"uniqueId">> => UniqueId}}).
 
 -spec(get_devices() -> {ok, [#device{}]} | {error, string() | [string()]}).
 get_devices() ->
@@ -263,8 +225,6 @@ handle_call({create_permission, Rec}, _From, State) ->
     {reply, do_create_permission(State, Rec), State};
 handle_call({delete_permission, Rec}, _From, State) ->
     {reply, do_delete_permission(State, Rec), State};
-handle_call({get_permission, Query}, _From, State) ->
-    {reply, do_get_permission(State, Query), State};
 handle_call({get_permissions, Query}, _From, State) ->
   {reply, do_get_permissions(State, Query), State};
 
@@ -274,8 +234,6 @@ handle_call({update_user, Rec}, _From, State) ->
     {reply, do_update_user(State, Rec), State};
 handle_call({delete_user, Rec}, _From, State) ->
     {reply, do_delete_user(State, Rec), State};
-handle_call({get_user, Query}, _From, State) ->
-    {reply, do_get_user(State, Query), State};
 handle_call({get_users}, _From, State) ->
     {reply, do_get_users(State), State};
 
@@ -285,8 +243,6 @@ handle_call({update_device, Rec}, _From, State) ->
     {reply, do_update_device(State, Rec), State};
 handle_call({delete_device, Rec}, _From, State) ->
     {reply, do_delete_device(State, Rec), State};
-handle_call({get_device, Query}, _From, State) ->
-    {reply, do_get_device(State, Query), State};
 handle_call({get_devices}, _From, State) ->
     {reply, do_get_devices(State), State};
 
@@ -434,14 +390,6 @@ do_delete_permission(#state{topology = Topology}, Rec) ->
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission).
 
-
-do_get_permission(#state{topology = Topology}, Query) ->
-  Callback = fun(Conf) ->
-                mongoc:find_one(Conf, ?COLLECTION_PERMISSIONS, Query, #{}, 0)
-             end,
-  Item = mongoc:transaction_query(Topology, Callback),
-  do_get_result(Item, permission).
-
 do_get_permissions(#state{topology = Topology}, Query) ->
     Callback = fun(Conf) ->
                        Cursor = mongoc:find(Conf, ?COLLECTION_PERMISSIONS, Query),
@@ -503,15 +451,6 @@ do_get_users(#state{topology = Topology}) ->
                end,
     mongoc:transaction_query(Topology, Callback).
 
-do_get_user(#state{topology = Topology}, Query) ->
-    Callback = fun(Conf) ->
-                       mongoc:find_one(Conf, ?COLLECTION_USERS, Query, #{}, 0)
-               end,
-    Item = mongoc:transaction_query(Topology, Callback),
-    do_get_result(Item, user).
-
-
-
 do_create_device(#state{topology = Topology}, Rec) ->
     Map = to_map(device, Rec#device{id = gen_id(), status = <<"">>, lastUpdate = 0, positionId = 0}),
     Callback = fun(Worker) ->
@@ -547,15 +486,6 @@ do_get_devices(#state{topology = Topology}) ->
                        {ok, Items}
                end,
     mongoc:transaction_query(Topology, Callback).
-
-do_get_device(#state{topology = Topology}, Query) ->
-    Callback = fun(Conf) ->
-                       mongoc:find_one(Conf, ?COLLECTION_DEVICES, Query, #{}, 0)
-               end,
-    Item = mongoc:transaction_query(Topology, Callback),
-    do_get_result(Item, device).
-
-
 
 do_create_position(#state{topology = Topology}, Rec) ->
     ServerTime = em_helper_time:timestamp(),
