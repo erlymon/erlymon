@@ -80,7 +80,18 @@ init([]) ->
   EventManager = {em_manager_event,{em_manager_event, start_link,[]},
     permanent,2000,worker,dynamic},
 
-  {ok, {SupFlags, [ServerManager, PermissionsManager, UsersManager, DevicesManager, PositionsManager, EventManager]}}.
+  CommansManager = {em_manager_commands,{em_manager_commands, start_link,[]},
+    permanent,2000,worker,dynamic},
+
+  {ok, {SupFlags, [
+    ServerManager,
+    PermissionsManager,
+    UsersManager,
+    DevicesManager,
+    PositionsManager,
+    EventManager,
+    CommansManager
+  ]}}.
 
 %%%===================================================================
 %%% Internal functions

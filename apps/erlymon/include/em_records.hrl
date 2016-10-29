@@ -102,6 +102,14 @@
   positions = [] :: list()
 }).
 
+-record(device_state, {
+  deviceId = 0 :: integer(),
+  protocol :: any(),
+  socket :: any(),
+  transport :: any(),
+  timeout :: integer()|atom()
+}).
+
 %%  Device
 -define(STATUS_UNKNOWN, <<"unknown">>).
 -define(STATUS_ONLINE, <<"online">>).
