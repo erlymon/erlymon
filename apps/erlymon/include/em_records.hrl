@@ -107,7 +107,8 @@
   protocol :: any(),
   socket :: any(),
   transport :: any(),
-  timeout :: integer()|atom()
+  timeout :: integer()|atom(),
+  pattern :: any()
 }).
 
 %%  Device
