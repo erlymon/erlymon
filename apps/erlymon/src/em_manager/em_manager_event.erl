@@ -128,7 +128,7 @@ handle_cast({broadcast, {Device, Position}}, State) ->
                   em_http_api_socket_handler:notify(Permission#permission.userId, #event{positions = [Position]}),
                   em_http_api_socket_handler:notify(Permission#permission.userId, #event{devices = [Device]})
                end,
-  {ok, Permissions} = em_storage:get_permissions_by_device_id(Position#position.deviceId),
+  {ok, Permissions} = em_manager_permissions:get_by_device_id(Position#position.deviceId),
   lists:map(SendNotify, Permissions),
   {noreply, State};
 handle_cast(_Request, State) ->
