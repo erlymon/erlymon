@@ -135,8 +135,9 @@ update_device(Req, User) ->
         false ->
           cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
         true ->
-          em_data_manager:update_device(Device),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2)
+          {ok, LastUpdate} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S %Z">>, Device#device.lastUpdate),
+          em_data_manager:update_device(Device#device{lastUpdate = LastUpdate}),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device#device{lastUpdate = LastUpdate}), Req2)
       end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
