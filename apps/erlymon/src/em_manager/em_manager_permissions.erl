@@ -37,6 +37,7 @@
   get/0,
   get/2,
   get_by_user_id/1,
+  get_by_device_id/1,
   create/1,
   delete/1
 ]).
@@ -66,7 +67,11 @@ get(UserId, DeviceId) ->
 
 -spec(get_by_user_id(Id :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
 get_by_user_id(Id) ->
-  gen_server:call(?SERVER, {get, Id}).
+  gen_server:call(?SERVER, {get_by_user_id, Id}).
+
+-spec(get_by_device_id(Id :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
+get_by_device_id(Id) ->
+  gen_server:call(?SERVER, {get_by_device_id, Id}).
 
 -spec(create(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
 create(Permission) ->
@@ -134,8 +139,10 @@ handle_call({get}, _From, State) ->
   do_get_permissions(State);
 handle_call({get, UserId, DeviceId}, _From, State) ->
   do_get_permission(State, UserId, DeviceId);
-handle_call({get, Id}, _From, State) when is_integer(Id) ->
+handle_call({get_by_user_id, Id}, _From, State) when is_integer(Id) ->
   do_get_permissions_by_user_id(State, Id);
+handle_call({get_by_device_id, Id}, _From, State) when is_integer(Id) ->
+  do_get_permissions_by_device_id(State, Id);
 handle_call({create, Permission}, _From, State) ->
   do_create_permission(State, Permission);
 handle_call({delete, Permission}, _From, State) ->
@@ -222,6 +229,10 @@ do_get_permission(State = #state{cache = Cache}, SearchUserId, SearchDeviceId) -
 
 do_get_permissions_by_user_id(State = #state{cache = Cache}, SearchUserId) ->
   Match = ets:fun2ms(fun(Permission = #permission{userId = UserId}) when UserId =:= SearchUserId -> Permission end),
+  {reply, {ok, ets:select(Cache, Match)}, State}.
+
+do_get_permissions_by_device_id(State = #state{cache = Cache}, SearchDeviceId) ->
+  Match = ets:fun2ms(fun(Permission = #permission{deviceId = DeviceId}) when DeviceId =:= SearchDeviceId -> Permission end),
   {reply, {ok, ets:select(Cache, Match)}, State}.
 
 do_create_permission(State = #state{cache = Cache}, PermissionModel) ->
