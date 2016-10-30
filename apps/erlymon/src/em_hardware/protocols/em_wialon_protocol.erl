@@ -75,7 +75,7 @@
   >>
 ).
 
--record(state, {protocol, transport, socket, timeout, device, pattern}).
+%%-record(state, {protocol, transport, socket, timeout, device, pattern}).
 
 start_link(Ref, Socket, Transport, Opts) ->
   Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Opts]),
@@ -85,12 +85,12 @@ init(Ref, Socket, Transport, Opts) ->
   ok = ranch:accept_ack(Ref),
   Protocol = proplists:get_value(protocol, Opts),
   {ok, Pattern} = re:compile(?PATTERN),
-  loop(#state{protocol = Protocol, socket = Socket, transport = Transport, pattern = Pattern}).
+  loop(#device_state{protocol = Protocol, socket = Socket, transport = Transport, timeout = infinity, pattern = Pattern}).
 
 % echo "39. wialon"
 % (echo -n -e "#D#030816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n";) | nc -v localhost 5003
-loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport, device = Device, pattern = Pattern}) ->
-  case Transport:recv(Socket, 0, infinity) of
+loop(State = #device_state{protocol = Protocol, socket = Socket, transport = Transport, timeout = Timeout, deviceId = DeviceId, pattern = Pattern}) ->
+  case Transport:recv(Socket, 0, Timeout) of
     {ok, Data} ->
       em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
       [_, Head, Body] = binary:split(Data, [<<"#">>], [global]),
@@ -101,20 +101,22 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
             {error, _Reason} ->
               em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
               send_packet(State, <<"#AL#0">>),
-              Transport:close(Socket);
-            {ok, FindDevice} ->
+              close(State);
+            {ok, Device} ->
+              NewState = State#device_state{deviceId = Device#device.id},
+              em_manager_commands:link(NewState),
               send_packet(State, <<"#AL#1">>),
-              loop(State#state{device = FindDevice})
+              loop(NewState)
           end;
         {data, PositionModel} ->
           Position = PositionModel#position{
-            deviceId = Device#device.id,
+            deviceId = DeviceId,
             protocol = atom_to_binary(Protocol, utf8),
             attributes = #{
               ?KEY_IP => em_hardware:resolve(Socket)
             }
           },
-          case em_data_manager:create_position(Device, Position) of
+          case em_data_manager:create_position(DeviceId, Position) of
             {ok, _} -> send_packet(State, <<"#AD#1">>);
             _ -> send_packet(State, <<"#AD#0">>)
           end,
@@ -122,8 +124,12 @@ loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport,
       end,
       loop(State);
     _ ->
-      Transport:close(Socket)
+      close(State)
   end.
+
+close(State = #device_state{transport = Transport, socket = Socket}) ->
+  em_manager_commands:unlink(State),
+  Transport:close(Socket).
 
 parse(<<"L">>, Data, _) ->
   case binary:split(Data, [<<";">>], []) of
@@ -210,7 +216,7 @@ read_param({Pos, Len}, Data) ->
   binary:part(Data, Pos, Len).
 
 
-send_packet(#state{socket = Socket, transport = Transport}, Bin) ->
+send_packet(#device_state{socket = Socket, transport = Transport}, Bin) ->
   Transport:send(Socket, <<Bin/binary, "\r\n">>).
 
 test() ->
