@@ -65,17 +65,18 @@ get_server() ->
 update_server(Server) ->
   em_manager_server:update(Server).
 
--spec(create_position(DeviceModel :: #device{}, PositionModel :: #position{}) -> {ok, #position{}} | {error, string()}).
-create_position(DeviceModel, PositionModel) ->
+-spec(create_position(DeviceId :: integer(), PositionModel :: #position{}) -> {ok, #position{}} | {error, string()}).
+create_position(DeviceId, PositionModel) ->
       case em_manager_positions:create(PositionModel) of
         {ok, Position} ->
-          em_manager_devices:update(DeviceModel#device{
-            positionId = Position#position.id,
-            lastUpdate = em_helper_time:timestamp()
-          }),
-          case em_manager_devices:get_by_id(DeviceModel#device.id) of
-            {ok, Device} ->
-              em_manager_event:broadcast(Device, Position),
+          case em_manager_devices:get_by_id(DeviceId) of
+            {ok, FindDevice} ->
+              DeviceModel = FindDevice#device{
+                positionId = Position#position.id,
+                lastUpdate = em_helper_time:timestamp()
+              },
+              em_manager_devices:update(DeviceModel),
+              em_manager_event:broadcast(DeviceModel, Position),
               {ok, Position};
             _ ->
               {ok, Position}
