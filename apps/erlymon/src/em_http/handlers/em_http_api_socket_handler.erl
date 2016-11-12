@@ -66,8 +66,10 @@ websocket_info({timeout, _Ref, User}, Req, State) ->
                                   {error, _Reason} ->
                                       Acc;
                                   {ok, Position} ->
-                                      {ok, Address} = em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language),
-                                      [Position#position{address = Address} | Acc]
+                                      case em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language) of
+                                          {ok, Address} -> [Position#position{address = Address} | Acc];
+                                          _ -> [Position | Acc]
+                                      end
                               end
                       end,
     Positions = lists:foldl(GetLastPosition, [], Devices),
