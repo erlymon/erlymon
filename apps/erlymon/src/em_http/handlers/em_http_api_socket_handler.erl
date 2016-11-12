@@ -59,13 +59,15 @@ websocket_info({event, Event}, Req, State) ->
     {reply, {text, em_http:str(Event)}, Req, State};
 websocket_info({timeout, _Ref, User}, Req, State) ->
     em_logger:info("WS INIT: ~w", [User]),
+    Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
     {ok, Devices} = em_data_manager:get_devices(User#user.id),
     GetLastPosition = fun(Device, Acc) ->
                               case em_data_manager:get_last_position(Device#device.positionId, Device#device.id) of
                                   {error, _Reason} ->
                                       Acc;
                                   {ok, Position} ->
-                                      [Position | Acc]
+                                      {ok, Address} = em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language),
+                                      [Position#position{address = Address} | Acc]
                               end
                       end,
     Positions = lists:foldl(GetLastPosition, [], Devices),
