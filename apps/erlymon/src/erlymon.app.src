@@ -35,7 +35,7 @@
       , ssl
       , mongodb
       , jsx
-      , ibrowse
+      , hackney
       , ranch
       , cowboy
       , cowboy_session

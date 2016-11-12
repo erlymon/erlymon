@@ -51,6 +51,10 @@ init([]) ->
     StorageType = proplists:get_value(type, EmStorageEnv),
     StorageSettings = proplists:get_value(settings, EmStorageEnv),
 
+    {ok, EmGeocoderEnv} = application:get_env(erlymon, em_geocoder),
+    GeocoderType = proplists:get_value(type, EmGeocoderEnv),
+    GeocoderSettings = proplists:get_value(settings, EmGeocoderEnv),
+
     SupFlags = #{strategy => one_for_all, intensity => 1000, period => 3600},
     ChildSpecs = [
         #{
@@ -64,6 +68,14 @@ init([]) ->
         #{
             id => em_manager_sup,
             start => {em_manager_sup, start_link, []},
+            restart => permanent,
+            shutdown => 3000,
+            type => supervisor,
+            modules => dynamic
+        },
+        #{
+            id => em_geocoder_sup,
+            start => {em_geocoder_sup, start_link, [GeocoderType, GeocoderSettings]},
             restart => permanent,
             shutdown => 3000,
             type => supervisor,

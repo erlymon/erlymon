@@ -27,7 +27,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/2]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -38,28 +38,30 @@
 %% API functions
 %%====================================================================
 
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+-spec(start_link(GeocoderType :: term(), GeocoderSettings :: term()) ->
+    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+start_link(GeocoderType, GeocoderSettings) ->
+    supervisor:start_link({local, ?SERVER}, ?MODULE, [GeocoderType, GeocoderSettings]).
 
 %%====================================================================
 %% Supervisor callbacks
 %%====================================================================
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
-init([]) ->
-    {ok, EmGeocoderEnv} = application:get_env(erlymon, em_geocoder),
-    Pools = proplists:get_value(pools, EmGeocoderEnv),
-    em_logger:debug("Pools ~w", [Pools]),
-    PoolSpecs = lists:map(fun({Name, SizeArgs, WorkerArgs}) ->
-        em_logger:debug("Pool spec: ~s ~w ~w", [Name, SizeArgs, WorkerArgs]),
-        PoolArgs = [{name, {local, Name}},
-            {worker_module, make_module_name(Name)}] ++ SizeArgs,
-        poolboy:child_spec(Name, PoolArgs, WorkerArgs)
-    end, Pools),
-    {ok, {{one_for_one, 10, 10}, PoolSpecs}}.
+init([GeocoderType, GeocoderSettings]) ->
+    SupFlags = #{strategy => one_for_all, intensity => 1000, period => 3600},
+    ChildSpecs = [
+        #{
+            id => em_geocoder,
+            start => {em_geocoder, start_link, [GeocoderType, GeocoderSettings]},
+            restart => permanent,
+            shutdown => 3000,
+            type => worker,
+            modules => dynamic
+        }
+    ],
+    {ok, {SupFlags, ChildSpecs} }.
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
-make_module_name(Name) ->
-    list_to_atom("em_" ++ atom_to_list(Name) ++ "_worker").
