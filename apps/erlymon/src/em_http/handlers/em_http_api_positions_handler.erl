@@ -68,10 +68,15 @@ get_positions(Req, User) ->
             false ->
               cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req);
             _ ->
+              Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
               {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.from),
               {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.to),
               {ok, Positions} = em_data_manager:get_positions(Params#qs_params.deviceId, TimeFrom, TimeTo),
-              cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Positions), Req)
+              FixPositions = lists:map(fun(Position) ->
+                {ok, Address} = em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language),
+                Position#position{address = Address}
+                end, Positions),
+              cowboy_req:reply(?STATUS_OK, ?HEADERS, str(FixPositions), Req)
           end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
