@@ -68,7 +68,7 @@ request(<<"GET">>, Qs, Req) ->
             protocol = <<"osmand">>
           },
           em_logger:info("save message => unit: id = '~w' imei = '~s' position: ~w", [Object#device.id, Imei, Position]),
-          em_data_manager:create_position(Object, Position),
+          em_data_manager:create_position(Object#device.id, Position),
           cowboy_req:reply(200, Req)
       end;
     _Reason ->
