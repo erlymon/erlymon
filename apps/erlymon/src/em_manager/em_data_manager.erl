@@ -69,6 +69,7 @@ update_server(Server) ->
 create_position(DeviceId, PositionModel) ->
       case em_manager_positions:create(PositionModel) of
         {ok, Position} ->
+          em_logger:info("em_data_manager:create_position => DeviceId: ~w", [DeviceId]),
           case em_manager_devices:get_by_id(DeviceId) of
             {ok, FindDevice} ->
               DeviceModel = FindDevice#device{
