@@ -37,8 +37,10 @@
 %% http://blog.dberg.org/2012/04/using-gproc-and-cowboy-to-pass-messages.html
 %% http://ninenines.eu/docs/en/cowboy/HEAD/guide/ws_handlers/
 -spec(notify(UserId::integer(), Data:: #device{} | #position{}) -> any()).
-notify(UserId, Event) ->
-    em_helper_process:send({p, l, {user, UserId}}, {event, Event}).
+notify(UserId, Data) when is_record(Data, position) ->
+    em_helper_process:send({p, l, {user, UserId}}, {position, Data});
+notify(UserId, Data) when is_record(Data, device) ->
+    em_helper_process:send({p, l, {user, UserId}}, {device, Data}).
 
 init(Req, Opts) ->
     case cowboy_session:get(user, Req) of
@@ -54,9 +56,18 @@ init(Req, Opts) ->
 websocket_handle(_Data, Req, State) ->
     {ok, Req, State}.
 
-websocket_info({event, Event}, Req, State) ->
-    em_logger:info("WS EVENT: ~w", [Event]),
-    {reply, {text, em_http:str(Event)}, Req, State};
+websocket_info({position, Position}, Req, State) ->
+    em_logger:info("WS SEND POSITION: ~w", [Position]),
+    Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
+    case em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language) of
+        {ok, Address} ->
+            {reply, {text, em_http:str(#event{positions = [Position#position{address = Address}]})}, Req, State};
+        _ ->
+            {reply, {text, em_http:str(#event{positions = [Position]})}, Req, State}
+    end;
+websocket_info({device, Device}, Req, State) ->
+    em_logger:info("WS SEND DEVICE: ~w", [Device]),
+    {reply, {text, em_http:str(#event{devices = [Device]})}, Req, State};
 websocket_info({timeout, _Ref, User}, Req, State) ->
     em_logger:info("WS INIT: ~w", [User]),
     Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
