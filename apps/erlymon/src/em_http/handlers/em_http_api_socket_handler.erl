@@ -36,7 +36,7 @@
 
 %% http://blog.dberg.org/2012/04/using-gproc-and-cowboy-to-pass-messages.html
 %% http://ninenines.eu/docs/en/cowboy/HEAD/guide/ws_handlers/
-
+-spec(notify(UserId::integer(), Data:: #device{} | #position{}) -> any()).
 notify(UserId, Event) ->
     em_helper_process:send({p, l, {user, UserId}}, {event, Event}).
 

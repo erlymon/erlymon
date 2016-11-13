@@ -54,7 +54,7 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(broadcast(Device::map(), Position::map()) ->
+-spec(broadcast(Device::#device{}, Position::#position{}) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 broadcast(Device, Position) ->
   em_logger:info("~w:broadcast => ~w ~w", [?MODULE, Device, Position]),
