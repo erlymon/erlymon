@@ -73,10 +73,12 @@ get_positions(Req, User) ->
               {ok, TimeTo} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.to),
               {ok, Positions} = em_data_manager:get_positions(Params#qs_params.deviceId, TimeFrom, TimeTo),
               FixPositions = lists:map(fun(Position) ->
-                case em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language) of
-                  {ok, Address} -> Position#position{address = Address};
-                  _ -> Position
-                end
+                  case em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language) of
+                    {ok, Address} ->
+                      %%em_logger:info("Language: ~s Address: ~s", [Language, Address]),
+                      Position#position{address = Address};
+                    _ -> Position
+                  end
                 end, Positions),
               cowboy_req:reply(?STATUS_OK, ?HEADERS, str(FixPositions), Req)
           end;
