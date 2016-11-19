@@ -72,7 +72,8 @@ get_devices(Req, User) ->
           cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
         _ ->
           {ok, Devices} = em_data_manager:get_all_devices(),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Devices), Req)
+          FixDevices = lists:map(fun(Device) -> Device#device{status = fix_device_status(Device#device.positionId, Device#device.id)} end, Devices),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(FixDevices), Req)
       end;
     {ok, #get_devices_params{all = false, userId = UserId}} ->
       case em_permissions_manager:check_user(User#user.id, get_user_id(UserId, User)) of
@@ -80,7 +81,8 @@ get_devices(Req, User) ->
           cowboy_req:reply(?STATUS_FORBIDDEN, Req);
         _ ->
           {ok, Devices} = em_data_manager:get_devices(get_user_id(UserId, User)),
-          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Devices), Req)
+          FixDevices = lists:map(fun(Device) -> Device#device{status = fix_device_status(Device#device.positionId, Device#device.id)} end, Devices),
+          cowboy_req:reply(?STATUS_OK, ?HEADERS, str(FixDevices), Req)
       end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
@@ -185,3 +187,20 @@ rec_to_map(Rec) ->
     <<"lastUpdate">> => Date,
     <<"positionId">> => Rec#device.positionId
   }.
+
+
+
+fix_device_status(PositionId, DeviceId) ->
+  case em_manager_positions:get(PositionId, DeviceId) of
+    {ok, #position{fixTime = FixTime}} ->
+      device_status(em_helper_time:timestamp() - FixTime);
+    _ ->
+      ?STATUS_UNKNOWN
+  end.
+
+device_status(DiffTime) when DiffTime =< 300 ->
+  ?STATUS_ONLINE;
+device_status(DiffTime) when DiffTime > 300 ->
+  ?STATUS_OFFLINE;
+device_status(_) ->
+  ?STATUS_UNKNOWN.
