@@ -80,13 +80,11 @@ stop_hardware(_State) ->
 
 start_web(_StartType, _StartArgs) ->
     {ok, EmHttp} = application:get_env(erlymon, em_http),
-    Web = proplists:get_value(web, EmHttp),
-
-    em_logger:info("Start web server port: ~w", [proplists:get_value(port, Web)]),
-    Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, Web)}])),
+    em_logger:info("Start web server port: ~w", [proplists:get_value(port, EmHttp)]),
+    Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, EmHttp)}])),
     cowboy:start_http(web, 100, [
-                                 {port, proplists:get_value(port, Web)},
-                                 {timeout, proplists:get_value(timeout, Web)}
+                                 {port, proplists:get_value(port, EmHttp)},
+                                 {timeout, proplists:get_value(timeout, EmHttp)}
                                 ], [{env, [{dispatch, Dispatch}]}]).
 
 %%--------------------------------------------------------------------

@@ -84,22 +84,20 @@
       ]}
     ]}
     , {'em_hardware', [
-      {gps103, [{port, 5001}], []},
-      {tk103, [{port, 5002}], []},
-      {gl100, [{port, 5003}], []},
-      {gl200, [{port, 5004}], []},
-      {t55, [{port, 5005}], []},
-      {xexun2, [{port, 5006}], []},
-      {meitrack, [{port, 5020}], []},
-      {wialon, [{port, 5039}], []},
-      {osmand, [{port, 5055}], []}
+        {gps103, [{port, 5001}], []},
+        {tk103, [{port, 5002}], []},
+        {gl100, [{port, 5003}], []},
+        {gl200, [{port, 5004}], []},
+        {t55, [{port, 5005}], []},
+        {xexun2, [{port, 5006}], []},
+        {meitrack, [{port, 5020}], []},
+        {wialon, [{port, 5039}], []},
+        {osmand, [{port, 5055}], []}
     ]}
     , {em_http, [
-      {web, [
         {port, 8082},
         {debug, false},
         {timeout, 10000}
-      ]}
     ]}
   ]}
     , {modules, []}
