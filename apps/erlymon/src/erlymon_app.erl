@@ -43,66 +43,61 @@ start(_StartType, _StartArgs) ->
     %%em_geocoder_sup:start_link(),
     start_hardware(_StartType, _StartArgs),
     start_web(_StartType, _StartArgs),
-  Res.
+    Res.
 
 %%--------------------------------------------------------------------
 stop(_State) ->
     stop_web(_State),
     stop_hardware(_State).
 
-    
+
 start_hardware(_StartType, _StartArgs) ->
-  {ok, EmHardware} = application:get_env(erlymon, em_hardware),
-  
-  TcpServers = proplists:get_value(tcp_servers, EmHardware),
-  lists:foreach(fun({PoolName, Options, Args}) ->
-    em_logger:info("Start tcp server  ~w port: ~w",[PoolName, proplists:get_value(port, Options)]),
-    {ok, _} = ranch:start_listener(PoolName, ?ACCEPTORS, ranch_tcp, Options, make_module_name(PoolName), [{protocol, PoolName}, Args])
-  end, TcpServers),
-  
-  HttpServers = proplists:get_value(http_servers, EmHardware),
-  lists:foreach(fun({Name, Options, Routes}) ->
-    em_logger:info("Start http server ~w port: ~w", [Name, proplists:get_value(port, Options)]),
-    Dispatch = cowboy_router:compile(Routes),
-    {ok, _} = cowboy:start_http(Name, 100, Options, [{env, [{dispatch, Dispatch}]}])
-  end, HttpServers).
+    {ok, EmHardware} = application:get_env(erlymon, em_hardware),
+    lists:foreach(fun({Protocol, Options, Args}) ->
+                          em_logger:info("Start hardware server  ~w port: ~w",[Protocol, proplists:get_value(port, Options)]),
+                          case Protocol of
+                              osmand ->
+                                  Dispatch = cowboy_router:compile([{'_', [{"/", em_osmand_protocol, []}]}]),
+                                  {ok, _} = cowboy:start_http(Protocol, 100, Options, [{env, [{dispatch, Dispatch}]}]);
+                              _ ->
+                                  {ok, _} = ranch:start_listener(Protocol, ?ACCEPTORS, ranch_tcp, Options, make_module_name(Protocol), [{protocol, Protocol}, Args])
+                          end
+                  end, EmHardware).
 
 %%--------------------------------------------------------------------
 stop_hardware(_State) ->
-  {ok, EmHardware} = application:get_env(erlymon, em_hardware),
-  
-  TcpServers = proplists:get_value(tcp_servers, EmHardware),
-  lists:foreach(fun({PoolName, _, _}) ->
-    ranch:stop_listener(PoolName)
-  end, TcpServers),
-  
-  HttpServers = proplists:get_value(http_servers, EmHardware),
-  lists:foreach(fun({Name, _, _}) ->
-    cowboy:stop_listener(Name)
-  end, HttpServers),
-  ok.
+    {ok, EmHardware} = application:get_env(erlymon, em_hardware),
+    lists:foreach(fun({Protocol, _, _}) ->
+                          case Protocol of
+                              osmand ->
+                                cowboy:stop_listener(Protocol);
+                              _ ->
+                                ranch:stop_listener(Protocol)
+                          end
+                  end, EmHardware),
+    ok.
 
-  
+
 start_web(_StartType, _StartArgs) ->
-  {ok, EmHttp} = application:get_env(erlymon, em_http),
-  Web = proplists:get_value(web, EmHttp),
+    {ok, EmHttp} = application:get_env(erlymon, em_http),
+    Web = proplists:get_value(web, EmHttp),
 
-  em_logger:info("Start web server port: ~w", [proplists:get_value(port, Web)]),
-  Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, Web)}])),
-  cowboy:start_http(web, 100, [
-    {port, proplists:get_value(port, Web)},
-    {timeout, proplists:get_value(timeout, Web)}
-  ], [{env, [{dispatch, Dispatch}]}]).
+    em_logger:info("Start web server port: ~w", [proplists:get_value(port, Web)]),
+    Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, Web)}])),
+    cowboy:start_http(web, 100, [
+                                 {port, proplists:get_value(port, Web)},
+                                 {timeout, proplists:get_value(timeout, Web)}
+                                ], [{env, [{dispatch, Dispatch}]}]).
 
 %%--------------------------------------------------------------------
 stop_web(_State) ->
-  cowboy:stop_listener(web).
+    cowboy:stop_listener(web).
 
 %%====================================================================
 %% Internal functions
 %%====================================================================
 make_module_name(Name) ->
-  list_to_atom("em_" ++ atom_to_list(Name) ++ "_protocol").
+    list_to_atom("em_" ++ atom_to_list(Name) ++ "_protocol").
 %%====================================================================
 %% Internal functions
 %%====================================================================
