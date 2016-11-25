@@ -170,7 +170,9 @@ parse_satellites(Satteliates) ->
     list_to_integer(binary_to_list(Satteliates)).
 
 parse_power(Power) ->
-    list_to_integer(binary_to_list(Power)).
+    em_logger:info("PARSER POWER: '~w'", [Power]),
+    erlang:binary_to_integer(Power, 16).
+    %%list_to_integer(binary_to_list(Power)).
 
 parse_altitude(Altitude) ->
     list_to_integer(binary_to_list(Altitude)).
@@ -205,6 +207,8 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
      },
     em_helper_time:datetime_to_utc(Date).
 
+%% $$J139,359231038158125,AAA,35,53.897721,27.443013,161125211605,A,5,30,0,4,3.4,252,1070708,1506398,257|4|0000|0000,0000,0007|0007||02DD|00FE,*E8
+%% $$K139,359231038158125,AAA,35,53.897721,27.443013,161125211605,A,5,30,0,4,3.4,252,1070708,1506398,257|4|0000|0000,0000,0007|0007||02DD|00FE,*E9
 test() ->
     Packet = <<"\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n">>,
     parse(Packet).
