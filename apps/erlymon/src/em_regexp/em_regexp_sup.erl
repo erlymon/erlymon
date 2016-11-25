@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(erlymon_sup).
+-module(em_regexp_sup).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(supervisor).
@@ -39,7 +39,7 @@
 %%====================================================================
 
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+  supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
 %%====================================================================
 %% Supervisor callbacks
@@ -47,50 +47,18 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, EmStorageEnv} = application:get_env(erlymon, em_storage),
-    StorageType = proplists:get_value(type, EmStorageEnv),
-    StorageSettings = proplists:get_value(settings, EmStorageEnv),
-
-    {ok, EmGeocoderEnv} = application:get_env(erlymon, em_geocoder),
-    GeocoderType = proplists:get_value(type, EmGeocoderEnv),
-    GeocoderSettings = proplists:get_value(settings, EmGeocoderEnv),
-
-    SupFlags = #{strategy => one_for_all, intensity => 1000, period => 3600},
-    ChildSpecs = [
-        #{
-            id => em_regexp_sup,
-            start => {em_regexp_sup, start_link, []},
-            restart => permanent,
-            shutdown => 3000,
-            type => supervisor,
-            modules => dynamic
-        },
-        #{
-            id => em_storage_sup,
-            start => {em_storage_sup, start_link, [StorageType, StorageSettings]},
-            restart => permanent,
-            shutdown => 3000,
-            type => supervisor,
-            modules => dynamic
-        },
-        #{
-            id => em_manager_sup,
-            start => {em_manager_sup, start_link, []},
-            restart => permanent,
-            shutdown => 3000,
-            type => supervisor,
-            modules => dynamic
-        },
-        #{
-            id => em_geocoder_sup,
-            start => {em_geocoder_sup, start_link, [GeocoderType, GeocoderSettings]},
-            restart => permanent,
-            shutdown => 3000,
-            type => supervisor,
-            modules => dynamic
-        }
-    ],
-    {ok, {SupFlags, ChildSpecs}}.
+  SupFlags = #{strategy => one_for_one, intensity => 1000, period => 3600},
+  ChildSpecs = [
+    #{
+      id => em_regexp,
+      start => {em_regexp, start_link, []},
+      restart => permanent,
+      shutdown => 3000,
+      type => worker,
+      modules => [em_storage]
+    }
+  ],
+  {ok, {SupFlags, ChildSpecs}}.
 
 %%====================================================================
 %% Internal functions
