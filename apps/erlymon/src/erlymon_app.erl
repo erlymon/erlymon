@@ -37,6 +37,7 @@
 %%====================================================================
 
 start(_StartType, _StartArgs) ->
+    em_proc:init(),
     Res = erlymon_sup:start_link(),
     %%em_storage_sup:start_link(),
     %%em_data_manager:init(),
