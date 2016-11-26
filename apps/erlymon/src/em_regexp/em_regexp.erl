@@ -208,8 +208,8 @@ do_match(State, Data, Pattern) ->
             [do_read_param(Param, Data) | Res]
                                           end, [], List)),
           {reply, {ok, Res}, State};
-        _ ->
-          {reply, {error, <<"No match">>}, State}
+        Reason ->
+          {reply, {error, Reason}, State}
       end;
     {error, Reason} ->
       {reply, {error, Reason}, State}
