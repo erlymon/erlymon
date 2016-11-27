@@ -25,87 +25,248 @@
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(ranch_protocol).
+-behaviour(gen_server).
+
+-include("em_hardware.hrl").
 -include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
--export([init/4]).
 -export([test/0]).
+
+%% gen_server callbacks
+-export([init/1,
+  handle_call/3,
+  handle_cast/2,
+  handle_info/2,
+  terminate/2,
+  code_change/3]).
+
+-define(TIMEOUT, infinity).
+
+-define(SERVER, ?MODULE).
 
 
 -define(PATTERN, list_to_binary([
-    "\\$\\$." ++
-    "\\d+," ++
-    "(\\d+)," ++
-    "[0-9a-fA-F]{3}," ++
-    "(?:\\d+,)?(\\d+)," ++
-    "(-?\\d+\\.\\d+)," ++
-    "(-?\\d+\\.\\d+)," ++
-    "(\\d{2})(\\d{2})(\\d{2})" ++
-    "(\\d{2})(\\d{2})(\\d{2})," ++
-    "([AV])," ++
-    "(\\d+)," ++
-    "(\\d+)," ++
-    "(\\d+\\.?\\d*)," ++
-    "(\\d+)," ++
-    "(\\d+\\.?\\d*)," ++
-    "(-?\\d+)," ++
-    "(\\d+)," ++
-    "(\\d+)," ++
-    "(\\d+)\\|" ++
-    "(\\d+)\\|" ++
-    "([0-9a-fA-F]+)\\|" ++
-    "([0-9a-fA-F]+)," ++
-    "([0-9a-fA-F]+)," ++
-    "([0-9a-fA-F]+)?\\|" ++
-    "([0-9a-fA-F]+)?\\|" ++
-    "([0-9a-fA-F]+)?\\|" ++
-    "([0-9a-fA-F]+)\\|" ++
-    "([0-9a-fA-F]+)," ++
-    ".*?"
+    "\\$\\$." ++                    %% flag
+    "\\d+," ++                      %% length
+    "(\\d+)," ++                    %% imei
+    "[0-9a-fA-F]{3}," ++            %% command
+    "(?:\\d+,)?(\\d+)," ++          %% event
+    "(-?\\d+\\.\\d+)," ++           %% latitude
+    "(-?\\d+\\.\\d+)," ++           %% longitude
+    "(\\d{2})(\\d{2})(\\d{2})" ++   %% date (ddmmyy)
+    "(\\d{2})(\\d{2})(\\d{2})," ++  %% time
+    "([AV])," ++                    %% validity
+    "(\\d+)," ++                    %% satellites
+    "(\\d+)," ++                    %% gsm signal
+    "(\\d+\\.?\\d*)," ++            %% speed
+    "(\\d+)," ++                    %% course
+    "(\\d+\\.?\\d*)," ++            %% hdop
+    "(-?\\d+)," ++                  %% altitude
+    "(\\d+)," ++                    %% odometer
+    "(\\d+)," ++                    %% runtime
+    "(\\d+)\\|" ++                  %% mc
+    "(\\d+)\\|" ++                  %% mnc
+    "([0-9a-fA-F]+)\\|" ++          %% lac
+    "([0-9a-fA-F]+)," ++            %% cell
+    "([0-9a-fA-F]+)," ++            %% state
+    "([0-9a-fA-F]+)?\\|" ++         %% adc1
+    "([0-9a-fA-F]+)?\\|" ++         %% adc2
+    "([0-9a-fA-F]+)?\\|" ++         %% adc3
+    "([0-9a-fA-F]+)\\|" ++          %% battery
+    "([0-9a-fA-F]+)," ++            %% power
+    ".*?"                           %% any
 ])).
 
--record(state, {protocol, transport, socket, timeout, device}).
+-record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts the server
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(start_link(Ref :: any(), Socket :: any(), Transport :: any(), Opts :: any()) ->
+  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(Ref, Socket, Transport, Opts) ->
-  Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Opts]),
-  {ok, Pid}.
+  {ok, proc_lib:spawn_link(?MODULE, init, [{Ref, Socket, Transport, Opts}])}.
 
-init(Ref, Socket, Transport, Opts) ->
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Initializes the server
+%%
+%% @spec init(Args) -> {ok, State} |
+%%                     {ok, State, Timeout} |
+%%                     ignore |
+%%                     {stop, Reason}
+%% @end
+%%--------------------------------------------------------------------
+-spec(init(Args :: term()) ->
+  {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term()} | ignore).
+init({Ref, Socket, Transport, Opts}) ->
   ok = ranch:accept_ack(Ref),
+  ok = Transport:setopts(Socket, [{active, once}]),
   Protocol = proplists:get_value(protocol, Opts),
-  loop(#state{protocol = Protocol, socket = Socket, transport = Transport}).
+  gen_server:enter_loop(?MODULE, [],
+    #state{protocol = Protocol, socket=Socket, transport=Transport}, ?TIMEOUT).
+%%{ok, #state{}}.
 
-loop(State = #state{protocol = Protocol, socket = Socket, transport = Transport}) ->
-  case Transport:recv(Socket, 0, 5000) of
-    {ok, Data} ->
-      em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
-      case parse(Data) of
-        {ok, Imei, PositionModel} ->
-          em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), Imei, PositionModel]),
-          case em_data_manager:get_device_by_uid(Imei) of
-            {error, _Reason} ->
-              em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
-              Transport:close(Socket);
-            {ok, Object} ->
-              Position = PositionModel#position{
-                deviceId = Object#device.id,
-                protocol = atom_to_binary(Protocol, utf8),
-                attributes = maps:merge(PositionModel#position.attributes, #{
-                  ?KEY_IP => em_hardware:resolve(Socket)
-                })
-              },
-              em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Object#device.id, Imei, Position]),
-              em_data_manager:create_position(Object#device.id, Position),
-              loop(State#state{device = Object})
-          end;
-        {error, Message} ->
-          em_logger:info("ERROR: ~s", [Message]),
-          Transport:close(Socket)
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling call messages
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(handle_call(Request :: term(), From :: {pid(), Tag :: term()},
+    State :: #state{}) ->
+  {reply, Reply :: term(), NewState :: #state{}} |
+  {reply, Reply :: term(), NewState :: #state{}, timeout() | hibernate} |
+  {noreply, NewState :: #state{}} |
+  {noreply, NewState :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
+  {stop, Reason :: term(), NewState :: #state{}}).
+handle_call(_Request, _From, State) ->
+  {reply, ok, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling cast messages
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(handle_cast(Request :: term(), State :: #state{}) ->
+  {noreply, NewState :: #state{}} |
+  {noreply, NewState :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term(), NewState :: #state{}}).
+handle_cast(_Request, State) ->
+  {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling all non call/cast messages
+%%
+%% @spec handle_info(Info, State) -> {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, State}
+%% @end
+%%--------------------------------------------------------------------
+-spec(handle_info(Info :: timeout() | term(), State :: #state{}) ->
+  {noreply, NewState :: #state{}} |
+  {noreply, NewState :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term(), NewState :: #state{}}).
+handle_info({command, Data}, State=#state{socket=Socket, transport=Transport}) ->
+  Transport:send(Socket, Data),
+  {noreply, State, ?TIMEOUT};
+handle_info({tcp, _, ?TRASH}, State=#state{socket=Socket, transport=Transport}) ->
+  Transport:setopts(Socket, [{active, once}]),
+  {noreply, State, ?TIMEOUT};
+handle_info({tcp, Socket, Data}, State=#state{protocol = Protocol, socket=Socket, transport=Transport, deviceId = 0}) when byte_size(Data) > 1 ->
+  Transport:setopts(Socket, [{active, once}]),
+
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
+  case parse(Data) of
+    {ok, Imei, PositionModel} ->
+      em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), Imei, PositionModel]),
+      case em_data_manager:get_device_by_uid(Imei) of
+        {error, _Reason} ->
+          em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
+          {stop, normal, State};
+        {ok, Object} ->
+          em_proc:registry(Object#device.id, self()),
+          Position = PositionModel#position{
+            deviceId = Object#device.id,
+            protocol = atom_to_binary(Protocol, utf8),
+            attributes = maps:merge(PositionModel#position.attributes, #{
+              ?KEY_IP => em_hardware:resolve(Socket)
+            })
+          },
+          em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), Object#device.id, Imei, Position]),
+          em_data_manager:create_position(Object#device.id, Position),
+          {noreply, State#state{deviceId = Object#device.id}, ?TIMEOUT}
       end;
-    _ ->
-      Transport:close(Socket)
-  end.
+    {error, Message} ->
+      em_logger:info("ERROR: ~s", [Message]),
+      {stop, normal, State}
+  end;
+handle_info({tcp, Socket, Data}, State=#state{protocol = Protocol, socket=Socket, transport=Transport, deviceId = DeviceId}) when byte_size(Data) > 1 ->
+  Transport:setopts(Socket, [{active, once}]),
+
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
+  case parse(Data) of
+    {ok, Imei, PositionModel} ->
+      em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), Imei, PositionModel]),
+      Position = PositionModel#position{
+        deviceId = DeviceId,
+        protocol = atom_to_binary(Protocol, utf8),
+        attributes = maps:merge(PositionModel#position.attributes, #{
+          ?KEY_IP => em_hardware:resolve(Socket)
+        })
+      },
+      em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), DeviceId, Imei, Position]),
+      em_data_manager:create_position(DeviceId, Position),
+      {noreply, State, ?TIMEOUT};
+    {error, Message} ->
+      em_logger:info("ERROR: ~s", [Message]),
+      {stop, normal, State}
+  end;
+handle_info({tcp_closed, _Socket}, State) ->
+  {stop, normal, State};
+handle_info({tcp_error, _, Reason}, State) ->
+  {stop, Reason, State};
+handle_info(timeout, State) ->
+  {stop, normal, State};
+handle_info(_Info, State) ->
+  {stop, normal, State}.
+%%handle_info(_Info, State) ->
+%%  {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This function is called by a gen_server when it is about to
+%% terminate. It should be the opposite of Module:init/1 and do any
+%% necessary cleaning up. When it returns, the gen_server terminates
+%% with Reason. The return value is ignored.
+%%
+%% @spec terminate(Reason, State) -> void()
+%% @end
+%%--------------------------------------------------------------------
+-spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
+    State :: #state{}) -> term()).
+terminate(_Reason, _State) ->
+  ok.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Convert process state when code is changed
+%%
+%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @end
+%%--------------------------------------------------------------------
+-spec(code_change(OldVsn :: term() | {down, term()}, State :: #state{},
+    Extra :: term()) ->
+  {ok, NewState :: #state{}} | {error, Reason :: term()}).
+code_change(_OldVsn, State, _Extra) ->
+  {ok, State}.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
 
 %% echo "20. meitrack"
 %% (echo -n -e "\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n";) | nc -v localhost 5020
