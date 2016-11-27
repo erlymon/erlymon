@@ -27,6 +27,7 @@
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
 
+-include("em_hardware.hrl").
 %% API
 -export([start_link/4]).
 
@@ -39,8 +40,6 @@
   code_change/3]).
 
 -define(TIMEOUT, infinity).
--define(TRASH, <<67,78,88,78,0,0,0,1,0,0,4,0,27,0,0,0,77,10,0,0,188,177,167,177,104,111,115,116,58,58,102,101,97,116,117,114,101,115,61,99,109,100,44,115,104,101,108,108,95,118,50>>).
-
 
 -define(SERVER, ?MODULE).
 
