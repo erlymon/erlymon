@@ -34,10 +34,6 @@
 -export([start_link/0]).
 
 -export([
-  get/0,
-  get/1,
-  link/1,
-  unlink/1,
   execute/1
 ]).
 
@@ -51,31 +47,11 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {cache}).
+-record(state, {}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec(get() ->
-  {ok, [#device_state{}]} | {error, string()}).
-get() ->
-  gen_server:call(?SERVER, {get}).
-
--spec(get(DeviceId :: integer()) ->
-  {ok, DeviceState :: #device_state{}} | {error, string()}).
-get(DeviceId) ->
-  gen_server:call(?SERVER, {get, DeviceId}).
-
--spec(link(DeviceState :: #device_state{}) ->
-  {ok, DeviceState :: #device_state{}} | {error, string()}).
-link(DeviceState) ->
-  gen_server:call(?SERVER, {link, DeviceState}).
-
--spec(unlink(DeviceState :: #device_state{}) ->
-  {ok, DeviceState :: #device_state{}} | {error, string()}).
-unlink(DeviceState) ->
-  gen_server:call(?SERVER, {unlink, DeviceState}).
-
 -spec(execute(Command :: #command{}) ->
   {ok, Command :: #command{}} | {error, string()}).
 execute(Command) ->
@@ -113,8 +89,7 @@ start_link() ->
   {stop, Reason :: term()} | ignore).
 init([]) ->
   em_logger:info("Init commands manager"),
-  Cache = ets:new(device_state, [set, private, {keypos, 2}]),
-  {ok, #state{cache = Cache}}.
+  {ok, #state{}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -131,14 +106,6 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call({get}, _From, State) ->
-  do_get_devices_state(State);
-handle_call({get, Id}, _From, State) when is_integer(Id) ->
-  do_get_device_state_by_id(State, Id);
-handle_call({link, DeviceState}, _From, State) ->
-  do_link_device_state(State, DeviceState);
-handle_call({unkink, DeviceState}, _From, State) ->
-  do_unlink_device_state(State, DeviceState);
 handle_call({execute, Command}, _From, State) ->
   do_execute_command(State, Command);
 handle_call(_Request, _From, State) ->
@@ -208,36 +175,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_get_devices_state(State = #state{cache = Cache}) ->
-  {reply, {ok, ets:tab2list(Cache)}, State}.
 
-do_get_device_state_by_id(State = #state{cache = Cache}, Id) ->
-  case ets:lookup(Cache, Id) of
-    [] ->
-      {reply, {error, <<"Access is denied">>}, State};
-    [Item|_] ->
-      {reply, {ok, Item}, State}
-  end.
-
-do_link_device_state(State = #state{cache = Cache}, DeviceState) ->
-  case ets:insert_new(Cache, DeviceState) of
-    true ->
-      {reply, {ok, DeviceState}, State};
-    false ->
-      {reply, {error, <<"Error link device state">>}, State}
-  end.
-
-do_unlink_device_state(State = #state{cache = Cache}, DeviceState) ->
-  case ets:delete(Cache, DeviceState#device_state.deviceId) of
-    true ->
-      {reply, {ok, DeviceState}, State};
-    false -> {reply, {error, <<"Error unlink device state">>}, State}
-  end.
-
-do_execute_command(State = #state{cache = Cache}, Command) ->
-  case ets:lookup(Cache, Command#command.deviceId) of
-    [] ->
-      {reply, {error, <<"Access is denied">>}, State};
-    [DeviceState|_] ->
-      {reply, {ok, DeviceState}, State}
-  end.
+do_execute_command(State, Command) ->
+  {reply, em_proc:send(Command#command.deviceId, {command, Command}), State}.
