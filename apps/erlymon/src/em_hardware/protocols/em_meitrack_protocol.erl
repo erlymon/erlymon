@@ -168,9 +168,22 @@ handle_cast(_Request, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_info({command, Data}, State=#state{socket=Socket, transport=Transport}) ->
-  Transport:send(Socket, Data),
-  {noreply, State, ?TIMEOUT};
+handle_info({command, Command}, State=#state{socket=Socket, transport=Transport}) ->
+  case em_manager_devices:get_by_id(Command#command.deviceId) of
+    {ok, Device} ->
+      case do_encode_command(Device#device.id, Command) of
+        {ok, CommandBin} ->
+          em_logger:info("CommandBin: ~s", [CommandBin]),
+          Transport:send(Socket, Command),
+          {noreply, State, ?TIMEOUT};
+        {error, Reason} ->
+          em_logger:info("Error: ~s", [Reason]),
+          {noreply, State, ?TIMEOUT}
+      end;
+    {error, Reason} ->
+      em_logger:info("Error: ~s", [Reason]),
+      {noreply, State, ?TIMEOUT}
+  end;
 handle_info({tcp, _, ?TRASH}, State=#state{socket=Socket, transport=Transport}) ->
   Transport:setopts(Socket, [{active, once}]),
   {noreply, State, ?TIMEOUT};
@@ -267,6 +280,30 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_encode_command(UniqueId, #command{type = ?TYPE_POSITION_SINGLE}) ->
+  {ok, do_format_command(UniqueId, <<"Q">>, <<"A10">>)};
+do_encode_command(UniqueId, #command{type = ?TYPE_ENGINE_STOP}) ->
+  {ok, do_format_command(UniqueId, <<"M">>, <<"C01,0,12222">>)};
+do_encode_command(UniqueId, #command{type = ?TYPE_ENGINE_RESUME}) ->
+  {ok, do_format_command(UniqueId, <<"M">>, <<"C01,0,02222">>)};
+do_encode_command(UniqueId, #command{type = ?TYPE_ALARM_ARM}) ->
+  {ok, do_format_command(UniqueId, <<"M">>, <<"C01,0,22122">>)};
+do_encode_command(UniqueId, #command{type = ?TYPE_ALARM_DISARM}) ->
+  {ok, do_format_command(UniqueId, <<"M">>, <<"C01,0,22022">>)};
+do_encode_command(UniqueId, #command{type = ?TYPE_REQUEST_PHOTO}) ->
+  {ok, do_format_command(UniqueId, <<"D">>, <<"D03,1,camera_picture.jpg">>)};
+do_encode_command(UniqueId, #command{type = ?TYPE_SEND_SMS, attributes = #{?KEY_PHONE_NUMBER := PhoneNumber, ?KEY_MESSAGE := Message}}) ->
+  Content = list_to_binary(io_lib:format("C02,0,~s,~s", [PhoneNumber, Message])),
+  {ok, do_format_command(UniqueId, <<"f">>, Content)};
+do_encode_command(_UniqueId, #command{type = Type}) ->
+  {error, <<"Unsupported command">>}.
+
+
+do_format_command(UniqueId, DataId, Content) ->
+  Length = 1 + byte_size(UniqueId) + 1 + byte_size(Content) + 5,
+  Result =  list_to_binary(io_lib:format("@@~c~d,~s,~s*", [DataId, Length, UniqueId, Content])),
+  CheckSum = em_checksum:sum(Result),
+  list_to_binary(io_lib:format("~s~x\r\n", [Result, CheckSum])).
 
 %% echo "20. meitrack"
 %% (echo -n -e "\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n";) | nc -v localhost 5020

@@ -174,11 +174,14 @@
 -define(TYPE_REQUEST_PHOTO, <<"requestPhoto">>).
 -define(TYPE_REBOOT_DEVICE, <<"rebootDevice">>).
 -define(TYPE_MOVEMENT_ALARM, <<"movementAlarm">>).
+-define(TYPE_SEND_SMS, <<"sendSms">>).
 
 -define(KEY_UNIQUE_ID, <<"uniqueId">>).
 -define(KEY_FREQUENCY, <<"frequency">>).
 -define(KEY_TIMEZONE, <<"timezone">>).
 -define(KEY_DEVICE_PASSWORD, <<"devicePassword">>).
 -define(KEY_RADIUS, <<"radius">>).
+-define(KEY_PHONE_NUMBER, <<"phoneNumber">>).
+-define(KEY_MESSAGE, <<"message">>).
 
 -endif. % RECORDS_HRL
