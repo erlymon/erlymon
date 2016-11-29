@@ -55,7 +55,7 @@ add_command(Req, User) ->
   Result = emodel:from_map(em_json:decode(JsonBin), #command{}, [
     {<<"deviceId">>, required, integer, #command.deviceId, []},
     {<<"type">>, required, string, #command.type, []},
-    {<<"attributes">>, required, map, #command.attributes, []}
+    {<<"attributes">>, optional, map, #command.attributes, []}
   ]),
   case Result of
     {ok, CommandModel} ->
@@ -63,7 +63,12 @@ add_command(Req, User) ->
           false ->
             cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
           _ ->
-            cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"TODO: need implement">>, Req2)
+            case em_manager_commands:execute(CommandModel) of
+              {ok, _} ->
+                cowboy_req:reply(?STATUS_OK, [], <<"">>, Req2);
+              {error, _Reason} ->
+                cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Error execute command">>, Req2)
+            end
         end;
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
