@@ -177,4 +177,9 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 
 do_execute_command(State, Command) ->
-  {reply, em_proc:send(Command#command.deviceId, {command, Command}), State}.
+  case em_proc:send(Command#command.deviceId, {command, Command}) of
+    {badarg, _} ->
+      {reply, {error, <<"Error send command">>}, State};
+    Pid ->
+      {reply, {ok, Pid}, State}
+  end.
