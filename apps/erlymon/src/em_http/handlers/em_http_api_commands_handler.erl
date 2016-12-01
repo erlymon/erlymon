@@ -52,11 +52,12 @@ request(_, Req, _) ->
 add_command(Req, User) ->
   {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
   em_logger:info("ADD COMMAND JSON: ~s", [JsonBin]),
-  Result = emodel:from_map(em_json:decode(JsonBin), #command{}, [
+  Result = from_map(em_json:decode(JsonBin), #command{}, [
     {<<"deviceId">>, required, integer, #command.deviceId, []},
     {<<"type">>, required, string, #command.type, []},
     {<<"attributes">>, optional, map, #command.attributes, []}
   ]),
+  em_logger:info("RESULT: ~w", [Result]),
   case Result of
     {ok, CommandModel} ->
         case em_permissions_manager:check_device(User#user.id, CommandModel#command.deviceId) of
@@ -73,3 +74,21 @@ add_command(Req, User) ->
     _Reason ->
       cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
   end.
+
+
+
+map(Map) when is_map(Map) ->
+  {ok, Map};
+map(_) ->
+  {error, <<"bad map">>}.
+
+get_converter(map, _Opts) -> emodel_converters:get_converter(fun map/1, _Opts); %% custom get_converter must return fun/2, emodel_converters:get_converter will automaticly lift your functions
+get_converter(Type, Opts) -> emodel_converters:get_converter(Type, Opts).
+
+get_validator(V, Opts) -> emodel_validators:get_validator(V, Opts).
+
+from_map(Data, Model, Description) ->
+  emodel:from_map(Data, Model, Description, #{
+    converters => fun get_converter/2,
+    validators => fun get_validator/2
+  }).
