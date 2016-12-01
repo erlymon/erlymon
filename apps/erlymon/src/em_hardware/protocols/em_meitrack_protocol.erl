@@ -171,10 +171,10 @@ handle_cast(_Request, State) ->
 handle_info({command, Command}, State=#state{socket=Socket, transport=Transport}) ->
   case em_manager_devices:get_by_id(Command#command.deviceId) of
     {ok, Device} ->
-      case do_encode_command(Device#device.id, Command) of
+      case do_encode_command(Device#device.uniqueId, Command) of
         {ok, CommandBin} ->
           em_logger:info("CommandBin: ~s", [CommandBin]),
-          Transport:send(Socket, Command),
+          Transport:send(Socket, CommandBin),
           {noreply, State, ?TIMEOUT};
         {error, Reason} ->
           em_logger:info("Error: ~s", [Reason]),
@@ -301,9 +301,9 @@ do_encode_command(_UniqueId, #command{type = Type}) ->
 
 do_format_command(UniqueId, DataId, Content) ->
   Length = 1 + byte_size(UniqueId) + 1 + byte_size(Content) + 5,
-  Result =  list_to_binary(io_lib:format("@@~c~d,~s,~s*", [DataId, Length, UniqueId, Content])),
+  Result =  list_to_binary(io_lib:format("@@~s~w,~s,~s*", [DataId, Length, UniqueId, Content])),
   CheckSum = em_checksum:sum(Result),
-  list_to_binary(io_lib:format("~s~x\r\n", [Result, CheckSum])).
+  list_to_binary(io_lib:format("~s~2.16.0B\r\n", [Result, CheckSum])).
 
 %% echo "20. meitrack"
 %% (echo -n -e "\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n";) | nc -v localhost 5020
