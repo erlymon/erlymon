@@ -31,16 +31,6 @@
 -export([init/2]).
 -export([websocket_handle/3]).
 -export([websocket_info/3]).
--export([notify/2]).
-
-
-%% http://blog.dberg.org/2012/04/using-gproc-and-cowboy-to-pass-messages.html
-%% http://ninenines.eu/docs/en/cowboy/HEAD/guide/ws_handlers/
--spec(notify(UserId::integer(), Data:: #device{} | #position{}) -> any()).
-notify(UserId, Data) when is_record(Data, position) ->
-    em_helper_process:send({p, l, {user, UserId}}, {position, Data});
-notify(UserId, Data) when is_record(Data, device) ->
-    em_helper_process:send({p, l, {user, UserId}}, {device, Data}).
 
 init(Req, Opts) ->
     case cowboy_session:get(user, Req) of
@@ -48,7 +38,7 @@ init(Req, Opts) ->
             {cowboy_websocket, Req2, Opts};
         {User, Req2} ->
             em_logger:info("Process reg for user: ~w", [User#user.id]),
-            em_helper_process:reg({p, l, {user, User#user.id}}),
+            em_proc:registry(User#user.id, self()),
             erlang:start_timer(1000, self(), User),
             {cowboy_websocket, Req2, Opts}
     end.
