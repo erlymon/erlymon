@@ -68,7 +68,7 @@ add_command(Req, User) ->
               {ok, _} ->
                 cowboy_req:reply(?STATUS_OK, [], <<"">>, Req2);
               {error, _Reason} ->
-                cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Error execute command">>, Req2)
+                cowboy_req:reply(?STATUS_BAD_REQUEST, [], em_json:encode(#{<<"details">> => <<"Error execute command">>, <<"message">> => null}), Req2)
             end
         end;
     _Reason ->
