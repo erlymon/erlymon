@@ -33,7 +33,7 @@
   mapUrl = <<"">> :: string(),
   language = <<"en">> :: string(),
   distanceUnit  = <<"km">> :: string(),
-  speedUnit = <<"km/h">> :: string(),
+  speedUnit = <<"kmph">> :: string(),
   latitude = 0 :: string(),
   longitude = 0 :: string(),
   zoom = 0 :: string()
@@ -48,7 +48,7 @@
   map = <<"osm">> :: string(),
   language = <<"en">> :: string(),
   distanceUnit  = <<"km">> :: string(),
-  speedUnit = <<"km/h">> :: string(),
+  speedUnit = <<"kmph">> :: string(),
   latitude = 0 :: string(),
   longitude = 0 :: string(),
   zoom = 0 :: string(),
