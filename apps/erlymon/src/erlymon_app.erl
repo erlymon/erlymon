@@ -53,8 +53,6 @@ stop(_State) ->
 
 
 start_hardware(_StartType, _StartArgs) ->
-  {ok, _} = ranch:start_listener(tcp_reverse, 10,
-    ranch_tcp, [{port, 5555}], em_template_protocol, []),
     {ok, EmHardware} = application:get_env(erlymon, em_hardware),
     lists:foreach(fun({Protocol, Options, Args}) ->
                           em_logger:info("Start hardware server  ~w port: ~w",[Protocol, proplists:get_value(port, Options)]),
