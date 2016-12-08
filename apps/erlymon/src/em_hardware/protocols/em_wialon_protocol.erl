@@ -25,136 +25,271 @@
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(ranch_protocol).
+-behaviour(gen_server).
 
 -include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
--export([init/4]).
 -export([test/0]).
 
--define(Date, <<"(\\d{2})(\\d{2})(\\d{2});">>). %% date (ddmmyy)
--define(Time, <<"(\\d{2})(\\d{2})(\\d{2});">>). %% time
--define(Latitude, <<"(\\d{2})(\\d{2}.\\d+);">>).%% latitude
--define(NS, <<"([NS]);">>). %%
--define(Longitude, <<"(\\d{3})(\\d{2}.\\d+);">>). %% longitude
--define(EW, <<"([EW]);">>). %% Calling number
--define(Speed, <<"(\\d+.?\\d*)?;">>). %% Speed
--define(Course, <<"(\\d+.?\\d*)?;">>). %% Course
--define(Altitude, <<"(?:NA|(\\d+.?\\d*));">>).%% Altitude
--define(Satellites, <<"(?:NA|(\\d+))">>). %% Satellites
--define(GroupBegin, <<";">>). %%
--define(Hdop, <<"(?:NA|(\\d+.?\\d*));">>). %% Hdop
--define(Inputs, <<"(?:NA|(\\d+));">>). %% Inputs
--define(Outputs, <<"(?:NA|(\\d+));">>). %% Outputs
--define(Adc, <<"(?:NA|([^;]*));">>). % Adc
--define(IButton, <<"(?:NA|([^;]*));">>). % IButton
--define(Params, <<"(?:NA|(.*))">>). % Params
--define(GroupEnd, <<"?">>).
+%% gen_server callbacks
+-export([init/1,
+  handle_call/3,
+  handle_cast/2,
+  handle_info/2,
+  terminate/2,
+  code_change/3]).
 
--define(PATTERN,
-  <<
-    ?Date/binary,
-    ?Time/binary,
-    ?Latitude/binary,
-    ?NS/binary,
-    ?Longitude/binary,
-    ?EW/binary,
-    ?Speed/binary,
-    ?Course/binary,
-    ?Altitude/binary,
-    ?Satellites/binary,
-    ?GroupBegin/binary,
-    ?Hdop/binary,
-    ?Inputs/binary,
-    ?Outputs/binary,
-    ?Adc/binary,
-    ?IButton/binary,
-    ?Params/binary,
-    ?GroupEnd/binary
-  >>
-).
+-define(TIMEOUT, infinity).
 
-%%-record(state, {protocol, transport, socket, timeout, device, pattern}).
+-define(SERVER, ?MODULE).
 
+
+-define(PATTERN, list_to_binary([
+    "(\\d{2})(\\d{2})(\\d{2});" ++ %% date (ddmmyy)
+    "(\\d{2})(\\d{2})(\\d{2});" ++ %% time
+    "(\\d{2})(\\d{2}\\.\\d+);" ++  %% latitude
+    "([NS]);" ++
+    "(\\d{3})(\\d{2}\\.\\d+);" ++  %% longitude
+    "([EW]);" ++
+    "(\\d+\\.?\\d*)?;" ++          %% speed
+    "(\\d+\\.?\\d*)?;" ++          %% course
+    "(?:NA|(\\d+\\.?\\d*));" ++    %% altitude
+    "(?:NA|(\\d+))" ++             %% satellites
+    "(?:;" ++                      %% group begin
+    "(?:NA|(\\d+\\.?\\d*));" ++     %% hdop
+    "(?:NA|(\\d+));" ++            %% inputs
+    "(?:NA|(\\d+));" ++            %% outputs
+    "(?:NA|([^;]*));" ++           %% adc
+    "(?:NA|([^;]*));" ++           %% ibutton
+    "(?:NA|(.*)))" ++              %% params
+    "?"                            %% group end
+])).
+
+-define(SOCKET_OPTS, [{active, once}, {packet, line}]).
+
+-record(state, {protocol, transport, socket, timeout, deviceId = 0}).
+
+%%%===================================================================
+%%% API
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Starts the server
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(start_link(Ref :: any(), Socket :: any(), Transport :: any(), Opts :: any()) ->
+  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link(Ref, Socket, Transport, Opts) ->
-  Pid = spawn_link(?MODULE, init, [Ref, Socket, Transport, Opts]),
-  {ok, Pid}.
+  {ok, proc_lib:spawn_link(?MODULE, init, [{Ref, Socket, Transport, Opts}])}.
 
-init(Ref, Socket, Transport, Opts) ->
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Initializes the server
+%%
+%% @spec init(Args) -> {ok, State} |
+%%                     {ok, State, Timeout} |
+%%                     ignore |
+%%                     {stop, Reason}
+%% @end
+%%--------------------------------------------------------------------
+-spec(init(Args :: term()) ->
+  {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term()} | ignore).
+init({Ref, Socket, Transport, Opts}) ->
   ok = ranch:accept_ack(Ref),
+  ok = Transport:setopts(Socket, ?SOCKET_OPTS),
   Protocol = proplists:get_value(protocol, Opts),
-  {ok, Pattern} = re:compile(?PATTERN),
-  loop(#device_state{protocol = Protocol, socket = Socket, transport = Transport, timeout = infinity, pattern = Pattern}).
+  gen_server:enter_loop(?MODULE, [],
+    #state{protocol = Protocol, socket = Socket, transport = Transport}, ?TIMEOUT).
+%%{ok, #state{}}.
 
-% echo "39. wialon"
-% (echo -n -e "#D#030816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n";) | nc -v localhost 5003
-loop(State = #device_state{protocol = Protocol, socket = Socket, transport = Transport, timeout = Timeout, deviceId = DeviceId, pattern = Pattern}) ->
-  case Transport:recv(Socket, 0, Timeout) of
-    {ok, Data} ->
-      em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
-      [_, Head, Body] = binary:split(Data, [<<"#">>], [global]),
-      case parse(Head, Body, Pattern) of
-        {auth, Imei, Password} ->
-          em_logger:info("[packet] unit: ip = '~s' imei: ~s password: ~s", [em_hardware:resolve(Socket), Imei, Password]),
-          case em_data_manager:get_device_by_uid(Imei) of
-            {error, _Reason} ->
-              em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
-              send_packet(State, <<"#AL#0">>),
-              close(State);
-            {ok, Device} ->
-              NewState = State#device_state{deviceId = Device#device.id},
-              em_manager_commands:link(NewState),
-              send_packet(State, <<"#AL#1">>),
-              loop(NewState)
-          end;
-        {data, PositionModel} ->
-          Position = PositionModel#position{
-            deviceId = DeviceId,
-            protocol = atom_to_binary(Protocol, utf8),
-            attributes = #{
-              ?KEY_IP => em_hardware:resolve(Socket)
-            }
-          },
-          case em_data_manager:create_position(DeviceId, Position) of
-            {ok, _} -> send_packet(State, <<"#AD#1">>);
-            _ -> send_packet(State, <<"#AD#0">>)
-          end,
-          loop(State)
-      end,
-      loop(State);
-    _ ->
-      close(State)
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling call messages
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(handle_call(Request :: term(), From :: {pid(), Tag :: term()},
+    State :: #state{}) ->
+  {reply, Reply :: term(), NewState :: #state{}} |
+  {reply, Reply :: term(), NewState :: #state{}, timeout() | hibernate} |
+  {noreply, NewState :: #state{}} |
+  {noreply, NewState :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
+  {stop, Reason :: term(), NewState :: #state{}}).
+handle_call(_Request, _From, State) ->
+  {reply, ok, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling cast messages
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(handle_cast(Request :: term(), State :: #state{}) ->
+  {noreply, NewState :: #state{}} |
+  {noreply, NewState :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term(), NewState :: #state{}}).
+handle_cast(_Request, State) ->
+  {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Handling all non call/cast messages
+%%
+%% @spec handle_info(Info, State) -> {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, State}
+%% @end
+%%--------------------------------------------------------------------
+-spec(handle_info(Info :: timeout() | term(), State :: #state{}) ->
+  {noreply, NewState :: #state{}} |
+  {noreply, NewState :: #state{}, timeout() | hibernate} |
+  {stop, Reason :: term(), NewState :: #state{}}).
+handle_info({command, Command}, State) ->
+  do_execute_command(State, Command);
+%%handle_info({tcp, _, <<67,78,88,78,0,0,0,1,0,0,4,0,27,0,0,0,77,10>>}, State = #state{socket = Socket, transport = Transport}) ->
+%%  Transport:setopts(Socket, ?SOCKET_OPTS),
+%%  {noreply, State, ?TIMEOUT};
+handle_info({tcp, Socket, Data}, State = #state{socket = Socket, transport = Transport}) when byte_size(Data) > 1 ->
+  Transport:setopts(Socket, ?SOCKET_OPTS),
+  do_process_data(State, Data);
+handle_info({tcp_closed, _Socket}, State) ->
+  {stop, normal, State};
+handle_info({tcp_error, _, Reason}, State) ->
+  {stop, Reason, State};
+handle_info(timeout, State) ->
+  {stop, normal, State};
+handle_info(_Info, State) ->
+  {stop, normal, State}.
+%%handle_info(_Info, State) ->
+%%  {noreply, State}.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% This function is called by a gen_server when it is about to
+%% terminate. It should be the opposite of Module:init/1 and do any
+%% necessary cleaning up. When it returns, the gen_server terminates
+%% with Reason. The return value is ignored.
+%%
+%% @spec terminate(Reason, State) -> void()
+%% @end
+%%--------------------------------------------------------------------
+-spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
+    State :: #state{}) -> term()).
+terminate(_Reason, _State) ->
+  ok.
+
+%%--------------------------------------------------------------------
+%% @private
+%% @doc
+%% Convert process state when code is changed
+%%
+%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @end
+%%--------------------------------------------------------------------
+-spec(code_change(OldVsn :: term() | {down, term()}, State :: #state{},
+    Extra :: term()) ->
+  {ok, NewState :: #state{}} | {error, Reason :: term()}).
+code_change(_OldVsn, State, _Extra) ->
+  {ok, State}.
+
+%%%===================================================================
+%%% Internal functions
+%%%===================================================================
+do_execute_command(State = #state{transport = Transport, socket = Socket}, Command) ->
+  case em_manager_devices:get_by_id(Command#command.deviceId) of
+    {ok, Device} ->
+      case do_encode_command(Device#device.uniqueId, Command) of
+        {ok, CommandBin} ->
+          em_logger:info("CommandBin: ~s", [CommandBin]),
+          Transport:send(Socket, CommandBin),
+          {noreply, State, ?TIMEOUT};
+        {error, Reason} ->
+          em_logger:info("Error: ~s", [Reason]),
+          {noreply, State, ?TIMEOUT}
+      end;
+    {error, Reason} ->
+      em_logger:info("Error: ~s", [Reason]),
+      {noreply, State, ?TIMEOUT}
   end.
 
-close(State = #device_state{transport = Transport, socket = Socket}) ->
-  em_manager_commands:unlink(State),
-  Transport:close(Socket).
+do_encode_command(_UniqueId, _Command) ->
+  {error, <<"Unsupported command">>}.
 
-parse(<<"L">>, Data, _) ->
-  case binary:split(Data, [<<";">>], []) of
-    [Imei, Password] -> {auth, Imei, fix_password(Password)};
-    [Imei] -> {auth, Imei, <<>>}
+
+
+do_process_data(State = #state{transport = Transport, socket = Socket, protocol = _Protocol, deviceId = 0}, <<"#L#", Body/binary>>) ->
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Body]),
+  [Imei|_] = binary:split(Body, [<<";">>], []),
+  case em_data_manager:get_device_by_uid(Imei) of
+    {error, _Reason} ->
+      em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
+      Transport:send(Socket, format_response(<<"#AL#">>, 0)),
+      {stop, normal, State};
+    {ok, Object} ->
+      em_proc:registry(Object#device.id, self()),
+      Transport:send(Socket, format_response(<<"#AL#">>, 1)),
+      {noreply, State#state{deviceId = Object#device.id}, ?TIMEOUT}
   end;
-parse(<<"D">>, Data, Pattern) ->
-  case data_match(Data, Pattern) of
-    %% [_, Day, Month, Year, Hour, Minute, Second, LatDeg, LatMin, LatHem, LonDeg, LonMin, LonHem, Speed, Course, Altitude, Satellites, Hdop, Inputs, Outputs, Adc, IButton, Params | _]
-    [_, Day, Month, Year, Hour, Minute, Second, LatDeg, LatMin, LatHem, LonDeg, LonMin, LonHem, Speed, Course, Altitude | _] ->
+do_process_data(State = #state{transport = Transport, socket = Socket, protocol = Protocol, deviceId = DeviceId}, <<"#D#", Body/binary>>) when DeviceId > 0 ->
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Body]),
+  case parse(Body) of
+    {ok, PositionModel} ->
+      em_logger:info("[packet] unit: ip = '~s' message: ~w", [em_hardware:resolve(Socket), PositionModel]),
+      Position = PositionModel#position{
+        deviceId = DeviceId,
+        protocol = atom_to_binary(Protocol, utf8),
+        attributes = maps:merge(PositionModel#position.attributes, #{
+          ?KEY_IP => em_hardware:resolve(Socket)
+        })
+      },
+      em_logger:info("save message => unit: ip = '~s' id = '~w' position: ~w", [em_hardware:resolve(Socket), DeviceId, Position]),
+      em_data_manager:create_position(DeviceId, Position),
+      Transport:send(Socket, format_response(<<"#AD#">>, 1)),
+      {noreply, State, ?TIMEOUT};
+    {error, Message} ->
+      em_logger:info("ERROR: ~s", [Message]),
+      Transport:send(Socket, format_response(<<"#AD#">>, 0)),
+      {stop, normal, State}
+  end;
+do_process_data(State, _) ->
+  %%em_logger:info("ERROR: parsing packet"),
+  {stop, normal, State}.
+
+
+%% echo "39. wialon"
+%% (echo -n -e "#D#110816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n";) | nc -v localhost 5039
+parse(Data) ->
+  case em_regexp:match(Data, ?PATTERN) of
+    {ok, [_, Day, Month, Year, Hour, Minute, Second, LatDeg, LatMin, LatHem, LonDeg, LonMin, LonHem, Speed, Course, Altitude | _]} ->
       Position = #position{
         deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
         latitude = parse_coordinate(deg_min_hem, {LatDeg, LatMin, LatHem}),
         longitude = parse_coordinate(deg_min_hem, {LonDeg, LonMin, LonHem}),
         speed = parse_speed(Speed),
         course = parse_course(Course),
-        altitude = parse_altitude(Altitude)
+        altitude = parse_altitude(Altitude),
+        attributes = #{
+        }
       },
-      {data, Position};
+      {ok, Position};
     Reason ->
-      {error, Reason}
+      Reason
   end.
-
-fix_password(<<"NA">>) -> <<>>;
-fix_password(Val) -> Val.
 
 parse_coordinate(deg_min_hem, {<<"NA">>, <<"NA">>, <<"NA">>}) ->
   undefined;
@@ -204,23 +339,13 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
   em_logger:info("Date => ~w", [Date]),
   em_helper_time:datetime_to_utc(Date).
 
-data_match(Data, Pattern) ->
-  {match, List} = re:run(Data, Pattern),
-  lists:reverse(lists:foldl(fun(Param, Res) ->
-    [read_param(Param, Data) | Res]
-                            end, [], List)).
-
-read_param({-1, 0}, _) ->
-  void;
-read_param({Pos, Len}, Data) ->
-  binary:part(Data, Pos, Len).
+format_response(Prefix, Number) ->
+  NumberStr = list_to_binary(integer_to_list(Number)),
+  <<Prefix/binary, NumberStr/binary, "\r\n">>.
 
 
-send_packet(#device_state{socket = Socket, transport = Transport}, Bin) ->
-  Transport:send(Socket, <<Bin/binary, "\r\n">>).
-
+-spec(test() -> any()).
+%% #D#110816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA
 test() ->
   Packet = <<"#D#110816;142342;5354.33140;N;02730.14582;E;0;0;0;NA;NA;NA;NA;;NA;NA\r\n">>,
-  {ok, Pattern} = re:compile(?PATTERN),
-  parse(<<"D">>, Packet, Pattern).
-
+  em_regexp:match(Packet, ?PATTERN).
