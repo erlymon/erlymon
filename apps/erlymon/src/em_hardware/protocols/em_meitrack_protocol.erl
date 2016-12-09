@@ -79,6 +79,8 @@
     ".*?"                           %% any
 ])).
 
+-define(SOCKET_OPTS, [{active, once}, {packet, line}]).
+
 -record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
@@ -116,7 +118,7 @@ start_link(Ref, Socket, Transport, Opts) ->
   {stop, Reason :: term()} | ignore).
 init({Ref, Socket, Transport, Opts}) ->
   ok = ranch:accept_ack(Ref),
-  ok = Transport:setopts(Socket, [{active, once}]),
+  ok = Transport:setopts(Socket, ?SOCKET_OPTS),
   Protocol = proplists:get_value(protocol, Opts),
   gen_server:enter_loop(?MODULE, [],
     #state{protocol = Protocol, socket = Socket, transport = Transport}, ?TIMEOUT).
@@ -170,11 +172,11 @@ handle_cast(_Request, State) ->
   {stop, Reason :: term(), NewState :: #state{}}).
 handle_info({command, Command}, State) ->
   do_execute_command(State, Command);
-handle_info({tcp, _, ?TRASH}, State = #state{socket = Socket, transport = Transport}) ->
-  Transport:setopts(Socket, [{active, once}]),
+handle_info({tcp, _, <<67,78,88,78,0,0,0,1,0,0,4,0,27,0,0,0,77,10>>}, State = #state{socket = Socket, transport = Transport}) ->
+  Transport:setopts(Socket, ?SOCKET_OPTS),
   {noreply, State, ?TIMEOUT};
-handle_info({tcp, Socket, Data}, State = #state{socket = Socket, transport = Transport}) when byte_size(Data) > 1 ->
-  Transport:setopts(Socket, [{active, once}]),
+handle_info({tcp, Socket, Data}, State = #state{socket = Socket, transport = Transport}) ->
+  Transport:setopts(Socket, ?SOCKET_OPTS),
   do_process_data(State, Data);
 handle_info({tcp_closed, _Socket}, State) ->
   {stop, normal, State};
