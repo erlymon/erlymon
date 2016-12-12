@@ -34,6 +34,10 @@
 -export([start_link/4]).
 -export([test/0]).
 
+-ifdef(TEST).
+-compile(export_all).
+-endif. % EXPORT_ALL
+
 %% gen_server callbacks
 -export([init/1,
   handle_call/3,
