@@ -23,7 +23,7 @@
 %%%-------------------------------------------------------------------
 {application, erlymon,
   [{description, "An OTP application"}
-    , {vsn, "3.4"}
+    , {vsn, "v3.4"}
     , {registered, []}
     , {mod, {'erlymon_app', []}}
     , {applications,
