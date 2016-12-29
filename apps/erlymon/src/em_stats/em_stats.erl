@@ -21,29 +21,16 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_manager_devices).
+-module(em_stats).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(gen_server).
 
-
 -include("em_records.hrl").
-
--include_lib("stdlib/include/ms_transform.hrl").
-
 
 %% API
 -export([start_link/0]).
-
--export([
-  count/0,
-  get/0,
-  get_by_uid/1,
-  get_by_id/1,
-  create/1,
-  update/1,
-  delete/1
-]).
+-export([report/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -55,38 +42,11 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {cache}).
+-record(state, {connection, tref}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec(count() -> {ok, integer()} | {error, string()}).
-count() ->
-  gen_server:call(?SERVER, count).
-
--spec(get() -> {ok, [Rec :: #device{}]} | {error, string()}).
-get() ->
-  gen_server:call(?SERVER, {get}).
-
--spec(get_by_uid(UniqueId :: string()) -> {ok, Rec :: #device{}} | {error, string()}).
-get_by_uid(UniquiId) ->
-  gen_server:call(?SERVER, {get, UniquiId}).
-
--spec(get_by_id(Id :: integer()) -> {ok, Rec :: #device{}} | {error, string()}).
-get_by_id(Id) ->
-  gen_server:call(?SERVER, {get, Id}).
-
--spec(create(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
-create(Device) ->
-  gen_server:call(?SERVER, {create, Device}).
-
--spec(update(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
-update(Device) ->
-  gen_server:call(?SERVER, {update, Device}).
-
--spec(delete(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
-delete(Device) ->
-  gen_server:call(?SERVER, {delete, Device}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -98,6 +58,17 @@ delete(Device) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
+%%--------------------------------------------------------------------
+%% @doc
+%% Get statistics report
+%%
+%% @end
+%%--------------------------------------------------------------------
+-spec(report() ->
+  {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+report() ->
+  gen_server:call(?SERVER, report).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -118,14 +89,10 @@ start_link() ->
   {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term()} | ignore).
 init([]) ->
-  em_logger:info("Init devices manager"),
-  Cache = ets:new(devices, [set, private, {keypos, 2}]),
-  {ok, Items} = em_storage:get_devices(),
-  lists:foreach(fun(Item) ->
-    ets:insert_new(Cache, Item)
-                end, Items),
-  em_logger:info("Loaded ~w device(s)", [length(ets:tab2list(Cache))]),
-  {ok, #state{cache = Cache}}.
+  em_logger:info("Init stats"),
+  {ok, Conn} = shotgun:open("stats.erlymon.org", 80),
+  {ok, TRef} = timer:send_interval(3600 * 1000, periodic),
+  {ok, #state{connection = Conn, tref = TRef}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -142,20 +109,8 @@ init([]) ->
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_call(count, _From, State) ->
-  do_count_devices(State);
-handle_call({get}, _From, State) ->
-  do_get_devices(State);
-handle_call({get, Id}, _From, State) when is_integer(Id) ->
-  do_get_device_by_id(State, Id);
-handle_call({get, UniqueId}, _From, State) when is_binary(UniqueId) ->
-  do_get_device_by_uid(State, UniqueId);
-handle_call({create, Device}, _From, State) ->
-  do_create_device(State, Device);
-handle_call({update, Device}, _From, State) ->
-  do_update_device(State, Device);
-handle_call({delete, Device}, _From, State) ->
-  do_delete_device(State, Device);
+handle_call(report, _From, State) ->
+  do_report(State);
 handle_call(_Request, _From, State) ->
   {reply, ok, State}.
 
@@ -187,6 +142,8 @@ handle_cast(_Request, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
+handle_info(periodic, State) ->
+  do_send_report(State);
 handle_info(_Info, State) ->
   {noreply, State}.
 
@@ -203,8 +160,9 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
     State :: #state{}) -> term()).
-terminate(_Reason, #state{cache = Cache}) ->
-  ets:delete(Cache),
+terminate(_Reason, #state{connection = Conn, tref = TRef}) ->
+  timer:cancel(TRef),
+  shotgun:close(Conn),
   ok.
 
 %%--------------------------------------------------------------------
@@ -224,65 +182,29 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_count_devices(State = #state{cache = Cache}) ->
-  Info = ets:info(Cache),
-  {size, Size} = proplists:lookup(size, Info),
-  {reply, {ok, Size}, State}.
+do_report(State) ->
+  {reply, {ok, do_gen_report()}, State}.
 
 
-do_get_devices(State = #state{cache = Cache}) ->
-  {reply, {ok, ets:tab2list(Cache)}, State}.
+do_send_report(State = #state{connection = Conn}) ->
+  Headers = #{<<"content-type">> => <<"application/json">>},
+  shotgun:put(Conn, "/api/servers", Headers, str(do_gen_report()), #{}),
+  {noreply, State}.
 
-do_get_device_by_id(State = #state{cache = Cache}, Id) ->
-  case ets:lookup(Cache, Id) of
-    [] ->
-      {reply, {error, <<"Access is denied">>}, State};
-    [Item|_] ->
-      {reply, {ok, Item}, State}
-  end.
 
-do_get_device_by_uid(State = #state{cache = Cache}, Uid) ->
-  Match = ets:fun2ms(fun(Device = #device{uniqueId = UniqueId}) when UniqueId =:= Uid -> Device end),
-  case ets:select(Cache, Match) of
-    [] ->
-      {reply, {error, <<"Access is denied">>}, State};
-    [Item|_] ->
-      {reply, {ok, Item}, State}
-  end.
+do_gen_report() ->
+  {ok, UsersCounter} = em_manager_users:count(),
+  {ok, DevicesCounter} = em_manager_devices:count(),
+  #statistics{
+    node = node(),
+    usersCounter = UsersCounter,
+    devicesCounter = DevicesCounter
+  }.
 
-do_create_device(State = #state{cache = Cache}, DeviceModel) ->
-  case em_storage:create_device(DeviceModel) of
-    {ok, Device} ->
-      case ets:insert_new(Cache, Device) of
-        true ->
-          {reply, {ok, Device}, State};
-        false ->
-          {reply, {error, <<"Error sync in devices cache">>}, State}
-      end;
-    Reason ->
-      {reply, Reason, State}
-  end.
-
-do_update_device(State = #state{cache = Cache}, DeviceModel) ->
-  case em_storage:update_device(DeviceModel) of
-    {ok, Device} ->
-      case ets:insert(Cache, Device) of
-        true ->
-          {reply, {ok, Device}, State};
-        false -> {reply, {error, <<"Error sync in devices cache">>}, State}
-      end;
-    Reason ->
-      {reply, Reason, State}
-  end.
-
-do_delete_device(State = #state{cache = Cache}, DeviceModel) ->
-  case em_storage:delete_device(DeviceModel) of
-    {ok, Device} ->
-      case ets:delete(Cache, Device#device.id) of
-        true ->
-          {reply, {ok, Device}, State};
-        false -> {reply, {error, <<"Error sync in devices cache">>}, State}
-      end;
-    Reason ->
-      {reply, Reason, State}
-  end.
+str(Statistics) ->
+  Map = #{
+    <<"node">> => Statistics#statistics.node,
+    <<"usersCounter">> => Statistics#statistics.usersCounter,
+    <<"devicesCounter">> => Statistics#statistics.devicesCounter
+  },
+  em_json:encode(Map).

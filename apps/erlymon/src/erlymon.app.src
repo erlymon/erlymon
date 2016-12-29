@@ -43,6 +43,7 @@
       , gproc
       , syn
       , emodel
+      , shotgun
     ]}
     , {env, [
         {lager, [

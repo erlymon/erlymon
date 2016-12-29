@@ -34,6 +34,7 @@
 -export([start_link/0]).
 
 -export([
+         count/0,
          get/0,
          get/1,
          check/2,
@@ -58,6 +59,9 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
+-spec(count() -> {ok, integer()} | {error, string()}).
+count() ->
+  gen_server:call(?SERVER, count).
 
 -spec(get() -> {ok, [Rec :: #user{}]} | {error, string()}).
 get() ->
@@ -137,6 +141,8 @@ init([]) ->
              {noreply, NewState :: #state{}, timeout() | hibernate} |
              {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
              {stop, Reason :: term(), NewState :: #state{}}).
+handle_call(count, _From, State) ->
+  do_count_users(State);
 handle_call({get}, _From, State) ->
     do_get_users(State);
 handle_call({get, Id}, _From, State) ->
@@ -217,6 +223,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_count_users(State = #state{cache = Cache}) ->
+  Info = ets:info(Cache),
+  {size, Size} = proplists:lookup(size, Info),
+  {reply, {ok, Size}, State}.
+
 
 do_get_users(State = #state{cache = Cache}) ->
     {reply, {ok, ets:tab2list(Cache)}, State}.

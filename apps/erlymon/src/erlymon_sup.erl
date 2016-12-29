@@ -88,6 +88,14 @@ init([]) ->
             shutdown => 3000,
             type => supervisor,
             modules => dynamic
+        },
+        #{
+            id => em_stats,
+            start => {em_stats, start_link, []},
+            restart => permanent,
+            shutdown => 3000,
+            type => worker,
+            modules => [em_stats]
         }
     ],
     {ok, {SupFlags, ChildSpecs}}.

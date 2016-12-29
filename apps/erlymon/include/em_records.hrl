@@ -111,6 +111,12 @@
   pattern :: any()
 }).
 
+-record(statistics, {
+  node :: atom(),
+  usersCounter :: integer(),
+  devicesCounter :: integer()
+}).
+
 %%  Device
 -define(STATUS_UNKNOWN, <<"unknown">>).
 -define(STATUS_ONLINE, <<"online">>).
