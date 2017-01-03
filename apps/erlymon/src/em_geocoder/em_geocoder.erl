@@ -29,7 +29,6 @@
 %% API
 -export([start_link/2]).
 -export([reverse/3]).
--export([test/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -49,7 +48,10 @@
 %% Url: http://nominatim.openstreetmap.org/reverse?format=json&lat=40.714224&lon=-73.961452&zoom=18&addressdetails=1
 -define(NOMINATIM_COORDS_URL, <<"http://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1">>).
 
--record(state, {type, settings}).
+-record(state, {
+    type :: atom(),
+    settings :: map()
+}).
 
 %%%===================================================================
 %%% API
@@ -59,7 +61,6 @@
 reverse(Latitude, Longitude, Language) ->
     gen_server:call(?SERVER, {reverse, Latitude, Longitude, Language}).
 
-test() -> em_geocoder:reverse(55.7522200, 37.6155600, <<"en_US">>).
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server

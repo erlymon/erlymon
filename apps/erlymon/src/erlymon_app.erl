@@ -36,6 +36,7 @@
 %% API
 %%====================================================================
 
+-spec start(_StartType :: any(), _StartArgs :: list()) -> {ok, pid()}.
 start(_StartType, _StartArgs) ->
     em_proc:init(),
     Res = erlymon_sup:start_link(),
@@ -47,6 +48,7 @@ start(_StartType, _StartArgs) ->
     Res.
 
 %%--------------------------------------------------------------------
+-spec stop(_State :: any()) -> ok.
 stop(_State) ->
     stop_web(_State),
     stop_hardware(_State).

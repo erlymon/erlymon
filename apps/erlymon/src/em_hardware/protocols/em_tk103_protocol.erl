@@ -26,11 +26,11 @@
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
 
+-include("em_hardware.hrl").
 -include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
--export([test/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -85,8 +85,6 @@
 ])).
 
 -define(SOCKET_OPTS, [{active, once}, {packet, line}, {line_delimiter, $)}]).
-
--record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
 %%% API
@@ -360,6 +358,6 @@ format_response(SysDeviceId, <<"BP05">>) ->
 
 %% (123456789012BP05123456789012345120101A6000.0000N13000.0000E000.0120200000.0000000000L000946BB)
 %% (123456789012 BP05 123456789012345 120101 A 6000.0000N 13000.0000E 000.0 120200 000.00 00000000 L000946BB)
-test() ->
-  Packet = <<"(123456789012BP05123456789012345120101A6000.0000N13000.0000E000.0120200000.0000000000L000946BB)">>,
-  em_regexp:match(Packet, ?PATTERN).
+%%test() ->
+%%  Packet = <<"(123456789012BP05123456789012345120101A6000.0000N13000.0000E000.0120200000.0000000000L000946BB)">>,
+%%  em_regexp:match(Packet, ?PATTERN).

@@ -28,10 +28,6 @@
 %% hardware: hardware library's entry point.
 
 -export([
-  gprmc/5,
-  to_wgs84/1,
-  to_nmea/1,
-  parsing_gprmc/1,
   utc_to_datetime/1,
   datetime_to_utc/1,
   to_timestamp/1
@@ -57,94 +53,10 @@
 
 %% API
 
-%% @spec gprmc(DateTime::tuple(), Coordinates::tuple(), GpsStatus::list(), Knots::float(), Course::float()) -> Result::binary()
-%% DateTime = {{Year::integer(), Month::integer(), Day::integer()}, {Hours::integer(), Minutes::integer(), Secunds::integer()}}
-%% Coordinates = {{Longitude::float()}, LongitudeType::list(), {Latitude::float(), LatitudeType::list()}}
-%% Result = binary()
-%% @doc Created GPRMC string.
-gprmc({{Year, Month, Day}, {Hours, Minutes, Secunds}}, {{Longitude, LongitudeType}, {Latitude, LatitudeType}}, GpsStatus, Knots, Course)
-  when is_integer(Year) and is_integer(Month) and is_integer(Day) and is_integer(Hours) and is_integer(Secunds) and is_float(Longitude) and is_list(LongitudeType) and is_float(Latitude) and is_list(LatitudeType) and is_list(GpsStatus) and is_float(Knots) and is_float(Course) ->
-  [LongitudeString] = io_lib:fwrite("~.4f", [Longitude]),
-  [Lon0, Lon1] = string:tokens(LongitudeString, "."),
-  [LatitudeString] = io_lib:fwrite("~.4f", [Latitude]),
-  [Lat0, Lat1] = string:tokens(LatitudeString, "."),
-  Gprmc = io_lib:fwrite("GPRMC,~2..0B~2..0B~2..0B.~3..0B,~s,~4..0B.~4..0B,~s,~5..0B.~4..0B,~s,~.2f,~.2f,~2..0B~2..0B~2..0B,,,",
-    [
-      Hours,
-      Minutes,
-      Secunds,
-      0,
-      GpsStatus,
-      list_to_integer(Lat0), list_to_integer(Lat1),
-      LatitudeType,
-      list_to_integer(Lon0), list_to_integer(Lon1),
-      LongitudeType,
-      Knots,
-      Course,
-      Day,
-      Month,
-      Year
-    ]),
-  list_to_binary(io_lib:fwrite("$~s*~.16B", [Gprmc, adf_core_checksum:crc(binary_to_list(list_to_binary(Gprmc)))])).
-
-%% @spec to_wgs84(Value::tuple()) -> Result::tuple()
-%% Value = {{Longitude::float()}, LongitudeType::list(), {Latitude::float(), LatitudeType::list()}}
-%% Result = {Longitude::float(), Latitude::float()}
-%% @doc Convert NMEA183 coordinates to WGS84.
-to_wgs84({{Longitude, LongitudeType}, {Latitude, LatitudeType}}) ->
-  Convert = fun(Nmea, Type) ->
-    Degrees = trunc(Nmea / 100) + (Nmea - trunc(Nmea / 100) * 100) / 60,
-    case Type of
-      'N' ->
-        Degrees;
-      'S' ->
-        -1 * Degrees;
-      'E' ->
-        Degrees;
-      'W' ->
-        -1 * Degrees
-    end
-
-  end,
-  {Convert(Longitude, LongitudeType), Convert(Latitude, LatitudeType)}.
-
-%% @spec to_nmea(Value::tuple()) -> Result::tuple()
-%% Value = {Longitude::float(), Latitude::float()}
-%% Result = {{Longitude::float(), LongitudeType::list()}, {Latitude::float(), LatitudeType::list()}}
-%% @doc Convert WGS84 coordinates to NMEA.
-to_nmea({Longitude, Latitude}) ->
-  Convert = fun(Value, {Type0, Type1}) ->
-    Degrees = trunc(Value),
-    Minutes = (Value - Degrees) * 60,
-    Result = (Degrees * 100) + Minutes,
-    if
-      Value > 0 ->
-        {abs(Result), Type0};
-      true ->
-        {abs(Result), Type1}
-    end
-  end,
-  {Convert(Longitude, {"E", "W"}), Convert(Latitude, {"N", "S"})}.
-
-%% @spec parsing_gprmc(Data::list()) -> Result::tuple()
-%% Result = {DateTime::tuple(), Coordinates::tuple(), GpsStatus::list(), Knots::float(), Course::float()}
-%% DateTime = {{Year::integer(), Month::integer(), Day::integer()},{Hours::integer(), Minutes::integer(), Secunds::integer()}}
-%% Coordinates = {{Longitude::float()}, LongitudeType::list(), {Latitude::float(), LatitudeType::list()}}
-%% @doc Parsed GPRMC data.
-parsing_gprmc(Data) when is_list(Data) ->
-  %%[Gprmc, Crc] = string:tokens(Data, "*"),
-  {ok, [Hours, Minutes, Secunds, _Milisecunds, GpsStatus, Latitude, LatitudeType, Longitude, LongitudeType, Knots, Course, Day, Month, Year, _Tail], _} = io_lib:fread("$GPRMC,~2s~2s~2s.~3s,~c,~f,~c,~f,~c,~f,~f,~2s~2s~2s,~2s", Data),
-  {
-    {{list_to_integer(Year), list_to_integer(Month), list_to_integer(Day)}, {list_to_integer(Hours), list_to_integer(Minutes), list_to_integer(Secunds)}},
-    {{Longitude, LongitudeType}, {Latitude, LatitudeType}},
-    GpsStatus,
-    Knots,
-    Course
-  }.
-
 %% @spec utc_to_datetime(Millisecunds::integer()) -> Result::tuple()
 %% Result = {{Year::integer(), Month::integer(), Day::integer()},{Hours::integer(), Minutes::integer(), Secunds::integer()}}
 %% @doc Convert utc to datetime.
+-spec utc_to_datetime(integer()) -> tuple().
 utc_to_datetime(Milliseconds) when is_integer(Milliseconds) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
   Seconds = BaseDate + (Milliseconds div 1000),
@@ -154,6 +66,7 @@ utc_to_datetime(Milliseconds) when is_integer(Milliseconds) ->
 %% @spec datetime_to_utc(DateTime::tuple()) -> Result::integer()
 %% DateTime = {{Year::integer(), Month::integer(), Day::integer()},{Hours::integer(), Minutes::integer(), Secunds::integer()}}
 %% @doc Convert datetime to utc.
+-spec datetime_to_utc(tuple()) -> integer().
 datetime_to_utc({{Year, Month, Day}, Time}) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
   (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate) * 1000.
@@ -162,6 +75,7 @@ datetime_to_utc({{Year, Month, Day}, Time}) ->
 %% @spec to_timestamp(DateTime::tuple()) -> Result::integer()
 %% DateTime = {{Year::integer(), Month::integer(), Day::integer()},{Hours::integer(), Minutes::integer(), Secunds::integer()}}
 %% @doc Convert datetime to utc.
+-spec to_timestamp(tuple()) -> integer().
 to_timestamp({{Year,Month,Day},{Hours,Minutes,Seconds}}) ->
   (calendar:datetime_to_gregorian_seconds(
     {{Year,Month,Day},{Hours,Minutes,Seconds}}
@@ -173,6 +87,7 @@ to_timestamp({{Year,Month,Day},{Hours,Minutes,Seconds}}) ->
 %%--------------------------------------------------------------------
 
 %% @doc Converted meters per secunds to knots.
+-spec mpers_to_kn(Value :: float()) -> float().
 mpers_to_kn(Value) when is_float(Value) ->
   Value * 3600 / 1852.
 
@@ -181,6 +96,7 @@ mpers_to_kn(Value) when is_float(Value) ->
 %% @spec kn_to_mpers(Value::float()) -> Result::float()
 %% @end
 %%--------------------------------------------------------------------
+-spec kn_to_mpers(Value :: float()) -> float().
 kn_to_mpers(Value) when is_float(Value) ->
   Value * 1852 / 3600.
 
@@ -189,12 +105,14 @@ kn_to_mpers(Value) when is_float(Value) ->
 %% @spec kmperh_to_mpers(Value::float()) -> Result::float()
 %% @end
 %%--------------------------------------------------------------------
+-spec kmperh_to_mpers(Value :: float()) -> float().
 kmperh_to_mpers(Value) when is_float(Value) ->
   Value * 1000 / 3600.
 
 
 %% parse knots and convert to mps
 %% 1 knots = 0.514 m/s
+-spec knots_to_mps(Value :: float()) -> float().
 knots_to_mps(Value) when is_float(Value) ->
   Value * 0.514.
 
@@ -203,6 +121,7 @@ knots_to_mps(Value) when is_float(Value) ->
 %% @spec timestamp() -> integer().
 %% @end
 %%--------------------------------------------------------------------
+-spec timestamp() -> integer().
 timestamp() ->
   timer:now_diff(os:timestamp(), {0, 0, 0}).
 
@@ -219,6 +138,7 @@ timestamp() ->
 %%  MaxLen: 4095 bytes (32767 bits) - detection single, double, triple, and all odd errors
 %% @end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec crc16_ccitt(Data :: binary()) -> integer().
 crc16_ccitt(Data) when is_binary(Data) ->
   crc16_ccitt(binary_to_list(Data), 16#ffff).
 
@@ -251,6 +171,7 @@ crc16_ccitt_loop(Count, Crc) ->
 %%%  Check : 0xF7 ("123456789")
 %%%  MaxLen: 15 bytes(127 bits) - detection single, double, triple,  and all odd errors
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-spec crc8(Data :: binary()) -> integer().
 crc8(Data) when is_binary(Data) ->
   crc8(binary_to_list(Data), 16#ff).
 
@@ -274,6 +195,7 @@ crc8_loop(Count, Crc) ->
 
 %% @spec crc(Data::list()) -> Result::integer()
 %% @doc Calculate crc.
+-spec crc(Data :: list()) -> integer().
 crc(Data) when is_list(Data) ->
   crc(Data, 0).
 
@@ -284,7 +206,7 @@ crc([Head | Tail], Crc) ->
 
 
 
-
+-spec resolve(Socket :: inet:socket()) -> string().
 resolve(Socket) ->
   case inet:peername(Socket) of
     {ok, {Address, _Port}} ->

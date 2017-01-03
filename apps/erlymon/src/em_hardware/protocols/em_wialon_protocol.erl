@@ -27,6 +27,7 @@
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
 
+-include("em_hardware.hrl").
 -include("em_records.hrl").
 
 %% API
@@ -68,8 +69,6 @@
 ])).
 
 -define(SOCKET_OPTS, [{active, once}, {packet, line}]).
-
--record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
 %%% API
@@ -165,7 +164,7 @@ handle_info({command, Command}, State) ->
 %%  {noreply, State, ?TIMEOUT};
 handle_info({tcp, Socket, Data}, State = #state{socket = Socket, transport = Transport}) when byte_size(Data) > 1 ->
   Transport:setopts(Socket, ?SOCKET_OPTS),
-  do_process_data(State, Data);
+  do_process_data(Data, State);
 handle_info({tcp_closed, _Socket}, State) ->
   {stop, normal, State};
 handle_info({tcp_error, _, Reason}, State) ->
@@ -232,7 +231,7 @@ do_encode_command(_UniqueId, _Command) ->
 
 
 
-do_process_data(State = #state{transport = Transport, socket = Socket, protocol = _Protocol, deviceId = 0}, <<"#L#", Body/binary>>) ->
+do_process_data(<<"#L#", Body/binary>>, State = #state{transport = Transport, socket = Socket, protocol = _Protocol, deviceId = 0}) ->
   em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Body]),
   [Imei|_] = binary:split(Body, [<<";">>], []),
   case em_data_manager:get_device_by_uid(Imei) of
@@ -245,7 +244,7 @@ do_process_data(State = #state{transport = Transport, socket = Socket, protocol 
       Transport:send(Socket, format_response(<<"#AL#">>, 1)),
       {noreply, State#state{deviceId = Object#device.id}, ?TIMEOUT}
   end;
-do_process_data(State = #state{transport = Transport, socket = Socket, protocol = Protocol, deviceId = DeviceId}, <<"#D#", Body/binary>>) when DeviceId > 0 ->
+do_process_data( <<"#D#", Body/binary>>, State = #state{transport = Transport, socket = Socket, protocol = Protocol, deviceId = DeviceId}) when DeviceId > 0 ->
   em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Body]),
   case parse(Body) of
     {ok, PositionModel} ->
@@ -266,7 +265,7 @@ do_process_data(State = #state{transport = Transport, socket = Socket, protocol 
       Transport:send(Socket, format_response(<<"#AD#">>, 0)),
       {stop, normal, State}
   end;
-do_process_data(State, _) ->
+do_process_data(_, State) ->
   %%em_logger:info("ERROR: parsing packet"),
   {stop, normal, State}.
 

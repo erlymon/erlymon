@@ -34,6 +34,7 @@
   check_registration/0
 ]).
 
+-spec(check_admin(UserId :: integer()) -> boolean()).
 check_admin(UserId) ->
     em_logger:info("check_admin: ~w", [UserId]),
     case em_manager_users:get(UserId) of
@@ -44,13 +45,14 @@ check_admin(UserId) ->
         false
     end.
 
+-spec(check_user(UserId :: integer(), OtherUserId :: integer()) -> boolean()).
 check_user(UserId, OtherUserId) when UserId == OtherUserId ->
     true;
 check_user(UserId, _) ->
     check_admin(UserId).
 
 
-
+-spec(check_device(UserId :: integer(), DeviceId :: integer()) -> boolean()).
 check_device(UserId, DeviceId) ->
     case em_manager_permissions:get(UserId, DeviceId) of
       {error, _Reason} ->
@@ -59,6 +61,7 @@ check_device(UserId, DeviceId) ->
             true
     end.
 
+-spec(check_registration() -> boolean()).
 check_registration() ->
   case em_manager_server:get() of
     {ok, #server{registration = true}} ->

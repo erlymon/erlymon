@@ -28,11 +28,11 @@
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
 
+-include("em_hardware.hrl").
 -include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
--export([test/0]).
 
 -ifdef(TEST).
 -compile(export_all).
@@ -74,8 +74,6 @@
 ])).
 
 -define(SOCKET_OPTS, [{active, once}, {packet, line}, {line_delimiter, $\0}]).
-
--record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
 %%% API
@@ -339,6 +337,6 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
   em_helper_time:datetime_to_utc(Date).
 
 %% +RESP:GTSOS,123456789012345,0,0,0,1,0.0,0,0.0,1,130.000000,60.000000,20120101120300,0460,0000,18d8,6141,00,11F0,0102120204\0
-test() ->
-  Packet = <<"+RESP:GTSOS,123456789012345,0,0,0,1,0.0,0,0.0,1,130.000000,60.000000,20120101120300,0460,0000,18d8,6141,00,11F0,0102120204\0">>,
-  em_regexp:match(Packet, ?PATTERN).
+%%test() ->
+%%  Packet = <<"+RESP:GTSOS,123456789012345,0,0,0,1,0.0,0,0.0,1,130.000000,60.000000,20120101120300,0460,0000,18d8,6141,00,11F0,0102120204\0">>,
+%%  em_regexp:match(Packet, ?PATTERN).

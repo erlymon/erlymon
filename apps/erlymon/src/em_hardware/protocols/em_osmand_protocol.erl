@@ -48,6 +48,7 @@
 %% http://localhost:5055/?id=123456&lat={0}&lon={1}&timestamp={2}&hdop={3}&altitude={4}&speed={5}
 %% id=353490069161244&timestamp=1440085518&lat=53.944019&lon=27.6468195&speed=0.0&bearing=0.0&altitude=0.0&batt=53.0
 %% httpi request => http GET localhost:5055 id==123456789012345 timestamp==1440085518 lat==53.944019 lon==27.6468195 speed==0.0 bearing==0.0 altitude==0.0 batt==53.0
+-spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.
 init(Req, Opts) ->
     io:format("OPTS: ~w", [Opts]),
     Method = cowboy_req:method(Req),

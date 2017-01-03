@@ -34,11 +34,13 @@
   timestamp/0
 ]).
 
+-spec(format(Format :: string(), Utc :: integer()) -> string()).
 format(Format, Utc) when is_integer(Utc) ->
   tempo:format_unix(Format, Utc);
 format(Format,_) ->
   tempo:format_unix(Format, 0).
 
+-spec(parse(Format :: string(), Bin :: string()) -> integer()).
 parse(Format, Bin) ->
   case tempo:parse_unix(Format, Bin) of
     {ok, Utc} ->
@@ -47,11 +49,13 @@ parse(Format, Bin) ->
       Reason
   end.
 
+-spec(datetime_to_utc(DateTime :: term()) -> integer()).
 datetime_to_utc({{Year, Month, Day}, Time}) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
   (calendar:datetime_to_gregorian_seconds({{Year, Month, Day}, Time}) - BaseDate).
 
 
+-spec(utc_to_datetime(Seconds :: integer()) -> integer()).
 utc_to_datetime(Seconds) when is_integer(Seconds) ->
   BaseDate = calendar:datetime_to_gregorian_seconds({{1970, 1, 1}, {0, 0, 0}}),
   Seconds = BaseDate + Seconds,
@@ -64,5 +68,6 @@ utc_to_datetime(Seconds) when is_integer(Seconds) ->
 %% @spec timestamp() -> integer().
 %% @end
 %%--------------------------------------------------------------------
+-spec(timestamp() -> integer()).
 timestamp() ->
   timer:now_diff(os:timestamp(), {0, 0, 0}) div 1000000.

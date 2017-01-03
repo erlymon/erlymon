@@ -27,11 +27,11 @@
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
 
+-include("em_hardware.hrl").
 -include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
--export([test/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -114,8 +114,6 @@
 ])).
 
 -define(SOCKET_OPTS, [{active, once}, {packet, line}]).
-
--record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
 %%% API
@@ -452,8 +450,8 @@ bin_to_num(Bin) ->
   end.
 
 %% "\$PGID,123456789012345*0F\r\n\$TRCCR,20150727040136.279,A,53.897743,27.442885,0.00,0.00,0.00,34,*34\r\n
-test() ->
-  %%Packet0 = <<"\$PGID,123456789012345*0F\r\n">>,
-  Packet1 = <<"\$TRCCR,20150727040136.279,A,53.897743,27.442885,0.00,0.00,0.00,34,*34\r\n">>,
-  parse(Packet1).
-  %%parse(Packet1).
+%%test() ->
+%%  %%Packet0 = <<"\$PGID,123456789012345*0F\r\n">>,
+%%  Packet1 = <<"\$TRCCR,20150727040136.279,A,53.897743,27.442885,0.00,0.00,0.00,34,*34\r\n">>,
+%%  parse(Packet1).
+%%  %%parse(Packet1).

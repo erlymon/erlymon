@@ -31,13 +31,15 @@
   send/2
 ]).
 
-
+-spec init() -> ok.
 init() ->
   em_logger:info("Init process manager"),
   syn:init().
 
-registry(Key, Process) ->
-  syn:register(Key, Process).
+-spec registry(Key :: any(), Pid :: pid()) ->  ok | {error, taken | pid_already_registered}.
+registry(Key, Pid) ->
+  syn:register(Key, Pid).
 
+-spec send(Key :: term(), Message :: term()) -> pid().
 send(Key, Message) ->
   syn:send(Key, Message).

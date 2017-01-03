@@ -44,34 +44,43 @@
 -export([stop_trace/1]).
 %% API
 
+-spec(info(Formatted :: string()) -> ok).
 info(Formatted) ->
     lager:info(Formatted).
 
+-spec(info(Formatted :: string(), Args :: list()) -> ok).
 info(Formatted, Args) ->
     lager:info(Formatted, Args).
 
+-spec(warning(Formatted :: string()) -> ok).
 warning(Formatted) ->
     lager:warning(Formatted).
 
+-spec(warning(Formatted :: string(), Args :: list()) -> ok).
 warning(Formatted, Args) ->
     lager:warning(Formatted, Args).
 
+-spec(error(Formatted :: string()) -> ok).
 error(Formatted) ->
     lager:error(Formatted).
 
+-spec(error(Formatted :: string(), Args :: list()) -> ok).
 error(Formatted, Args) ->
     lager:error(Formatted, Args).
 
+-spec(debug(Formatted :: string()) -> ok).
 debug(Formatted) ->
     lager:debug(Formatted).
 
+-spec(debug(Formatted :: string(), Args :: list()) -> ok).
 debug(Formatted, Args) ->
     lager:debug(Formatted, Args).
 
-
+-spec(trace_file(Formatted :: string(), Args :: list()) -> ok).
 trace_file(Path, Options) ->
     lager:trace_file(Path, Options).
 
+-spec(stop_trace(Formatted :: string()) -> ok).
 stop_trace(Trace) ->
     lager:stop_trace(Trace).
 

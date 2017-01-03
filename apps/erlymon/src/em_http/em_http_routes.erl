@@ -27,6 +27,7 @@
 %% API
 -export([get/1]).
 
+-spec get(Opts :: list()) -> list().
 get(Opts) ->
   [{'_', [
     {"/api/server", em_http_api_server_handler, []},

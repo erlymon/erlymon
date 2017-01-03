@@ -27,11 +27,11 @@
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
 
+-include("em_hardware.hrl").
 -include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
--export([test/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -132,8 +132,6 @@
 ])).
 
 -define(SOCKET_OPTS, [{active, once}, {packet, line}]).
-
--record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
 %%% API
@@ -312,7 +310,7 @@ do_process_data(State = #state{transport = Transport, socket = Socket, protocol 
       em_logger:info("ERROR: ~s", [Message]),
       {stop, normal, State}
   end;
-do_process_data(State = #state{transport = Transport, socket = Socket, protocol = _Protocol, deviceId = 0}, Data = <<"##", _/binary>>) ->
+do_process_data(State = #state{transport = Transport, socket = Socket, protocol = _Protocol}, Data = <<"##", _/binary>>) ->
   em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
   case parse(Data) of
     {ok, Imei} ->
@@ -450,7 +448,7 @@ parse_valid(Validity) when is_binary(Validity) ->
 %% ##,imei:123456789012345,A
 %% imei:123456789012345,help me,1201011201,,F,120100.000,A,6000.0000,N,13000.0000,E,0.00,;
 %% imei:359710049092324,tracker,151027025958,,F,235957.000,A,2429.5156,N,04424.5828,E,0.01,27.91,,0,0,,,;
-test() ->
-  Packet = <<"imei:123456789012345,help me,1201011201,,F,120100.000,A,6000.0000,N,13000.0000,E,0.00,;">>,
-  %%Packet = <<"##,imei:359586015829802,A">>,
-  em_regexp:match(Packet, ?PATTERN).
+%%test() ->
+%%  Packet = <<"imei:123456789012345,help me,1201011201,,F,120100.000,A,6000.0000,N,13000.0000,E,0.00,;">>,
+%%  %%Packet = <<"##,imei:359586015829802,A">>,
+%%  em_regexp:match(Packet, ?PATTERN).

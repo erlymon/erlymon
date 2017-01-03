@@ -38,8 +38,7 @@
 %% API functions
 %%====================================================================
 
--spec(start_link(GeocoderType :: term(), GeocoderSettings :: term()) ->
-    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+-spec start_link(GeocoderType :: term(), GeocoderSettings :: term()) -> supervisor:startlink_ret().
 start_link(GeocoderType, GeocoderSettings) ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, [GeocoderType, GeocoderSettings]).
 
@@ -48,6 +47,7 @@ start_link(GeocoderType, GeocoderSettings) ->
 %%====================================================================
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
+-spec init(Args :: list()) -> {ok, tuple()}.
 init([GeocoderType, GeocoderSettings]) ->
     SupFlags = #{strategy => one_for_all, intensity => 1000, period => 3600},
     ChildSpecs = [

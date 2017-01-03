@@ -26,11 +26,11 @@
 -behaviour(ranch_protocol).
 -behaviour(gen_server).
 
+-include("em_hardware.hrl").
 -include("em_records.hrl").
 
 %% API
 -export([start_link/4]).
--export([test/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -74,8 +74,6 @@
 ])).
 
 -define(SOCKET_OPTS, [{active, once}, {packet, line}]).
-
--record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
 %%% API
@@ -359,6 +357,6 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
   em_helper_time:datetime_to_utc(Date).
 
 %% 111111120009,+436763737552,GPRMC,120600.000,A,6000.0000,N,13000.0000,E,0.00,0.00,010112,,,A*68,F,, imei:123456789012345,04,481.2,F:4.15V,0,139,2689,232,03,2725,0576\n
-test() ->
-  Packet = <<"111111120009,+436763737552,GPRMC,120600.000,A,6000.0000,N,13000.0000,E,0.00,0.00,010112,,,A*68,F,, imei:123456789012345,04,481.2,F:4.15V,0,139,2689,232,03,2725,0576\n">>,
-  em_regexp:match(Packet, ?PATTERN_FULL).
+%%test() ->
+%%  Packet = <<"111111120009,+436763737552,GPRMC,120600.000,A,6000.0000,N,13000.0000,E,0.00,0.00,010112,,,A*68,F,, imei:123456789012345,04,481.2,F:4.15V,0,139,2689,232,03,2725,0576\n">>,
+%%  em_regexp:match(Packet, ?PATTERN_FULL).

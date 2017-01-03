@@ -32,6 +32,7 @@
 -export([websocket_handle/3]).
 -export([websocket_info/3]).
 
+-spec init(Req :: cowboy_req:req(), Opts :: list()) -> {atom(), cowboy_req:req(), list()}.
 init(Req, Opts) ->
     case cowboy_session:get(user, Req) of
         {undefined, Req2} ->
@@ -43,9 +44,13 @@ init(Req, Opts) ->
             {cowboy_websocket, Req2, Opts}
     end.
 
+-spec websocket_handle(Data:: any(), Req :: cowboy_req:req(), State :: term()) ->
+    {ok, cowboy_req:req(), term()}.
 websocket_handle(_Data, Req, State) ->
     {ok, Req, State}.
 
+-spec websocket_info(term(), Req :: cowboy_req:req(), State :: term()) ->
+    {reply, term(), cowboy_req:req(), term()}.
 websocket_info({position, Position}, Req, State) ->
     em_logger:info("WS SEND POSITION: ~w", [Position]),
     Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),

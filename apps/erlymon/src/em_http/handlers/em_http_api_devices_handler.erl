@@ -31,7 +31,7 @@
 -include("em_http.hrl").
 -include("em_records.hrl").
 
--record(get_devices_params, {all = false, userId = 0}).
+-record(get_devices_params, {all = false :: atom(), userId = 0 :: integer()}).
 %% GET http://demo.traccar.org/api/device/get?_dc=1436251203853&page=1&start=0&limit=25
 %% {"success":true,"data":[]}
 -spec init(Req :: cowboy_req:req(), Opts :: any()) -> {ok, cowboy_req:req(), any()}.

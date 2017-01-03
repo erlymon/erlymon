@@ -38,6 +38,7 @@
 %% API functions
 %%====================================================================
 
+-spec start_link() -> supervisor:startlink_ret().
 start_link() ->
   supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
@@ -46,6 +47,7 @@ start_link() ->
 %%====================================================================
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
+-spec init(Args :: list()) -> {ok, tuple()}.
 init([]) ->
   SupFlags = #{strategy => one_for_one, intensity => 1000, period => 3600},
   ChildSpecs = [

@@ -54,7 +54,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {cache}).
+-record(state, {cache :: any()}).
 
 %%%===================================================================
 %%% API

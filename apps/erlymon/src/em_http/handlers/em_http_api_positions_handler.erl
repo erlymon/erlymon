@@ -31,7 +31,7 @@
 -include("em_http.hrl").
 -include("em_records.hrl").
 
--record(qs_params, {deviceId = 0, from = <<"">>, to = <<"">>}).
+-record(qs_params, {deviceId = 0 :: integer(), from = <<"">> :: string(), to = <<"">> :: string()}).
 
 %% GET http://demo.traccar.org/api/user/get?_dc=1436251203853&page=1&start=0&limit=25
 %% {"success":true,"data":[]}

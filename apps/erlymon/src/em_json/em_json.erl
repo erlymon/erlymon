@@ -32,10 +32,10 @@
   decode/1
 ]).
 
-
+-spec(encode(Object :: map()) -> string()).
 encode(Object) ->
   jsx:encode(Object).
 
-
+-spec(decode(Binary :: string()) -> map()).
 decode(Binary) ->
   jsx:decode(Binary, [return_maps]).

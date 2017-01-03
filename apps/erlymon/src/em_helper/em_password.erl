@@ -29,7 +29,8 @@
 -export([
          hash/1
 ]).
-    
+
+-spec hash(Password :: string()) -> string().
 hash(Password) ->
     Bin = crypto:hash(sha512, Password),
     list_to_binary(lists:flatten(list_to_hex(binary_to_list(Bin)))).

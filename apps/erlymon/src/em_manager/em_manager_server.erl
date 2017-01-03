@@ -43,7 +43,7 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {server}).
+-record(state, {server :: #server{}}).
 
 %%%===================================================================
 %%% API

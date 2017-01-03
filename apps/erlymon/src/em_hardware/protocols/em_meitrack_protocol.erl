@@ -32,7 +32,6 @@
 
 %% API
 -export([start_link/4]).
--export([test/0]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -80,8 +79,6 @@
 ])).
 
 -define(SOCKET_OPTS, [{active, once}, {packet, line}]).
-
--record(state, {protocol, transport, socket, timeout, deviceId = 0}).
 
 %%%===================================================================
 %%% API
@@ -254,7 +251,7 @@ do_encode_command(UniqueId, #command{type = ?TYPE_REQUEST_PHOTO}) ->
 do_encode_command(UniqueId, #command{type = ?TYPE_SEND_SMS, attributes = #{?KEY_PHONE_NUMBER := PhoneNumber, ?KEY_MESSAGE := Message}}) ->
   Content = list_to_binary(io_lib:format("C02,0,~s,~s", [PhoneNumber, Message])),
   {ok, do_format_command(UniqueId, <<"f">>, Content)};
-do_encode_command(_UniqueId, #command{type = Type}) ->
+do_encode_command(_UniqueId, #command{type = _Type}) ->
   {error, <<"Unsupported command">>}.
 
 
@@ -265,7 +262,7 @@ do_format_command(UniqueId, DataId, Content) ->
   list_to_binary(io_lib:format("~s~2.16.0B\r\n", [Result, CheckSum])).
 
 
-do_process_data(State = #state{transport = _Transport, socket = Socket, protocol = Protocol, deviceId = 0}, Data) ->
+do_process_data(State = #state{transport = _Transport, socket = Socket, protocol = _Protocol, deviceId = 0}, Data) ->
   em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
   case parse(Data) of
     {ok, Imei, PositionModel} ->
@@ -282,7 +279,7 @@ do_process_data(State = #state{transport = _Transport, socket = Socket, protocol
       em_logger:info("ERROR: ~s", [Message]),
       {stop, normal, State}
   end;
-do_process_data(State = #state{transport = _Transport, socket = Socket, protocol = Protocol, deviceId = DeviceId}, Data) ->
+do_process_data(State = #state{transport = _Transport, socket = Socket, protocol = _Protocol, deviceId = DeviceId}, Data) ->
   em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
   case parse(Data) of
     {ok, Imei, PositionModel} ->
@@ -371,7 +368,7 @@ parse_date(Year, Month, Day, Hour, Minute, Second) ->
 
 %% $$J139,359231038158125,AAA,35,53.897721,27.443013,161125211605,A,5,30,0,4,3.4,252,1070708,1506398,257|4|0000|0000,0000,0007|0007||02DD|00FE,*E8
 %% $$K139,359231038158125,AAA,35,53.897721,27.443013,161125211605,A,5,30,0,4,3.4,252,1070708,1506398,257|4|0000|0000,0000,0007|0007||02DD|00FE,*E9
-test() ->
+%%test() ->
   %%Packet = <<"\$\$d138,123456789012345,AAA,35,60.000000,130.000000,120101122000,A,7,18,0,0,0,49,3800,24965,510|10|0081|4F4F,0000,000D|0010|0012|0963|0000,,*BF\r\n">>,
-  Packet = <<"\$\$K139,359231038158125,AAA,35,53.897721,27.443013,161126081580,A,5,30,0,4,3.4,252,1070708,1506398,257|4|0000|0000,0000,0007|0007||02DD|00FE,*E9\r\n">>,
-  em_regexp:match(Packet, ?PATTERN).
+%%  Packet = <<"\$\$K139,359231038158125,AAA,35,53.897721,27.443013,161126081580,A,5,30,0,4,3.4,252,1070708,1506398,257|4|0000|0000,0000,0007|0007||02DD|00FE,*E9\r\n">>,
+%%  em_regexp:match(Packet, ?PATTERN).

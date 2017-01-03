@@ -70,7 +70,7 @@
 -define(COLLECTION_DEVICES, <<"devices">>).
 -define(COLLECTION_POSITIONS, <<"positions">>).
 
--record(state, {topology}).
+-record(state, {topology :: pid()}).
 
 %%%===================================================================
 %%% API
@@ -715,7 +715,7 @@ objectid_to_id(ObjectId) ->
   Id.
 
 
-seconds_to_timestamp(Seconds) ->
+seconds_to_timestamp(Seconds) when is_integer(Seconds) ->
   #{<<"timestamp">> => bson:secs_to_unixtime(Seconds)};
 seconds_to_timestamp(_) ->
   #{<<"timestamp">> => {0, 0, 0}}.

@@ -42,7 +42,10 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {connection, tref}).
+-record(state, {
+  connection :: pid(),
+  tref :: timer:tref()
+}).
 
 %%%===================================================================
 %%% API

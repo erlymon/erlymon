@@ -29,6 +29,7 @@
 %% API
 -export([str/1]).
 
+-spec str(Rec :: term() | list()) -> string().
 str(Recs) when is_list(Recs) ->
   em_logger:info("CONVERT RECORDS: ~w", [Recs]),
   em_json:encode(lists:map(fun(Rec) -> rec_to_map(Rec) end, Recs));

@@ -37,7 +37,7 @@
 %%====================================================================
 %% API functions
 %%====================================================================
-
+-spec start_link() -> supervisor:startlink_ret().
 start_link() ->
     supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
@@ -46,6 +46,7 @@ start_link() ->
 %%====================================================================
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
+-spec init(Args :: list()) -> {ok, tuple()}.
 init([]) ->
     {ok, EmStorageEnv} = application:get_env(erlymon, em_storage),
     StorageType = proplists:get_value(type, EmStorageEnv),
