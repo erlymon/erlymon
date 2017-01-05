@@ -56,7 +56,7 @@ init([]) ->
     GeocoderType = proplists:get_value(type, EmGeocoderEnv),
     GeocoderSettings = proplists:get_value(settings, EmGeocoderEnv),
 
-    SupFlags = #{strategy => one_for_all, intensity => 1000, period => 3600},
+    SupFlags = #{strategy => one_for_one, intensity => 1000, period => 3600},
     ChildSpecs = [
         #{
             id => em_regexp_sup,
@@ -97,6 +97,14 @@ init([]) ->
             shutdown => 3000,
             type => worker,
             modules => [em_stats]
+        },
+        #{
+            id => em_timer,
+            start => {em_timer, start_link, []},
+            restart => permanent,
+            shutdown => 3000,
+            type => worker,
+            modules => [em_timer]
         }
     ],
     {ok, {SupFlags, ChildSpecs}}.
