@@ -74,10 +74,17 @@ create_position(DeviceId, PositionModel) ->
             {ok, FindDevice} ->
               DeviceModel = FindDevice#device{
                 positionId = Position#position.id,
-                lastUpdate = em_helper_time:timestamp()
+                lastUpdate = em_helper_time:timestamp(),
+                status = ?STATUS_ONLINE
               },
               em_manager_devices:update(DeviceModel),
-              em_manager_event:broadcast(DeviceModel, Position),
+              em_manager_event:broadcast(Position),
+              em_manager_event:broadcast(DeviceModel),
+              em_timer:create(DeviceId, fun() ->
+                                          LastDeviceModel = DeviceModel#device{status = ?STATUS_UNKNOWN},
+                                          em_manager_devices:update(LastDeviceModel),
+                                          em_manager_event:broadcast(LastDeviceModel)
+                                        end, 300000),
               {ok, Position};
             _ ->
               {ok, Position}

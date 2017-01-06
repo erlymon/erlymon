@@ -122,7 +122,8 @@ init([]) ->
   Cache = ets:new(devices, [set, private, {keypos, 2}]),
   {ok, Items} = em_storage:get_devices(),
   lists:foreach(fun(Item) ->
-    ets:insert_new(Cache, Item)
+                  ets:insert_new(Cache, Item),
+                  do_update_status(Item)
                 end, Items),
   em_logger:info("Loaded ~w device(s)", [length(ets:tab2list(Cache))]),
   {ok, #state{cache = Cache}}.
@@ -286,3 +287,12 @@ do_delete_device(State = #state{cache = Cache}, DeviceModel) ->
     Reason ->
       {reply, Reason, State}
   end.
+
+do_update_status(Item = #device{id = Id, status = ?STATUS_ONLINE}) ->
+  em_timer:create(Id, fun() ->
+                        LastItemModel = Item#device{status = ?STATUS_OFFLINE},
+                        em_manager_devices:update(LastItemModel),
+                        em_manager_event:broadcast(LastItemModel)
+                      end, 300000);
+do_update_status(_) ->
+  ok.

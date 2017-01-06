@@ -67,6 +67,14 @@ init([]) ->
             modules => dynamic
         },
         #{
+            id => em_timer,
+            start => {em_timer, start_link, []},
+            restart => permanent,
+            shutdown => 3000,
+            type => worker,
+            modules => [em_timer]
+        },
+        #{
             id => em_storage_sup,
             start => {em_storage_sup, start_link, [StorageType, StorageSettings]},
             restart => permanent,
@@ -97,14 +105,6 @@ init([]) ->
             shutdown => 3000,
             type => worker,
             modules => [em_stats]
-        },
-        #{
-            id => em_timer,
-            start => {em_timer, start_link, []},
-            restart => permanent,
-            shutdown => 3000,
-            type => worker,
-            modules => [em_timer]
         }
     ],
     {ok, {SupFlags, ChildSpecs}}.

@@ -30,7 +30,7 @@
 
 %% API
 -export([start_link/0]).
--export([broadcast/2]).
+-export([broadcast/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -54,11 +54,11 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(broadcast(Device::#device{}, Position::#position{}) ->
+-spec(broadcast(Data :: #device{} | #position{}) ->
   {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-broadcast(Device, Position) ->
-  em_logger:info("~w:broadcast => ~w ~w", [?MODULE, Device, Position]),
-  gen_server:cast(?SERVER, {broadcast, {Device, Position}}).
+broadcast(Data) ->
+  em_logger:info("~w:broadcast => ~w", [?MODULE, Data]),
+  gen_server:cast(?SERVER, {broadcast, Data}).
 
 
 %%--------------------------------------------------------------------
@@ -122,15 +122,8 @@ handle_call(_Request, _From, State) ->
   {noreply, NewState :: #state{}} |
   {noreply, NewState :: #state{}, timeout() | hibernate} |
   {stop, Reason :: term(), NewState :: #state{}}).
-handle_cast({broadcast, {Device, Position}}, State) ->
-  SendNotify = fun(Permission) ->
-                  em_logger:info("Permission: ~w", [Permission]),
-                  em_proc:send(Permission#permission.userId, {position, Position}),
-                  em_proc:send(Permission#permission.userId, {device, Device})
-               end,
-  {ok, Permissions} = em_manager_permissions:get_by_device_id(Position#position.deviceId),
-  lists:map(SendNotify, Permissions),
-  {noreply, State};
+handle_cast({broadcast, Data}, State) ->
+  do_broadcast(State, Data);
 handle_cast(_Request, State) ->
   {noreply, State}.
 
@@ -184,3 +177,22 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+do_broadcast(State, Data) when is_record(Data, position) ->
+  SendNotify = fun(Permission) ->
+                em_logger:info("Permission: ~w", [Permission]),
+                em_proc:send(Permission#permission.userId, {position, Data})
+               end,
+  {ok, Permissions} = em_manager_permissions:get_by_device_id(Data#position.deviceId),
+  lists:map(SendNotify, Permissions),
+  {noreply, State};
+do_broadcast(State, Data) when is_record(Data, device) ->
+  SendNotify = fun(Permission) ->
+                em_logger:info("Permission: ~w", [Permission]),
+                em_proc:send(Permission#permission.userId, {device, Data})
+               end,
+  {ok, Permissions} = em_manager_permissions:get_by_device_id(Data#device.id),
+  lists:map(SendNotify, Permissions),
+  {noreply, State};
+do_broadcast(State, _) ->
+  em_logger:info("Unknown data"),
+  {noreply, State}.

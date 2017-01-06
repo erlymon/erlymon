@@ -62,7 +62,7 @@ websocket_info({position, Position}, Req, State) ->
     end;
 websocket_info({device, Device}, Req, State) ->
     %%em_logger:info("WS SEND DEVICE: ~w", [Device]),
-    {reply, {text, em_http:str(#event{devices = [Device#device{status = fix_device_status(Device#device.positionId, Device#device.id)}]})}, Req, State};
+    {reply, {text, em_http:str(#event{devices = [Device]})}, Req, State};
 websocket_info({timeout, _Ref, User}, Req, State) ->
     %%em_logger:info("WS INIT: ~w", [User]),
     Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
@@ -82,19 +82,3 @@ websocket_info({timeout, _Ref, User}, Req, State) ->
     {reply, {text, em_http:str(#event{positions = Positions})}, Req, State};
 websocket_info(_Info, Req, State) ->
     {ok, Req, State}.
-
-
-fix_device_status(PositionId, DeviceId) ->
-    case em_manager_positions:get(PositionId, DeviceId) of
-        {ok, #position{fixTime = FixTime}} ->
-            device_status(em_helper_time:timestamp() - FixTime);
-        _ ->
-            ?STATUS_UNKNOWN
-    end.
-
-device_status(DiffTime) when DiffTime =< 300 ->
-    ?STATUS_ONLINE;
-device_status(DiffTime) when DiffTime > 300 ->
-    ?STATUS_OFFLINE;
-device_status(_) ->
-    ?STATUS_UNKNOWN.
