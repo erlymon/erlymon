@@ -464,10 +464,13 @@ do_update_device(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
                        Key = #{<<"_id">> => id_to_objectid(Rec#device.id)},
                        Command = #{<<"$set">> => maps:remove(<<"_id">>, Map)},
-                       mc_worker_api:update(Worker, ?COLLECTION_DEVICES, Key, Command)
+                      {
+                        mc_worker_api:update(Worker, ?COLLECTION_DEVICES, Key, Command),
+                        mc_worker_api:find_one(Worker, ?COLLECTION_DEVICES, Key)
+                      }
                end,
-    Res = mongoc:transaction(Topology, Callback),
-    do_update_result(Res, Map, device).
+    {Res, ResMap} = mongoc:transaction(Topology, Callback),
+    do_update_result(Res, ResMap, device).
 
 
 do_delete_device(#state{topology = Topology}, Rec) ->
@@ -658,14 +661,15 @@ to_map(user, Rec) ->
        <<"salt">> => Rec#user.salt
      };
 to_map(device, Rec) ->
-    #{
+    M = #{
        <<"_id">> => id_to_objectid(Rec#device.id),
        <<"name">> => Rec#device.name,
        <<"uniqueId">> => Rec#device.uniqueId,
        <<"status">> => Rec#device.status,
        <<"lastUpdate">> => seconds_to_timestamp(Rec#device.lastUpdate),
        <<"positionId">> => Rec#device.positionId
-     };
+     },
+    maps:filter(fun(_,V) -> V /= undefined end, M);
 to_map(position, Rec) ->
     #{
        <<"_id">> => id_to_objectid(Rec#position.id),
@@ -718,7 +722,7 @@ objectid_to_id(ObjectId) ->
 seconds_to_timestamp(Seconds) when is_integer(Seconds) ->
   #{<<"timestamp">> => bson:secs_to_unixtime(Seconds)};
 seconds_to_timestamp(_) ->
-  #{<<"timestamp">> => {0, 0, 0}}.
+  undefined.
 
 timestamp_to_seconds(#{<<"timestamp">> := Timestamp}) ->
   bson:unixtime_to_secs(Timestamp);

@@ -59,11 +59,11 @@
 
 -record(device, {
   id = 0 :: integer(),
-  name = <<"">> :: string(),
-  uniqueId = <<"">> :: string(),
-  status = <<"">> :: string(),
-  lastUpdate = 0 :: integer(),
-  positionId = 0 :: integer()
+  name = <<"">> :: string() | atom(),
+  uniqueId = <<"">> :: string() | atom(),
+  status = <<"">> :: string() | atom(),
+  lastUpdate = 0 :: integer() | atom(),
+  positionId = 0 :: integer() | atom()
 }).
 
 -record(position, {
