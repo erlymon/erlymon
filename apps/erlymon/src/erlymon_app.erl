@@ -40,25 +40,15 @@ start(_StartType, _StartArgs) ->
     Res = erlymon_sup:start_link(),
     {ok, EmHardwareArgs} = application:get_env(erlymon, em_hardware),
     em_hardware:start(EmHardwareArgs),
-    start_web(_StartType, _StartArgs),
+    {ok, EmHttpArgs} = application:get_env(erlymon, em_http),
+    em_http:start(EmHttpArgs),
     Res.
 
 %%--------------------------------------------------------------------
 -spec stop(_State :: any()) -> ok.
 stop(_State) ->
-    stop_web(_State),
+    {ok, EmHttpArgs} = application:get_env(erlymon, em_http),
+    em_http:stop(EmHttpArgs),
     {ok, EmHardwareArgs} = application:get_env(erlymon, em_hardware),
-    em_hardware:stop(EmHardwareArgs).
-
-start_web(_StartType, _StartArgs) ->
-    {ok, EmHttp} = application:get_env(erlymon, em_http),
-    em_logger:info("Start web server port: ~w", [proplists:get_value(port, EmHttp)]),
-    Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, EmHttp)}])),
-    cowboy:start_http(web, 100, [
-                                 {port, proplists:get_value(port, EmHttp)},
-                                 {timeout, proplists:get_value(timeout, EmHttp)}
-                                ], [{env, [{dispatch, Dispatch}]}]).
-
-%%--------------------------------------------------------------------
-stop_web(_State) ->
-    cowboy:stop_listener(web).
+    em_hardware:stop(EmHardwareArgs),
+    ok.

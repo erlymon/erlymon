@@ -56,13 +56,13 @@ websocket_info({position, Position}, Req, State) ->
     Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
     case em_geocoder:reverse(Position#position.latitude, Position#position.longitude, Language) of
         {ok, Address} ->
-            {reply, {text, em_http:str(#event{positions = [Position#position{address = Address}]})}, Req, State};
+            {reply, {text, em_http_utils:str(#event{positions = [Position#position{address = Address}]})}, Req, State};
         _ ->
-            {reply, {text, em_http:str(#event{positions = [Position]})}, Req, State}
+            {reply, {text, em_http_utils:str(#event{positions = [Position]})}, Req, State}
     end;
 websocket_info({device, Device}, Req, State) ->
     %%em_logger:info("WS SEND DEVICE: ~w", [Device]),
-    {reply, {text, em_http:str(#event{devices = [Device]})}, Req, State};
+    {reply, {text, em_http_utils:str(#event{devices = [Device]})}, Req, State};
 websocket_info({timeout, _Ref, User}, Req, State) ->
     %%em_logger:info("WS INIT: ~w", [User]),
     Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
@@ -79,6 +79,6 @@ websocket_info({timeout, _Ref, User}, Req, State) ->
                               end
                       end,
     Positions = lists:foldl(GetLastPosition, [], Devices),
-    {reply, {text, em_http:str(#event{positions = Positions})}, Req, State};
+    {reply, {text, em_http_utils:str(#event{positions = Positions})}, Req, State};
 websocket_info(_Info, Req, State) ->
     {ok, Req, State}.
