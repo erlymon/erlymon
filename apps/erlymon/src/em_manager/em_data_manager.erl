@@ -28,70 +28,78 @@
 
 %% API
 -export([
-  get_server/0,
-  update_server/1
-]).
+         get_server/0,
+         update_server/1
+        ]).
 
 -export([
-  create_user/1,
-  update_user/1,
-  delete_user/1,
-  check_user/2,
-  get_users/0
-]).
+         create_user/1,
+         update_user/1,
+         delete_user/1,
+         check_user/2,
+         get_users/0
+        ]).
 
 -export([
-  link_device/1,
-  unlink_device/1,
-  create_device/1,
-  update_device/1,
-  delete_device/1,
-  get_devices/1,
-  get_device_by_uid/1,
-  get_all_devices/0
-]).
+         link_device/1,
+         unlink_device/1,
+         create_device/1,
+         update_device/1,
+         delete_device/1,
+         get_devices/1,
+         get_device_by_uid/1,
+         get_all_devices/0
+        ]).
 
 -export([
-  create_position/2,
-  get_positions/3,
-  get_last_position/2
-]).
+         create_position/2,
+         get_positions/3,
+         get_last_position/2
+        ]).
 
 -spec(get_server() -> {ok, #server{}} | {error, string()}).
 get_server() ->
-  em_manager_server:get().
+    em_manager_server:get().
 
 -spec(update_server(Rec :: #server{}) -> {ok, #server{}} | {error, string() | [string()]}).
 update_server(Server) ->
-  em_manager_server:update(Server).
+    em_manager_server:update(Server).
 
 -spec(create_position(DeviceId :: integer(), PositionModel :: #position{}) -> {ok, #position{}} | {error, string()}).
 create_position(DeviceId, PositionModel) ->
-      case em_manager_positions:create(PositionModel) of
+    case em_manager_positions:create(PositionModel) of
         {ok, Position} ->
-          em_logger:info("em_data_manager:create_position => DeviceId: ~w", [DeviceId]),
-          case em_manager_devices:get_by_id(DeviceId) of
-            {ok, FindDevice} ->
-              DeviceModel = FindDevice#device{
-                positionId = Position#position.id,
-                lastUpdate = em_helper_time:timestamp(),
-                status = ?STATUS_ONLINE
-              },
-              em_manager_devices:update(DeviceModel),
-              em_manager_event:broadcast(Position),
-              em_manager_event:broadcast(DeviceModel),
-              em_timer:create(DeviceId, fun() ->
-                                          LastDeviceModel = DeviceModel#device{status = ?STATUS_UNKNOWN},
-                                          em_manager_devices:update(LastDeviceModel),
-                                          em_manager_event:broadcast(LastDeviceModel)
-                                        end, 300000),
-              {ok, Position};
-            _ ->
-              {ok, Position}
-          end;
+            em_logger:info("em_data_manager:create_position => DeviceId: ~w", [DeviceId]),
+            case em_manager_devices:get_by_id(DeviceId) of
+                {ok, FindDevice} ->
+                    DeviceModel = FindDevice#device{
+                                    positionId = Position#position.id,
+                                    lastUpdate = em_helper_time:timestamp(),
+                                    status = ?STATUS_ONLINE
+                                   },
+                    em_manager_devices:update(DeviceModel),
+                    em_manager_event:broadcast(Position),
+                    em_manager_event:broadcast(DeviceModel),
+                    em_timer:create(DeviceId, fun() ->
+                                                      Model = #device{
+                                                                 id = DeviceId,
+                                                                 name = undefined,
+                                                                 uniqueId = undefined,
+                                                                 status = ?STATUS_UNKNOWN,
+                                                                 lastUpdate = undefined,
+                                                                 positionId = undefined
+                                                                },
+                                                      {ok, Res} = em_manager_devices:update(Model),
+                                                      em_logger:info("DEVICE: ~w", [Res]),
+                                                      em_manager_event:broadcast(Res)
+                                              end, 300000),
+                    {ok, Position};
+                _ ->
+                    {ok, Position}
+            end;
         Reason ->
-          Reason
-      end.
+            Reason
+    end.
 
 -spec(get_positions(DeviceId :: integer(), TimeFrom :: integer(), TimeTo :: integer()) -> {ok, [#position{}]} | {error, string()}).
 get_positions(DeviceId, TimeFrom, TimeTo) ->
@@ -116,7 +124,7 @@ delete_user(User) ->
 
 -spec(check_user(Email :: string(), Password :: string()) -> {ok, #user{}} | {error, string()}).
 check_user(Email, Password) ->
-  em_manager_users:check(Email, Password).
+    em_manager_users:check(Email, Password).
 
 -spec(get_users() -> {ok, [#user{}]} | {error, string()}).
 get_users() ->
@@ -124,34 +132,34 @@ get_users() ->
 
 -spec(create_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 create_device(Device) ->
-  em_manager_devices:create(Device).
+    em_manager_devices:create(Device).
 
 -spec(update_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 update_device(Device) ->
-  em_manager_devices:update(Device).
+    em_manager_devices:update(Device).
 
 -spec(delete_device(Device :: #device{}) -> {ok, #device{}} | {error, string()}).
 delete_device(Device) ->
-  em_manager_devices:delete(Device).
+    em_manager_devices:delete(Device).
 
 -spec(get_devices(UserId :: integer()) -> {ok, [#device{}]} | {error, string()}).
 get_devices(UserId) ->
-  Callback = fun(Permission = #device_permission{deviceId = DeviceId}, Acc) ->
-                em_logger:info("PERMISSION: ~w", [Permission]),
-                case em_manager_devices:get_by_id(DeviceId) of
-                  {ok, Device} ->
-                    [Device | Acc];
-                  {error, _Reason} ->
-                    Acc
-                end
-             end,
-  {ok, Permissions} = em_manager_permissions:get_by_user_id(UserId),
-  Devices = lists:foldl(Callback, [], Permissions),
-  {ok, Devices}.
+    Callback = fun(Permission = #device_permission{deviceId = DeviceId}, Acc) ->
+                       em_logger:info("PERMISSION: ~w", [Permission]),
+                       case em_manager_devices:get_by_id(DeviceId) of
+                           {ok, Device} ->
+                               [Device | Acc];
+                           {error, _Reason} ->
+                               Acc
+                       end
+               end,
+    {ok, Permissions} = em_manager_permissions:get_by_user_id(UserId),
+    Devices = lists:foldl(Callback, [], Permissions),
+    {ok, Devices}.
 
 -spec(get_device_by_uid(UniqueId :: string()) -> {ok, #device{}} | {error, string()}).
 get_device_by_uid(UniqueId) ->
-  em_manager_devices:get_by_uid(UniqueId).
+    em_manager_devices:get_by_uid(UniqueId).
 
 -spec(get_all_devices() -> {ok, [#device{}]} | {error, string()}).
 get_all_devices() ->
@@ -159,8 +167,8 @@ get_all_devices() ->
 
 -spec(link_device(Permission :: #device_permission{}) -> {ok, #device_permission{}} | {error, string()}).
 link_device(Permission) ->
-  em_manager_permissions:create(Permission).
+    em_manager_permissions:create(Permission).
 
 -spec(unlink_device(Permission :: #device_permission{}) -> {ok, #device_permission{}} | {error, string()}).
 unlink_device(Permission) ->
-  em_manager_permissions:delete(Permission).
+    em_manager_permissions:delete(Permission).
