@@ -98,7 +98,7 @@ delete_permission(Rec) ->
 
 -spec(get_permissions() -> {ok, [#device_permission{}]} | {error, string() | [string()]}).
 get_permissions() ->
-  gen_server:call(?SERVER, {get_permissions, #{}}).
+    gen_server:call(?SERVER, {get_permissions, #{}}).
 
 -spec(create_user(Rec :: #user{}) -> {ok, #user{}} | {error, string() | [string()]}).
 create_user(Rec) ->
@@ -226,7 +226,7 @@ handle_call({create_permission, Rec}, _From, State) ->
 handle_call({delete_permission, Rec}, _From, State) ->
     {reply, do_delete_permission(State, Rec), State};
 handle_call({get_permissions, Query}, _From, State) ->
-  {reply, do_get_permissions(State, Query), State};
+    {reply, do_get_permissions(State, Query), State};
 
 handle_call({create_user, Rec}, _From, State) ->
     {reply, do_create_user(State, Rec), State};
@@ -326,7 +326,7 @@ do_create_indexses(#state{topology = Topology}) ->
                        Indexs = [
                                  %%{?COLLECTION_SERVERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
 
-                                 %%%{?COLLECTION_PERMISSIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
+%%%{?COLLECTION_PERMISSIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
                                  {?COLLECTION_DEVICE_PERMISSIONS, #{<<"key">> => #{<<"userId">> => 1, <<"deviceId">> => 1}, <<"name">> => <<"userId_1_deviceId_1">>, <<"unique">> => true}},
 
                                  %%{?COLLECTION_USERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
@@ -354,10 +354,13 @@ do_update_server(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
                        Key = #{<<"_id">> => id_to_objectid(Rec#server.id)},
                        Command = #{<<"$set">> => maps:remove(<<"_id">>, Map)},
-                       mc_worker_api:update(Worker, ?COLLECTION_SERVERS, Key, Command)
+                       {
+                         mc_worker_api:update(Worker, ?COLLECTION_SERVERS, Key, Command),
+                         mc_worker_api:find_one(Worker, ?COLLECTION_SERVERS, Key)
+                       }
                end,
-    Res = mongoc:transaction(Topology, Callback),
-    do_update_result(Res, Map, server).
+    {Res, ResMap} = mongoc:transaction(Topology, Callback),
+    do_update_result(Res, ResMap, server).
 
 do_create_server(#state{topology = Topology}, Rec) ->
     Map = to_map(server, Rec),
@@ -429,10 +432,13 @@ do_update_user(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
                        Key = #{<<"_id">> => id_to_objectid(Rec#user.id)},
                        Command = #{<<"$set">> => Map},
-                       mc_worker_api:update(Worker, ?COLLECTION_USERS, Key, Command)
+                       {
+                         mc_worker_api:update(Worker, ?COLLECTION_USERS, Key, Command),
+                         mc_worker_api:find_one(Worker, ?COLLECTION_USERS, Key)
+                       }
                end,
-    Res = mongoc:transaction(Topology, Callback),
-    do_update_result(Res, Map, user).
+    {Res, ResMap} = mongoc:transaction(Topology, Callback),
+    do_update_result(Res, ResMap, user).
 
 do_delete_user(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
@@ -464,10 +470,10 @@ do_update_device(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
                        Key = #{<<"_id">> => id_to_objectid(Rec#device.id)},
                        Command = #{<<"$set">> => maps:remove(<<"_id">>, Map)},
-                      {
-                        mc_worker_api:update(Worker, ?COLLECTION_DEVICES, Key, Command),
-                        mc_worker_api:find_one(Worker, ?COLLECTION_DEVICES, Key)
-                      }
+                       {
+                         mc_worker_api:update(Worker, ?COLLECTION_DEVICES, Key, Command),
+                         mc_worker_api:find_one(Worker, ?COLLECTION_DEVICES, Key)
+                       }
                end,
     {Res, ResMap} = mongoc:transaction(Topology, Callback),
     do_update_result(Res, ResMap, device).
@@ -535,13 +541,13 @@ do_create_result({{true, #{<<"n">> := 0, <<"writeErrors">> := WriteErrors}}, _},
     {error, lists:map(fun(#{<<"errmsg">> := ErrMsg}) -> ErrMsg end, WriteErrors)}.
 
 do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 0}}, _Item, _ItemType) ->
-  {warning, <<"Not update item">>};
+    {warning, <<"Not update item">>};
 do_update_result({true, #{<<"n">> := 1, <<"nModified">> := 1}}, Item, ItemType) ->
-  {ok, from_map(ItemType, Item)};
+    {ok, from_map(ItemType, Item)};
 do_update_result({true, #{<<"n">> := 0, <<"nModified">> := 0, <<"writeErrors">> := WriteErrors}}, _Item, _ItemType) ->
     {error, lists:map(fun(#{<<"errmsg">> := ErrMsg}) -> ErrMsg end, WriteErrors)};
 do_update_result({true, #{<<"n">> := 0, <<"nModified">> := 0}}, _Item, _ItemType) ->
-  {warning, <<"Not update item">>}.
+    {warning, <<"Not update item">>}.
 
 do_delete_result({true, #{<<"n">> := 1}}, Item, ItemType) ->
     {ok, from_map(ItemType, Item)};
@@ -622,20 +628,21 @@ from_map(position, Map) ->
       }.
 
 to_map(server, Rec) ->
-    #{
-       <<"_id">> => id_to_objectid(Rec#server.id),
-       <<"registration">> => Rec#server.registration,
-       <<"readonly">> => Rec#server.readonly,
-       <<"map">> => Rec#server.map,
-       <<"bingKey">> => Rec#server.bingKey,
-       <<"mapUrl">> => Rec#server.mapUrl,
-       <<"language">> => Rec#server.language,
-       <<"distanceUnit">> => Rec#server.distanceUnit,
-       <<"speedUnit">> => Rec#server.speedUnit,
-       <<"latitude">> => Rec#server.latitude,
-       <<"longitude">> => Rec#server.longitude,
-       <<"zoom">> => Rec#server.zoom
-     };
+    M = #{
+      <<"_id">> => id_to_objectid(Rec#server.id),
+      <<"registration">> => Rec#server.registration,
+      <<"readonly">> => Rec#server.readonly,
+      <<"map">> => Rec#server.map,
+      <<"bingKey">> => Rec#server.bingKey,
+      <<"mapUrl">> => Rec#server.mapUrl,
+      <<"language">> => Rec#server.language,
+      <<"distanceUnit">> => Rec#server.distanceUnit,
+      <<"speedUnit">> => Rec#server.speedUnit,
+      <<"latitude">> => Rec#server.latitude,
+      <<"longitude">> => Rec#server.longitude,
+      <<"zoom">> => Rec#server.zoom
+     },
+    maps:filter(fun(_, V) -> V /= undefined end, M);
 to_map(permission, Rec) ->
     #{
        <<"_id">> => id_to_objectid(Rec#device_permission.id),
@@ -643,33 +650,34 @@ to_map(permission, Rec) ->
        <<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)
      };
 to_map(user, Rec) ->
-    #{
-       <<"_id">> => id_to_objectid(Rec#user.id),
-       <<"name">> => Rec#user.name,
-       <<"email">> => Rec#user.email,
-       <<"readonly">> => Rec#user.readonly,
-       <<"admin">> => Rec#user.admin,
-       <<"map">> => Rec#user.map,
-       <<"language">> => Rec#user.language,
-       <<"distanceUnit">> => Rec#user.distanceUnit,
-       <<"speedUnit">> => Rec#user.speedUnit,
-       <<"latitude">> => Rec#user.latitude,
-       <<"longitude">> => Rec#user.longitude,
-       <<"zoom">> => Rec#user.zoom,
-       <<"password">> => Rec#user.password,
-       <<"hashPassword">> => Rec#user.hashPassword,
-       <<"salt">> => Rec#user.salt
-     };
+    M = #{
+      <<"_id">> => id_to_objectid(Rec#user.id),
+      <<"name">> => Rec#user.name,
+      <<"email">> => Rec#user.email,
+      <<"readonly">> => Rec#user.readonly,
+      <<"admin">> => Rec#user.admin,
+      <<"map">> => Rec#user.map,
+      <<"language">> => Rec#user.language,
+      <<"distanceUnit">> => Rec#user.distanceUnit,
+      <<"speedUnit">> => Rec#user.speedUnit,
+      <<"latitude">> => Rec#user.latitude,
+      <<"longitude">> => Rec#user.longitude,
+      <<"zoom">> => Rec#user.zoom,
+      <<"password">> => Rec#user.password,
+      <<"hashPassword">> => Rec#user.hashPassword,
+      <<"salt">> => Rec#user.salt
+     },
+    maps:filter(fun(_, V) -> V /= undefined end, M);
 to_map(device, Rec) ->
     M = #{
-       <<"_id">> => id_to_objectid(Rec#device.id),
-       <<"name">> => Rec#device.name,
-       <<"uniqueId">> => Rec#device.uniqueId,
-       <<"status">> => Rec#device.status,
-       <<"lastUpdate">> => seconds_to_timestamp(Rec#device.lastUpdate),
-       <<"positionId">> => Rec#device.positionId
+      <<"_id">> => id_to_objectid(Rec#device.id),
+      <<"name">> => Rec#device.name,
+      <<"uniqueId">> => Rec#device.uniqueId,
+      <<"status">> => Rec#device.status,
+      <<"lastUpdate">> => seconds_to_timestamp(Rec#device.lastUpdate),
+      <<"positionId">> => Rec#device.positionId
      },
-    maps:filter(fun(_,V) -> V /= undefined end, M);
+    maps:filter(fun(_, V) -> V /= undefined end, M);
 to_map(position, Rec) ->
     #{
        <<"_id">> => id_to_objectid(Rec#position.id),
@@ -694,9 +702,9 @@ hash(V) -> em_password:hash(V).
 
 
 gen_id() ->
-  {<<FirstPart:4/bytes, _:4/bytes, SecondPart:4/bytes>>} = gen_oid(),
-  <<Id:64/big>> = <<SecondPart:4/bytes, FirstPart:4/bytes>>,
-  Id.
+    {<<FirstPart:4/bytes, _:4/bytes, SecondPart:4/bytes>>} = gen_oid(),
+    <<Id:64/big>> = <<SecondPart:4/bytes, FirstPart:4/bytes>>,
+    Id.
 
 %% new_objectid returns a dummy ObjectId with the timestamp  part
 %% filled with the provided number of seconds from epoch UTC,
@@ -705,29 +713,29 @@ gen_id() ->
 %% it is useful only for queries to find documents with ids generated before or
 %% after the specified timestamp.
 gen_oid() ->
-  {Mega, Sec, Micro} = os:timestamp(),
-  Seconds = (Mega*1000000 + Sec),
-  {<<Seconds:32/big, 0:40/big, Micro:24/big>>}.
+    {Mega, Sec, Micro} = os:timestamp(),
+    Seconds = (Mega * 1000000 + Sec),
+    {<<Seconds:32/big, 0:40/big, Micro:24/big>>}.
 
 id_to_objectid(Id) ->
-  <<SecondPart:3/bytes, FirstPart:4/bytes>> = <<Id:56/big>>,
-  {<<FirstPart:4/bytes, 0:40/big, SecondPart:3/bytes>>}.
+    <<SecondPart:3/bytes, FirstPart:4/bytes>> = <<Id:56/big>>,
+    {<<FirstPart:4/bytes, 0:40/big, SecondPart:3/bytes>>}.
 
 objectid_to_id(ObjectId) ->
-  {<<FirstPart:4/bytes, _:40/big, SecondPart:3/bytes>>} = ObjectId,
-  <<Id:56/big>> = <<SecondPart:3/bytes, FirstPart:4/bytes>>,
-  Id.
+    {<<FirstPart:4/bytes, _:40/big, SecondPart:3/bytes>>} = ObjectId,
+    <<Id:56/big>> = <<SecondPart:3/bytes, FirstPart:4/bytes>>,
+    Id.
 
 
 seconds_to_timestamp(Seconds) when is_integer(Seconds) ->
-  #{<<"timestamp">> => bson:secs_to_unixtime(Seconds)};
+    #{<<"timestamp">> => bson:secs_to_unixtime(Seconds)};
 seconds_to_timestamp(_) ->
-  undefined.
+    undefined.
 
 timestamp_to_seconds(#{<<"timestamp">> := Timestamp}) ->
-  bson:unixtime_to_secs(Timestamp);
+    bson:unixtime_to_secs(Timestamp);
 timestamp_to_seconds(_) ->
-  0.
+    0.
 
 %%test() ->
 %%em_storage_mongo:create_device(#device{name = <<"auto5">>, uniqueId =  <<"005">>}).
