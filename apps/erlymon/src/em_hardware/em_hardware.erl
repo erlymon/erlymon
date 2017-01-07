@@ -32,7 +32,7 @@
 -define(ACCEPTORS, 10).
 
 -spec start(Args :: any()) -> any().
-start(Args) ->
+start(HwArgs) ->
   lists:foreach(fun({Protocol, Options, Args}) ->
     em_logger:info("Start hardware server  ~w port: ~w",[Protocol, proplists:get_value(port, Options)]),
     case Protocol of
@@ -42,7 +42,7 @@ start(Args) ->
       _ ->
         {ok, _} = ranch:start_listener(Protocol, ?ACCEPTORS, ranch_tcp, Options, make_module_name(Protocol), [{protocol, Protocol}, Args])
     end
-                end, Args).
+                end, HwArgs).
 
 -spec stop(Args :: any()) -> any().
 stop(Args) ->
