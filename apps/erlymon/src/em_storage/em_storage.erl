@@ -65,7 +65,7 @@
 
 -define(SERVER, ?MODULE).
 -define(COLLECTION_SERVERS, <<"servers">>).
--define(COLLECTION_PERMISSIONS, <<"permissions">>).
+-define(COLLECTION_DEVICE_PERMISSIONS, <<"user_device">>).
 -define(COLLECTION_USERS, <<"users">>).
 -define(COLLECTION_DEVICES, <<"devices">>).
 -define(COLLECTION_POSITIONS, <<"positions">>).
@@ -327,7 +327,7 @@ do_create_indexses(#state{topology = Topology}) ->
                                  %%{?COLLECTION_SERVERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
 
                                  %%%{?COLLECTION_PERMISSIONS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
-                                 {?COLLECTION_PERMISSIONS, #{<<"key">> => #{<<"userId">> => 1, <<"deviceId">> => 1}, <<"name">> => <<"userId_1_deviceId_1">>, <<"unique">> => true}},
+                                 {?COLLECTION_DEVICE_PERMISSIONS, #{<<"key">> => #{<<"userId">> => 1, <<"deviceId">> => 1}, <<"name">> => <<"userId_1_deviceId_1">>, <<"unique">> => true}},
 
                                  %%{?COLLECTION_USERS, #{<<"key">> => #{<<"id">> => 1}, <<"name">> => <<"id_1">>, <<"unique">> => true}},
                                  {?COLLECTION_USERS, #{<<"key">> => #{<<"email">> => 1}, <<"name">> => <<"email_1">>, <<"unique">> => true}},
@@ -372,27 +372,27 @@ do_create_server(#state{topology = Topology}, Rec) ->
 do_create_permission(#state{topology = Topology}, Rec) ->
     Map = to_map(permission, Rec#device_permission{id = gen_id()}),
     Callback = fun(Worker) ->
-                       mc_worker_api:insert(Worker, ?COLLECTION_PERMISSIONS, Map)
+                       mc_worker_api:insert(Worker, ?COLLECTION_DEVICE_PERMISSIONS, Map)
                end,
     Item = mongoc:transaction(Topology, Callback),
     do_create_result(Item, permission).
 
 do_delete_permission(#state{topology = Topology}, Rec = #device_permission{userId = UserId}) when UserId == 0 ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)})
+                       mc_worker_api:delete(Worker, ?COLLECTION_DEVICE_PERMISSIONS, #{<<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission);
 do_delete_permission(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"userId">> => id_to_objectid(Rec#device_permission.userId), <<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)})
+                       mc_worker_api:delete(Worker, ?COLLECTION_DEVICE_PERMISSIONS, #{<<"userId">> => id_to_objectid(Rec#device_permission.userId), <<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission).
 
 do_get_permissions(#state{topology = Topology}, Query) ->
     Callback = fun(Conf) ->
-                       Cursor = mongoc:find(Conf, ?COLLECTION_PERMISSIONS, Query),
+                       Cursor = mongoc:find(Conf, ?COLLECTION_DEVICE_PERMISSIONS, Query),
                        Items = mc_cursor:map(fun(Item) -> from_map(permission, Item) end, Cursor, infinity),
                        mc_cursor:close(Cursor),
                        {ok, Items}
