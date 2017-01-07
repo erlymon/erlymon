@@ -26,8 +26,6 @@
 
 -behaviour(application).
 
--define(ACCEPTORS, 10).
-
 %% Application callbacks
 -export([start/2
         ,stop/1]).
@@ -40,10 +38,8 @@
 start(_StartType, _StartArgs) ->
     em_proc:init(),
     Res = erlymon_sup:start_link(),
-    %%em_storage_sup:start_link(),
-    %%em_data_manager:init(),
-    %%em_geocoder_sup:start_link(),
-    start_hardware(_StartType, _StartArgs),
+    {ok, EmHardwareArgs} = application:get_env(erlymon, em_hardware),
+    em_hardware:start(EmHardwareArgs),
     start_web(_StartType, _StartArgs),
     Res.
 
@@ -51,35 +47,8 @@ start(_StartType, _StartArgs) ->
 -spec stop(_State :: any()) -> ok.
 stop(_State) ->
     stop_web(_State),
-    stop_hardware(_State).
-
-
-start_hardware(_StartType, _StartArgs) ->
-    {ok, EmHardware} = application:get_env(erlymon, em_hardware),
-    lists:foreach(fun({Protocol, Options, Args}) ->
-                          em_logger:info("Start hardware server  ~w port: ~w",[Protocol, proplists:get_value(port, Options)]),
-                          case Protocol of
-                              osmand ->
-                                  Dispatch = cowboy_router:compile([{'_', [{"/", em_osmand_protocol, []}]}]),
-                                  {ok, _} = cowboy:start_http(Protocol, 100, Options, [{env, [{dispatch, Dispatch}]}]);
-                              _ ->
-                                  {ok, _} = ranch:start_listener(Protocol, ?ACCEPTORS, ranch_tcp, Options, make_module_name(Protocol), [{protocol, Protocol}, Args])
-                          end
-                  end, EmHardware).
-
-%%--------------------------------------------------------------------
-stop_hardware(_State) ->
-    {ok, EmHardware} = application:get_env(erlymon, em_hardware),
-    lists:foreach(fun({Protocol, _, _}) ->
-                          case Protocol of
-                              osmand ->
-                                cowboy:stop_listener(Protocol);
-                              _ ->
-                                ranch:stop_listener(Protocol)
-                          end
-                  end, EmHardware),
-    ok.
-
+    {ok, EmHardwareArgs} = application:get_env(erlymon, em_hardware),
+    em_hardware:stop(EmHardwareArgs).
 
 start_web(_StartType, _StartArgs) ->
     {ok, EmHttp} = application:get_env(erlymon, em_http),
@@ -93,12 +62,3 @@ start_web(_StartType, _StartArgs) ->
 %%--------------------------------------------------------------------
 stop_web(_State) ->
     cowboy:stop_listener(web).
-
-%%====================================================================
-%% Internal functions
-%%====================================================================
-make_module_name(Name) ->
-    list_to_atom("em_" ++ atom_to_list(Name) ++ "_protocol").
-%%====================================================================
-%% Internal functions
-%%====================================================================

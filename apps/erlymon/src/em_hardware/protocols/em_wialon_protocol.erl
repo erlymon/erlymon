@@ -232,11 +232,11 @@ do_encode_command(_UniqueId, _Command) ->
 
 
 do_process_data(<<"#L#", Body/binary>>, State = #state{transport = Transport, socket = Socket, protocol = _Protocol, deviceId = 0}) ->
-  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Body]),
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_inet:resolve(Socket), Body]),
   [Imei|_] = binary:split(Body, [<<";">>], []),
   case em_data_manager:get_device_by_uid(Imei) of
     {error, _Reason} ->
-      em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
+      em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_inet:resolve(Socket), Imei]),
       Transport:send(Socket, format_response(<<"#AL#">>, 0)),
       {stop, normal, State};
     {ok, Object} ->
@@ -245,18 +245,18 @@ do_process_data(<<"#L#", Body/binary>>, State = #state{transport = Transport, so
       {noreply, State#state{deviceId = Object#device.id}, ?TIMEOUT}
   end;
 do_process_data( <<"#D#", Body/binary>>, State = #state{transport = Transport, socket = Socket, protocol = Protocol, deviceId = DeviceId}) when DeviceId > 0 ->
-  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Body]),
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_inet:resolve(Socket), Body]),
   case parse(Body) of
     {ok, PositionModel} ->
-      em_logger:info("[packet] unit: ip = '~s' message: ~w", [em_hardware:resolve(Socket), PositionModel]),
+      em_logger:info("[packet] unit: ip = '~s' message: ~w", [em_inet:resolve(Socket), PositionModel]),
       Position = PositionModel#position{
         deviceId = DeviceId,
         protocol = atom_to_binary(Protocol, utf8),
         attributes = maps:merge(PositionModel#position.attributes, #{
-          ?KEY_IP => em_hardware:resolve(Socket)
+          ?KEY_IP => em_inet:resolve(Socket)
         })
       },
-      em_logger:info("save message => unit: ip = '~s' id = '~w' position: ~w", [em_hardware:resolve(Socket), DeviceId, Position]),
+      em_logger:info("save message => unit: ip = '~s' id = '~w' position: ~w", [em_inet:resolve(Socket), DeviceId, Position]),
       em_data_manager:create_position(DeviceId, Position),
       Transport:send(Socket, format_response(<<"#AD#">>, 1)),
       {noreply, State, ?TIMEOUT};

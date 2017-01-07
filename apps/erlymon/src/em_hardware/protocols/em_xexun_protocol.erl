@@ -235,13 +235,13 @@ do_encode_command(_UniqueId, _Command) ->
   {error, <<"Unsupported command">>}.
 
 do_process_data(State = #state{transport = _Transport, socket = Socket, protocol = _Protocol, deviceId = 0}, Data) ->
-  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_inet:resolve(Socket), Data]),
   case parse(Data) of
     {ok, Imei, PositionModel} ->
-      em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), Imei, PositionModel]),
+      em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_inet:resolve(Socket), Imei, PositionModel]),
       case em_data_manager:get_device_by_uid(Imei) of
         {error, _Reason} ->
-          em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_hardware:resolve(Socket), Imei]),
+          em_logger:info("[packet] unit: ip = '~s' unknown device with imei = '~s'", [em_inet:resolve(Socket), Imei]),
           {stop, normal, State};
         {ok, Object} ->
           em_proc:registry(Object#device.id, self()),
@@ -252,7 +252,7 @@ do_process_data(State = #state{transport = _Transport, socket = Socket, protocol
       {stop, normal, State}
   end;
 do_process_data(State = #state{transport = _Transport, socket = Socket, protocol = _Protocol, deviceId = DeviceId}, Data) ->
-  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_hardware:resolve(Socket), Data]),
+  em_logger:info("[packet] unit: ip = '~s' data: ~s", [em_inet:resolve(Socket), Data]),
   case parse(Data) of
     {ok, Imei, PositionModel} ->
       do_save_position(State, DeviceId, Imei, PositionModel);
@@ -265,15 +265,15 @@ do_process_data(State, _) ->
   {stop, normal, State}.
 
 do_save_position(State = #state{socket = Socket, protocol = Protocol}, DeviceId, Imei, PositionModel) ->
-  em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_hardware:resolve(Socket), Imei, PositionModel]),
+  em_logger:info("[packet] unit: ip = '~s' imei = '~s' message: ~w", [em_inet:resolve(Socket), Imei, PositionModel]),
   Position = PositionModel#position{
     deviceId = DeviceId,
     protocol = atom_to_binary(Protocol, utf8),
     attributes = maps:merge(PositionModel#position.attributes, #{
-      ?KEY_IP => em_hardware:resolve(Socket)
+      ?KEY_IP => em_inet:resolve(Socket)
     })
   },
-  em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_hardware:resolve(Socket), DeviceId, Imei, Position]),
+  em_logger:info("save message => unit: ip = '~s' id = '~w' imei = '~s' position: ~w", [em_inet:resolve(Socket), DeviceId, Imei, Position]),
   em_data_manager:create_position(DeviceId, Position),
   {noreply, State, ?TIMEOUT}.
 
