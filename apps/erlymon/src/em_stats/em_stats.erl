@@ -93,9 +93,13 @@ report() ->
   {stop, Reason :: term()} | ignore).
 init([]) ->
   em_logger:info("Init stats"),
-  {ok, Conn} = shotgun:open("stats.erlymon.org", 80),
-  {ok, TRef} = timer:send_interval(3600 * 1000, periodic),
-  {ok, #state{connection = Conn, tref = TRef}}.
+  case shotgun:open("stats.erlymon.org", 80) of
+    {ok, Conn} ->
+      {ok, TRef} = timer:send_interval(3600 * 1000, periodic),
+      {ok, #state{connection = Conn, tref = TRef}};
+    Reason ->
+      {stop, Reason}
+  end.
 
 %%--------------------------------------------------------------------
 %% @private

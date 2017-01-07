@@ -109,7 +109,7 @@ add_device(Req, User) ->
     {ok, DeviceModel} ->
       case em_data_manager:create_device(DeviceModel) of
         {ok, Device} ->
-          em_data_manager:link_device(#permission{userId = User#user.id, deviceId = Device#device.id}),
+          em_data_manager:link_device(#device_permission{userId = User#user.id, deviceId = Device#device.id}),
           cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2);
         {error, [Reason|_]} ->
           em_logger:info("REASON: ~s", [Reason]),
@@ -164,7 +164,7 @@ remove_device(Req, User) ->
           cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req2);
         true ->
           em_data_manager:delete_device(Device),
-          em_data_manager:unlink_device(#permission{deviceId = Device#device.id}),
+          em_data_manager:unlink_device(#device_permission{deviceId = Device#device.id}),
           cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Device), Req2)
       end;
     _Reason ->

@@ -88,15 +88,15 @@ get_server() ->
 update_server(Rec) ->
     gen_server:call(?SERVER, {update_server, Rec}).
 
--spec(create_permission(Rec :: #permission{}) -> {ok, #permission{}} | {error, string() | [string()]}).
+-spec(create_permission(Rec :: #device_permission{}) -> {ok, #device_permission{}} | {error, string() | [string()]}).
 create_permission(Rec) ->
     gen_server:call(?SERVER, {create_permission, Rec}).
 
--spec(delete_permission(Rec :: #permission{}) -> {ok, #permission{}} | {error, string() | [string()]}).
+-spec(delete_permission(Rec :: #device_permission{}) -> {ok, #device_permission{}} | {error, string() | [string()]}).
 delete_permission(Rec) ->
     gen_server:call(?SERVER, {delete_permission, Rec}).
 
--spec(get_permissions() -> {ok, [#permission{}]} | {error, string() | [string()]}).
+-spec(get_permissions() -> {ok, [#device_permission{}]} | {error, string() | [string()]}).
 get_permissions() ->
   gen_server:call(?SERVER, {get_permissions, #{}}).
 
@@ -370,22 +370,22 @@ do_create_server(#state{topology = Topology}, Rec) ->
 
 
 do_create_permission(#state{topology = Topology}, Rec) ->
-    Map = to_map(permission, Rec#permission{id = gen_id()}),
+    Map = to_map(permission, Rec#device_permission{id = gen_id()}),
     Callback = fun(Worker) ->
                        mc_worker_api:insert(Worker, ?COLLECTION_PERMISSIONS, Map)
                end,
     Item = mongoc:transaction(Topology, Callback),
     do_create_result(Item, permission).
 
-do_delete_permission(#state{topology = Topology}, Rec = #permission{userId = UserId}) when UserId == 0 ->
+do_delete_permission(#state{topology = Topology}, Rec = #device_permission{userId = UserId}) when UserId == 0 ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"deviceId">> => id_to_objectid(Rec#permission.deviceId)})
+                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission);
 do_delete_permission(#state{topology = Topology}, Rec) ->
     Callback = fun(Worker) ->
-                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"userId">> => id_to_objectid(Rec#permission.userId), <<"deviceId">> => id_to_objectid(Rec#permission.deviceId)})
+                       mc_worker_api:delete(Worker, ?COLLECTION_PERMISSIONS, #{<<"userId">> => id_to_objectid(Rec#device_permission.userId), <<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)})
                end,
     Res = mongoc:transaction(Topology, Callback),
     do_delete_result(Res, to_map(permission, Rec), permission).
@@ -566,7 +566,7 @@ from_map(server, Map) ->
        zoom = maps:get(<<"zoom">>, Map, 0)
       };
 from_map(permission, Map) ->
-    #permission{
+    #device_permission{
        id = objectid_to_id(maps:get(<<"_id">>, Map, 0)),
        userId = objectid_to_id(maps:get(<<"userId">>, Map, 0)),
        deviceId = objectid_to_id(maps:get(<<"deviceId">>, Map, 0))
@@ -635,9 +635,9 @@ to_map(server, Rec) ->
      };
 to_map(permission, Rec) ->
     #{
-       <<"_id">> => id_to_objectid(Rec#permission.id),
-       <<"userId">> => id_to_objectid(Rec#permission.userId),
-       <<"deviceId">> => id_to_objectid(Rec#permission.deviceId)
+       <<"_id">> => id_to_objectid(Rec#device_permission.id),
+       <<"userId">> => id_to_objectid(Rec#device_permission.userId),
+       <<"deviceId">> => id_to_objectid(Rec#device_permission.deviceId)
      };
 to_map(user, Rec) ->
     #{

@@ -91,7 +91,7 @@
   attributes = #{} :: map()
 }).
 
--record(permission, {
+-record(device_permission, {
   id = 0 :: integer(),
   userId = 0 :: integer(),
   deviceId = 0 :: integer()

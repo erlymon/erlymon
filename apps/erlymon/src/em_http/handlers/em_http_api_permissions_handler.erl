@@ -56,10 +56,10 @@ add_permission(Req, User) ->
   %% {userId: 1458137425, deviceId: 1458137433}
   %%PermissionModel = em_json:decode(JsonBin),
   em_logger:info("ADD PERMISSION JSON: ~s", [JsonBin]),
-  Result = emodel:from_map(em_json:decode(JsonBin), #permission{}, [
-    {<<"id">>, optional, integer, #permission.id, []},
-    {<<"userId">>, required, integer, #permission.userId, []},
-    {<<"deviceId">>, required, integer, #permission.deviceId, []}
+  Result = emodel:from_map(em_json:decode(JsonBin), #device_permission{}, [
+    {<<"id">>, optional, integer, #device_permission.id, []},
+    {<<"userId">>, required, integer, #device_permission.userId, []},
+    {<<"deviceId">>, required, integer, #device_permission.deviceId, []}
   ]),
   case Result of
     {ok, PermissionModel} ->
@@ -80,10 +80,10 @@ remove_permission(Req, User) ->
   %% {userId: 1458137425, deviceId: 1458137433}
   %%PermissionModel = em_json:decode(JsonBin),
   em_logger:info("REMOVE PERMISSION JSON: ~s", [JsonBin]),
-  Result = emodel:from_map(em_json:decode(JsonBin), #permission{}, [
-    {<<"id">>, optional, integer, #permission.id, []},
-    {<<"userId">>, required, integer, #permission.userId, []},
-    {<<"deviceId">>, required, integer, #permission.deviceId, []}
+  Result = emodel:from_map(em_json:decode(JsonBin), #device_permission{}, [
+    {<<"id">>, optional, integer, #device_permission.id, []},
+    {<<"userId">>, required, integer, #device_permission.userId, []},
+    {<<"deviceId">>, required, integer, #device_permission.deviceId, []}
   ]),
   case Result of
     {ok, PermissionModel} ->

@@ -57,27 +57,27 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
--spec(get() -> {ok, [Rec :: #permission{}]} | {error, string()}).
+-spec(get() -> {ok, [Rec :: #device_permission{}]} | {error, string()}).
 get() ->
   gen_server:call(?SERVER, {get}).
 
--spec(get(UserId :: integer(), DeviceId :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
+-spec(get(UserId :: integer(), DeviceId :: integer()) -> {ok, [Rec :: #device_permission{}]} | {error, string()}).
 get(UserId, DeviceId) ->
   gen_server:call(?SERVER, {get, UserId, DeviceId}).
 
--spec(get_by_user_id(Id :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
+-spec(get_by_user_id(Id :: integer()) -> {ok, [Rec :: #device_permission{}]} | {error, string()}).
 get_by_user_id(Id) ->
   gen_server:call(?SERVER, {get_by_user_id, Id}).
 
--spec(get_by_device_id(Id :: integer()) -> {ok, [Rec :: #permission{}]} | {error, string()}).
+-spec(get_by_device_id(Id :: integer()) -> {ok, [Rec :: #device_permission{}]} | {error, string()}).
 get_by_device_id(Id) ->
   gen_server:call(?SERVER, {get_by_device_id, Id}).
 
--spec(create(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
+-spec(create(Permission :: #device_permission{}) -> {ok, #device_permission{}} | {error, string()}).
 create(Permission) ->
   gen_server:call(?SERVER, {create, Permission}).
 
--spec(delete(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
+-spec(delete(Permission :: #device_permission{}) -> {ok, #device_permission{}} | {error, string()}).
 delete(Permission) ->
   gen_server:call(?SERVER, {delete, Permission}).
 
@@ -219,7 +219,7 @@ do_get_permissions(State = #state{cache = Cache}) ->
   {reply, {ok, ets:tab2list(Cache)}, State}.
 
 do_get_permission(State = #state{cache = Cache}, SearchUserId, SearchDeviceId) ->
-  Match = ets:fun2ms(fun(Permission = #permission{userId = UserId, deviceId = DeviceId}) when (UserId =:= SearchUserId) and (DeviceId =:= SearchDeviceId) -> Permission end),
+  Match = ets:fun2ms(fun(Permission = #device_permission{userId = UserId, deviceId = DeviceId}) when (UserId =:= SearchUserId) and (DeviceId =:= SearchDeviceId) -> Permission end),
   case ets:select(Cache, Match) of
     [] ->
       {reply, {error, <<"Not find permission">>}, State};
@@ -228,11 +228,11 @@ do_get_permission(State = #state{cache = Cache}, SearchUserId, SearchDeviceId) -
   end.
 
 do_get_permissions_by_user_id(State = #state{cache = Cache}, SearchUserId) ->
-  Match = ets:fun2ms(fun(Permission = #permission{userId = UserId}) when UserId =:= SearchUserId -> Permission end),
+  Match = ets:fun2ms(fun(Permission = #device_permission{userId = UserId}) when UserId =:= SearchUserId -> Permission end),
   {reply, {ok, ets:select(Cache, Match)}, State}.
 
 do_get_permissions_by_device_id(State = #state{cache = Cache}, SearchDeviceId) ->
-  Match = ets:fun2ms(fun(Permission = #permission{deviceId = DeviceId}) when DeviceId =:= SearchDeviceId -> Permission end),
+  Match = ets:fun2ms(fun(Permission = #device_permission{deviceId = DeviceId}) when DeviceId =:= SearchDeviceId -> Permission end),
   {reply, {ok, ets:select(Cache, Match)}, State}.
 
 do_create_permission(State = #state{cache = Cache}, PermissionModel) ->
@@ -251,7 +251,7 @@ do_create_permission(State = #state{cache = Cache}, PermissionModel) ->
 do_delete_permission(State = #state{cache = Cache}, PermissionModel) ->
   case em_storage:delete_permission(PermissionModel) of
     {ok, Permission} ->
-      Match = ets:fun2ms(fun(#permission{userId = UserId, deviceId = DeviceId}) when (UserId =:= Permission#permission.userId) and (DeviceId =:= Permission#permission.deviceId) -> true end),
+      Match = ets:fun2ms(fun(#device_permission{userId = UserId, deviceId = DeviceId}) when (UserId =:= Permission#device_permission.userId) and (DeviceId =:= Permission#device_permission.deviceId) -> true end),
       case ets:select_delete(Cache, Match) of
         0 ->
           {reply, {error, <<"Error sync in permissions cache">>}, State};

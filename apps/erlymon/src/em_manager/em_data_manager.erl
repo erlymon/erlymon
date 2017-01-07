@@ -136,7 +136,7 @@ delete_device(Device) ->
 
 -spec(get_devices(UserId :: integer()) -> {ok, [#device{}]} | {error, string()}).
 get_devices(UserId) ->
-  Callback = fun(Permission = #permission{deviceId = DeviceId}, Acc) ->
+  Callback = fun(Permission = #device_permission{deviceId = DeviceId}, Acc) ->
                 em_logger:info("PERMISSION: ~w", [Permission]),
                 case em_manager_devices:get_by_id(DeviceId) of
                   {ok, Device} ->
@@ -157,10 +157,10 @@ get_device_by_uid(UniqueId) ->
 get_all_devices() ->
     em_manager_devices:get().
 
--spec(link_device(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
+-spec(link_device(Permission :: #device_permission{}) -> {ok, #device_permission{}} | {error, string()}).
 link_device(Permission) ->
   em_manager_permissions:create(Permission).
 
--spec(unlink_device(Permission :: #permission{}) -> {ok, #permission{}} | {error, string()}).
+-spec(unlink_device(Permission :: #device_permission{}) -> {ok, #device_permission{}} | {error, string()}).
 unlink_device(Permission) ->
   em_manager_permissions:delete(Permission).

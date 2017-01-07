@@ -180,7 +180,7 @@ code_change(_OldVsn, State, _Extra) ->
 do_broadcast(State, Data) when is_record(Data, position) ->
   SendNotify = fun(Permission) ->
                 em_logger:info("Permission: ~w", [Permission]),
-                em_proc:send(Permission#permission.userId, {position, Data})
+                em_proc:send(Permission#device_permission.userId, {position, Data})
                end,
   {ok, Permissions} = em_manager_permissions:get_by_device_id(Data#position.deviceId),
   lists:map(SendNotify, Permissions),
@@ -188,7 +188,7 @@ do_broadcast(State, Data) when is_record(Data, position) ->
 do_broadcast(State, Data) when is_record(Data, device) ->
   SendNotify = fun(Permission) ->
                 em_logger:info("Permission: ~w", [Permission]),
-                em_proc:send(Permission#permission.userId, {device, Data})
+                em_proc:send(Permission#device_permission.userId, {device, Data})
                end,
   {ok, Permissions} = em_manager_permissions:get_by_device_id(Data#device.id),
   lists:map(SendNotify, Permissions),
