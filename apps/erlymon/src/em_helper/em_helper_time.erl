@@ -35,19 +35,18 @@
 ]).
 
 -spec(format(Format :: string(), Utc :: integer()) -> string()).
+format(_, 0)  ->
+  {ok, <<"">>};
 format(Format, Utc) when is_integer(Utc) ->
   tempo:format_unix(Format, Utc);
-format(Format,_) ->
-  tempo:format_unix(Format, 0).
+format(_,_) ->
+  {ok, <<"">>}.
 
 -spec(parse(Format :: string(), Bin :: string()) -> integer()).
-parse(Format, Bin) ->
-  case tempo:parse_unix(Format, Bin) of
-    {ok, Utc} ->
-      {ok, Utc};
-    Reason ->
-      Reason
-  end.
+parse(Format, Bin) when is_binary(Bin) ->
+  tempo:parse_unix(Format, Bin);
+parse(_, _) ->
+  {ok, 0}.
 
 -spec(datetime_to_utc(DateTime :: term()) -> integer()).
 datetime_to_utc({{Year, Month, Day}, Time}) ->
