@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Anton Tananaev (anton.tananaev@gmail.com)
+ * Copyright 2015 - 2016 Anton Tananaev (anton.tananaev@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ Ext.define('Traccar.view.DevicesController', {
             }
         }
     },
+
     init: function () {
         var readonly = Traccar.app.getServer().get('readonly') && !Traccar.app.getUser().get('admin');
         this.lookupReference('toolbarAddButton').setVisible(!readonly);
@@ -43,7 +44,7 @@ Ext.define('Traccar.view.DevicesController', {
     onAddClick: function () {
         var device, dialog;
         device = Ext.create('Traccar.model.Device');
-        device.store = this.getView().getStore();
+        device.store = Ext.getStore('Devices');
         dialog = Ext.create('Traccar.view.DeviceDialog');
         dialog.down('form').loadRecord(device);
         dialog.show();

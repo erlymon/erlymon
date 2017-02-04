@@ -73,6 +73,7 @@ Ext.define('Traccar.controller.Root', {
     },
 
     loadApp: function () {
+        Ext.getStore('Groups').load();
         Ext.getStore('Devices').load();
         Ext.get('attribution').remove();
         if (this.isPhone) {
@@ -86,7 +87,7 @@ Ext.define('Traccar.controller.Root', {
     asyncUpdate: function (first) {
         var protocol, socket, self = this;
         protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-        socket = new WebSocket(protocol + window.location.host + '/api/socket');
+        socket = new WebSocket(protocol + '//' + window.location.host + '/api/socket');
 
         socket.onclose = function (event) {
             self.asyncUpdate(false);
@@ -101,7 +102,7 @@ Ext.define('Traccar.controller.Root', {
                 array = data.devices;
                 store = Ext.getStore('Devices');
                 for (i = 0; i < array.length; i++) {
-                    entity = store.findRecord('id', array[i].id, 0, false, false, true);
+                    entity = store.getById(array[i].id);
                     if (entity) {
                         entity.set({
                             status: array[i].status,

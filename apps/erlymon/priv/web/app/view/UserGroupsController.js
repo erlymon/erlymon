@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Anton Tananaev (anton.tananaev@gmail.com)
+ * Copyright 2016 Anton Tananaev (anton.tananaev@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-Ext.define('Traccar.view.UserDevicesController', {
+Ext.define('Traccar.view.UserGroupsController', {
     extend: 'Ext.app.ViewController',
-    alias: 'controller.userDevices',
+    alias: 'controller.userGroups',
 
     init: function () {
         this.userId = this.getView().user.getData().id;
         this.getView().getStore().load({
             scope: this,
             callback: function (records, operation, success) {
-                var userStore = Ext.create('Traccar.store.Devices');
+                var userStore = Ext.create('Traccar.store.Groups');
 
                 userStore.load({
                     params: {
@@ -47,10 +47,10 @@ Ext.define('Traccar.view.UserDevicesController', {
     onBeforeSelect: function (object, record, index) {
         Ext.Ajax.request({
             scope: this,
-            url: '/api/permissions/devices',
+            url: '/api/permissions/groups',
             jsonData: {
                 userId: this.userId,
-                deviceId: record.getData().id
+                groupId: record.getData().id
             },
             callback: function (options, success, response) {
                 if (!success) {
@@ -64,10 +64,10 @@ Ext.define('Traccar.view.UserDevicesController', {
         Ext.Ajax.request({
             scope: this,
             method: 'DELETE',
-            url: '/api/permissions/devices',
+            url: '/api/permissions/groups',
             jsonData: {
                 userId: this.userId,
-                deviceId: record.getData().id
+                groupId: record.getData().id
             },
             callback: function (options, success, response) {
                 if (!success) {

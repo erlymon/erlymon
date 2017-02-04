@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Anton Tananaev (anton.tananaev@gmail.com)
+ * Copyright 2016 Anton Tananaev (anton.tananaev@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-Ext.define('Traccar.store.DistanceUnits', {
+Ext.define('Traccar.store.AllGroups', {
     extend: 'Ext.data.Store',
-    fields: ['key', 'name', 'factor'],
+    model: 'Traccar.model.Group',
 
-    data: [{
-        key: 'km',
-        name: Strings.sharedKm,
-        factor: 0.001
-    }, {
-        key: 'mi',
-        name: Strings.sharedMi,
-        factor: 0.000621371
-    }],
-
-    formatValue: function (value, unit) {
-        var model;
-        if (!unit) {
-            unit = 'km';
+    proxy: {
+        type: 'rest',
+        url: '/api/groups',
+        extraParams: {
+            all: true
         }
-        model = this.findRecord('key', unit);
-        return (value * model.get('factor')).toFixed(2) + ' ' + model.get('name');
     }
 });

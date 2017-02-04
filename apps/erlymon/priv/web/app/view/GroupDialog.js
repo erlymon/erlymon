@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Anton Tananaev (anton.tananaev@gmail.com)
+ * Copyright 2016 Anton Tananaev (anton.tananaev@gmail.com)
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-Ext.define('Traccar.view.DeviceDialog', {
+Ext.define('Traccar.view.GroupDialog', {
     extend: 'Traccar.view.BaseEditDialog',
 
     requires: [
@@ -22,7 +22,7 @@ Ext.define('Traccar.view.DeviceDialog', {
     ],
 
     controller: 'baseEditDialog',
-    title: Strings.deviceDialog,
+    title: Strings.groupDialog,
 
     items: {
         xtype: 'form',
@@ -30,11 +30,6 @@ Ext.define('Traccar.view.DeviceDialog', {
             xtype: 'textfield',
             name: 'name',
             fieldLabel: Strings.sharedName,
-            allowBlank: false
-        }, {
-            xtype: 'textfield',
-            name: 'uniqueId',
-            fieldLabel: Strings.deviceIdentifier,
             allowBlank: false
         }, {
             xtype: 'combobox',
