@@ -64,7 +64,7 @@
          code_change/3]).
 
 -define(SERVER, ?MODULE).
--define(COLLECTION_SERVERS, <<"servers">>).
+-define(COLLECTION_SERVER, <<"server">>).
 -define(COLLECTION_DEVICE_PERMISSIONS, <<"user_device">>).
 -define(COLLECTION_USERS, <<"users">>).
 -define(COLLECTION_DEVICES, <<"devices">>).
@@ -344,7 +344,7 @@ do_create_indexses(#state{topology = Topology}) ->
 
 do_get_server(#state{topology = Topology}) ->
     Callback = fun(Conf) ->
-                       mongoc:find_one(Conf, ?COLLECTION_SERVERS, #{}, #{}, 0)
+                       mongoc:find_one(Conf, ?COLLECTION_SERVER, #{}, #{}, 0)
                end,
     Item = mongoc:transaction_query(Topology, Callback),
     do_get_result(Item, server).
@@ -355,8 +355,8 @@ do_update_server(#state{topology = Topology}, Rec) ->
                        Key = #{<<"_id">> => id_to_objectid(Rec#server.id)},
                        Command = #{<<"$set">> => maps:remove(<<"_id">>, Map)},
                        {
-                         mc_worker_api:update(Worker, ?COLLECTION_SERVERS, Key, Command),
-                         mc_worker_api:find_one(Worker, ?COLLECTION_SERVERS, Key)
+                         mc_worker_api:update(Worker, ?COLLECTION_SERVER, Key, Command),
+                         mc_worker_api:find_one(Worker, ?COLLECTION_SERVER, Key)
                        }
                end,
     {Res, ResMap} = mongoc:transaction(Topology, Callback),
@@ -365,7 +365,7 @@ do_update_server(#state{topology = Topology}, Rec) ->
 do_create_server(#state{topology = Topology}, Rec) ->
     Map = to_map(server, Rec),
     Callback = fun(Worker) ->
-                       mc_worker_api:insert(Worker, ?COLLECTION_SERVERS, Map)
+                       mc_worker_api:insert(Worker, ?COLLECTION_SERVER, Map)
                end,
     Item = mongoc:transaction(Topology, Callback),
     do_create_result(Item, server).
