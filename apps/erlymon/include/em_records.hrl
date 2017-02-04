@@ -97,6 +97,20 @@
   deviceId = 0 :: integer()
 }).
 
+
+-record(group, {
+  id = 0 :: integer(),
+  name = <<"">> :: string() | atom(),
+  groupId = <<"">> :: integer()
+}).
+
+-record(group_permission, {
+  id = 0 :: integer(),
+  userId = 0 :: integer(),
+  groupId = 0 :: integer()
+}).
+
+
 -record(event, {
   devices = [] :: list(),
   positions = [] :: list()
