@@ -21,7 +21,7 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_geocoder).
+-module(em_geocoder_google).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(gen_server).
@@ -29,30 +29,38 @@
 -include("em_records.hrl").
 
 %% API
--export([start_link/2]).
+-export([start_link/0]).
 -export([reverse/3]).
 
 %% gen_server callbacks
 -export([init/1,
-         handle_call/3,
-         handle_cast/2,
-         handle_info/2,
-         terminate/2,
-         code_change/3]).
+    handle_call/3,
+    handle_cast/2,
+    handle_info/2,
+    terminate/2,
+    code_change/3]).
 
 -define(SERVER, ?MODULE).
 
--record(state, {
-          type :: atom()
-         }).
+-define(NAME, "google").
+-define(HOST, "maps.googleapis.com").
+-define(PORT, 443).
+-define(REVERSE, <<"/maps/api/geocode/json?latlng={lat},{lon}&language={lang}">>).
+
+
+-record(state, {conn :: any()}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
+%% example:
+%% error: em_geocoder:reverse(0.0,0.0,<<"ru">>).
+%% ok: em_geocoder:reverse(57.234,24.24234,<<"en">>).
 -spec(reverse(Latitude :: float(), Longitude :: float(), Language :: string()) -> {ok, string()} | {error, string()}).
 reverse(Latitude, Longitude, Language) ->
     gen_server:call(?SERVER, {reverse, Latitude, Longitude, Language}).
+
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -60,10 +68,10 @@ reverse(Latitude, Longitude, Language) ->
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link(GeocoderType :: atom(), GeocoderSettings :: list()) ->
-             {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link(GeocoderType, GeocoderSettings) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [GeocoderType, GeocoderSettings], []).
+-spec(start_link() ->
+    {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
+start_link() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -81,11 +89,17 @@ start_link(GeocoderType, GeocoderSettings) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(init(Args :: term()) ->
-             {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
-             {stop, Reason :: term()} | ignore).
-init([GeocoderType, _GeocoderSettings]) ->
-    em_logger:info("Init '~s' geocoder service", [GeocoderType]),
-    {ok, #state{type = GeocoderType}}.
+    {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
+    {stop, Reason :: term()} | ignore).
+init([]) ->
+    em_logger:info("Init '~s' geocoder service", [?NAME]),
+    case shotgun:open(?HOST, ?PORT, https) of
+        {ok, Conn} ->
+            {ok, #state{conn = Conn}};
+        Reason ->
+            {stop, Reason}
+    end.
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -94,13 +108,13 @@ init([GeocoderType, _GeocoderSettings]) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(handle_call(Request :: term(), From :: {pid(), Tag :: term()},
-                  State :: #state{}) ->
-             {reply, Reply :: term(), NewState :: #state{}} |
-             {reply, Reply :: term(), NewState :: #state{}, timeout() | hibernate} |
-             {noreply, NewState :: #state{}} |
-             {noreply, NewState :: #state{}, timeout() | hibernate} |
-             {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
-             {stop, Reason :: term(), NewState :: #state{}}).
+    State :: #state{}) ->
+    {reply, Reply :: term(), NewState :: #state{}} |
+    {reply, Reply :: term(), NewState :: #state{}, timeout() | hibernate} |
+    {noreply, NewState :: #state{}} |
+    {noreply, NewState :: #state{}, timeout() | hibernate} |
+    {stop, Reason :: term(), Reply :: term(), NewState :: #state{}} |
+    {stop, Reason :: term(), NewState :: #state{}}).
 handle_call({reverse, Latitude, Longitude, Language}, _From, State) ->
     do_reverse(State, Latitude, Longitude, Language);
 handle_call(_Request, _From, State) ->
@@ -114,9 +128,9 @@ handle_call(_Request, _From, State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(handle_cast(Request :: term(), State :: #state{}) ->
-             {noreply, NewState :: #state{}} |
-             {noreply, NewState :: #state{}, timeout() | hibernate} |
-             {stop, Reason :: term(), NewState :: #state{}}).
+    {noreply, NewState :: #state{}} |
+    {noreply, NewState :: #state{}, timeout() | hibernate} |
+    {stop, Reason :: term(), NewState :: #state{}}).
 handle_cast(_Request, State) ->
     {noreply, State}.
 
@@ -131,9 +145,9 @@ handle_cast(_Request, State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(handle_info(Info :: timeout() | term(), State :: #state{}) ->
-             {noreply, NewState :: #state{}} |
-             {noreply, NewState :: #state{}, timeout() | hibernate} |
-             {stop, Reason :: term(), NewState :: #state{}}).
+    {noreply, NewState :: #state{}} |
+    {noreply, NewState :: #state{}, timeout() | hibernate} |
+    {stop, Reason :: term(), NewState :: #state{}}).
 handle_info(_Info, State) ->
     {noreply, State}.
 
@@ -149,8 +163,9 @@ handle_info(_Info, State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
-                State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+    State :: #state{}) -> term()).
+terminate(_Reason, #state{conn = Conn}) ->
+    shotgun:close(Conn),
     ok.
 
 %%--------------------------------------------------------------------
@@ -162,61 +177,65 @@ terminate(_Reason, _State) ->
 %% @end
 %%--------------------------------------------------------------------
 -spec(code_change(OldVsn :: term() | {down, term()}, State :: #state{},
-                  Extra :: term()) ->
-             {ok, NewState :: #state{}} | {error, Reason :: term()}).
+    Extra :: term()) ->
+    {ok, NewState :: #state{}} | {error, Reason :: term()}).
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_reverse(State = #state{type = Type}, Latitude, Longitude, Language) ->
-    case do_reverse_provider(Type, Latitude, Longitude, Language) of
-        {ok, Address} ->
-            {reply, {ok, do_address_format(Address)}, State};
-        Reason ->
-            {reply, Reason, State}
+do_reverse(State = #state{conn = Conn}, Latitude, Longitude, Language) ->
+    Headers = #{},
+    URL = do_create_url(?REVERSE, [
+        {<<"{lat}">>, erlang:float_to_binary(Latitude,[{decimals, 8}])},
+        {<<"{lon}">>, erlang:float_to_binary(Longitude,[{decimals, 8}])},
+        {<<"{lang}">>, Language}
+    ]),
+    em_logger:info("URL: ~s", [URL]),
+    case shotgun:get(Conn, URL, Headers) of
+        {ok, Response} ->
+            case Response of
+                #{status_code := 200, body := Body} ->
+                    {reply, do_parse_body(jsx:decode(Body, [return_maps])), State};
+                #{body := Body} ->
+                    {reply, {error, Body}, State}
+            end;
+        {error, Reason} ->
+            {reply, {error, Reason}, State}
     end.
 
-do_reverse_provider(google, Latitude, Longitude, Language) ->
-    em_geocoder_google:reverse(Latitude, Longitude, Language);
-do_reverse_provider(yandex, Latitude, Longitude, Language) ->
-    em_geocoder_yandex:reverse(Latitude, Longitude, Language);
-do_reverse_provider(nominatim, Latitude, Longitude, Language) ->
-    em_geocoder_nominatim:reverse(Latitude, Longitude, Language);
-do_reverse_provider(_, _, _, _) ->
-    {error, <<"Unknown provider">>}.
+do_parse_body(#{<<"error_message">> := Message}) ->
+    {error, Message};
+do_parse_body(#{<<"status">> := <<"ZERO_RESULTS">>, <<"results">> := []}) ->
+    {error, <<"Zerro results">>};
+do_parse_body(#{<<"status">> := <<"OK">>, <<"results">> := [#{<<"address_components">> := AddressComponents}|_]}) ->
+    Fun = fun(#{<<"short_name">> := ShortName, <<"types">> := Types}, Acc) ->
+        do_create_address(ShortName, Types, Acc)
+          end,
+    {ok, lists:foldl(Fun, #address{}, AddressComponents)}.
 
 
-%% Available parameters:
-%% %p - postcode
-%% %c - country
-%% %s - state
-%% %d - district
-%% %t - settlement (town)
-%% %u - suburb
-%% %r - street (road)
-%% %h - house
-do_address_format(Address) ->
-    do_address_format("%h %r, %t, %s, %c", Address).
+do_create_address(_, [], Address) ->
+    Address;
+do_create_address(Value, [<<"street_number">>|_], Address) ->
+    do_create_address(Value, [], Address#address{house = Value});
+do_create_address(Value, [<<"route">>|_], Address) ->
+    do_create_address(Value, [], Address#address{street = Value});
+do_create_address(Value, [<<"locality">>|_], Address) ->
+    do_create_address(Value, [], Address#address{settlement = Value});
+do_create_address(Value, [<<"administrative_area_level_2">>|_], Address) ->
+    do_create_address(Value, [], Address#address{district = Value});
+do_create_address(Value, [<<"administrative_area_level_1">>|_], Address) ->
+    do_create_address(Value, [], Address#address{state = Value});
+do_create_address(Value, [<<"country">>|_], Address) ->
+    do_create_address(Value, [], Address#address{country = Value});
+do_create_address(Value, [<<"postal_code">>|_], Address) ->
+    do_create_address(Value, [], Address#address{postcode = Value});
+do_create_address(Value, [_|Tail], Address) ->
+    do_create_address(Value, Tail, Address).
 
-do_address_format(Format, Address) ->
-    Fields = [
-              {"%p", Address#address.postcode},
-              {"%c", Address#address.country},
-              {"%s", Address#address.state},
-              {"%d", Address#address.country},
-              {"%t", Address#address.settlement},
-              {"%u", Address#address.suburb},
-              {"%r", Address#address.street},
-              {"%h", Address#address.house}
-             ],
-    Result = lists:foldl(fun({Key, Value}, Acc) ->
-                                 do_replace(Acc, Key, Value)
-                         end, Format, Fields),
-    re:replace(Result, "^[, ]*", "", [{return, binary}, global]).
-
-do_replace(S, K, undefined) ->
-    re:replace(S, "[, ]*" ++ K, "", [{return, list}, global]);
-do_replace(S, K, V) ->
-    re:replace(S, K, V, [{return, list}, global]).
+do_create_url(UrlTemplate, Params) ->
+    lists:foldr(fun({Key, Value}, Url) ->
+        binary:replace(Url, Key, Value)
+                end, UrlTemplate, Params).

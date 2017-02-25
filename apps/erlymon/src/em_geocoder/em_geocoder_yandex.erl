@@ -21,15 +21,13 @@
 %%%    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 %%% @end
 %%%-------------------------------------------------------------------
--module(em_geocoder).
+-module(em_geocoder_yandex).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 -behaviour(gen_server).
 
--include("em_records.hrl").
-
 %% API
--export([start_link/2]).
+-export([start_link/0]).
 -export([reverse/3]).
 
 %% gen_server callbacks
@@ -42,9 +40,13 @@
 
 -define(SERVER, ?MODULE).
 
--record(state, {
-          type :: atom()
-         }).
+-define(NAME, "yandex").
+-define(HOST, "geocode-maps.yandex.ru").
+-define(PORT, 443).
+-define(REVERSE, <<"/1.x/?geocode={lon},{lat}&format=json&results=1&lang={lang}">>).
+
+
+-record(state, {conn :: any()}).
 
 %%%===================================================================
 %%% API
@@ -54,16 +56,17 @@
 reverse(Latitude, Longitude, Language) ->
     gen_server:call(?SERVER, {reverse, Latitude, Longitude, Language}).
 
+
 %%--------------------------------------------------------------------
 %% @doc
 %% Starts the server
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec(start_link(GeocoderType :: atom(), GeocoderSettings :: list()) ->
+-spec(start_link() ->
              {ok, Pid :: pid()} | ignore | {error, Reason :: term()}).
-start_link(GeocoderType, GeocoderSettings) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [GeocoderType, GeocoderSettings], []).
+start_link() ->
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -83,9 +86,15 @@ start_link(GeocoderType, GeocoderSettings) ->
 -spec(init(Args :: term()) ->
              {ok, State :: #state{}} | {ok, State :: #state{}, timeout() | hibernate} |
              {stop, Reason :: term()} | ignore).
-init([GeocoderType, _GeocoderSettings]) ->
-    em_logger:info("Init '~s' geocoder service", [GeocoderType]),
-    {ok, #state{type = GeocoderType}}.
+init([]) ->
+    em_logger:info("Init '~s' geocoder service", [?NAME]),
+    case shotgun:open(?HOST, ?PORT, https) of
+        {ok, Conn} ->
+            {ok, #state{conn = Conn}};
+        Reason ->
+            {stop, Reason}
+    end.
+
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -150,7 +159,8 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
                 State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{conn = Conn}) ->
+    shotgun:close(Conn),
     ok.
 
 %%--------------------------------------------------------------------
@@ -170,53 +180,40 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_reverse(State = #state{type = Type}, Latitude, Longitude, Language) ->
-    case do_reverse_provider(Type, Latitude, Longitude, Language) of
-        {ok, Address} ->
-            {reply, {ok, do_address_format(Address)}, State};
-        Reason ->
-            {reply, Reason, State}
+do_reverse(State = #state{conn = Conn}, Latitude, Longitude, Language) ->
+    Headers = #{<<"content-type">> => <<"application/json; charset=utf-8">>},
+    URL = do_create_url(?REVERSE, [
+                                   {<<"{lat}">>, erlang:float_to_binary(Latitude,[{decimals, 8}])},
+                                   {<<"{lon}">>, erlang:float_to_binary(Longitude,[{decimals, 8}])},
+                                   {<<"{lang}">>, Language}
+                                  ]),
+    em_logger:info("URL: ~s", [URL]),
+    case shotgun:get(Conn, URL, Headers) of
+        {ok, Response} ->
+            case Response of
+                #{status_code := 200, body := Body} ->
+                    em_logger:info("Body: ~s", [Body]),
+                    do_parse_body(State, jsx:decode(Body, [return_maps]));
+                #{body := Body} ->
+                    {reply, {error, Body}, State}
+            end;
+        {error, Reason} ->
+            {reply, {error, Reason}, State}
     end.
 
-do_reverse_provider(google, Latitude, Longitude, Language) ->
-    em_geocoder_google:reverse(Latitude, Longitude, Language);
-do_reverse_provider(yandex, Latitude, Longitude, Language) ->
-    em_geocoder_yandex:reverse(Latitude, Longitude, Language);
-do_reverse_provider(nominatim, Latitude, Longitude, Language) ->
-    em_geocoder_nominatim:reverse(Latitude, Longitude, Language);
-do_reverse_provider(_, _, _, _) ->
-    {error, <<"Unknown provider">>}.
+do_parse_body(State, #{<<"error">> := #{<<"message">> := Message}}) ->
+    {reply, {error, Message}, State};
+%% {"response":{"GeoObjectCollection":{"metaDataProperty":{"GeocoderResponseMetaData":{"request":"37.6155600,55.7522200","found":"8","results":"1","Point":{"pos":"37.615560 55.752220"}}},"featureMember":[{"GeoObject":{"metaDataProperty":{"GeocoderMetaData":{"kind":"street","text":"Russian Federation, Moscow, Moscow Kremlin, Troitskaya Street","precision":"street","AddressDetails":{"Country":{"AddressLine":"Moscow, Moscow Kremlin, Troitskaya Street","CountryNameCode":"RU","CountryName":"Russian Federation","AdministrativeArea":{"AdministrativeAreaName":"Moscow","Locality":{"LocalityName":"Moscow","DependentLocality":{"DependentLocalityName":"Moscow Kremlin","Thoroughfare":{"ThoroughfareName":"Troitskaya Street"}}}}}}}},"description":"Moscow Kremlin, Moscow, Russian Federation","name":"Troitskaya Street","boundedBy":{"Envelope":{"lowerCorner":"37.615093 55.751938","upperCorner":"37.617842 55.752273"}},"Point":{"pos":"37.616476 55.752202"}}}]}}}
+do_parse_body(State, #{<<"response">> := #{<<"GeoObjectCollection">> := #{<<"metaDataProperty">> := #{<<"GeocoderResponseMetaData">> := #{<<"found">> := Found}}, <<"featureMember">> := FeatureMember}}}) ->
+    case erlang:binary_to_integer(Found) of
+        0 ->
+            {reply, {error, "Unknown address"}, State};
+        _ ->
+            [#{<<"GeoObject">> := #{<<"description">> := Description}}] = FeatureMember,
+            {reply, {ok, Description}, State}
+    end.
 
-
-%% Available parameters:
-%% %p - postcode
-%% %c - country
-%% %s - state
-%% %d - district
-%% %t - settlement (town)
-%% %u - suburb
-%% %r - street (road)
-%% %h - house
-do_address_format(Address) ->
-    do_address_format("%h %r, %t, %s, %c", Address).
-
-do_address_format(Format, Address) ->
-    Fields = [
-              {"%p", Address#address.postcode},
-              {"%c", Address#address.country},
-              {"%s", Address#address.state},
-              {"%d", Address#address.country},
-              {"%t", Address#address.settlement},
-              {"%u", Address#address.suburb},
-              {"%r", Address#address.street},
-              {"%h", Address#address.house}
-             ],
-    Result = lists:foldl(fun({Key, Value}, Acc) ->
-                                 do_replace(Acc, Key, Value)
-                         end, Format, Fields),
-    re:replace(Result, "^[, ]*", "", [{return, binary}, global]).
-
-do_replace(S, K, undefined) ->
-    re:replace(S, "[, ]*" ++ K, "", [{return, list}, global]);
-do_replace(S, K, V) ->
-    re:replace(S, K, V, [{return, list}, global]).
+do_create_url(UrlTemplate, Params) ->
+    lists:foldr(fun({Key, Value}, Url) ->
+                        binary:replace(Url, Key, Value)
+                end, UrlTemplate, Params).

@@ -102,6 +102,17 @@
   positions = [] :: list()
 }).
 
+-record(address, {
+  postcode :: string(),
+  country :: string(),
+  state :: string(),
+  district :: string(),
+  settlement :: string(),
+  suburb :: string(),
+  street :: string(),
+  house :: string()
+}).
+
 -record(device_state, {
   deviceId = 0 :: integer(),
   protocol :: any(),

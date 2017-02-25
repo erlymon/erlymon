@@ -51,6 +51,7 @@ start_link(GeocoderType, GeocoderSettings) ->
 init([GeocoderType, GeocoderSettings]) ->
     SupFlags = #{strategy => one_for_all, intensity => 1000, period => 3600},
     ChildSpecs = [
+        init_geocoder(GeocoderType),
         #{
             id => em_geocoder,
             start => {em_geocoder, start_link, [GeocoderType, GeocoderSettings]},
@@ -65,3 +66,30 @@ init([GeocoderType, GeocoderSettings]) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+init_geocoder(google) ->
+    #{
+        id => em_geocoder_google,
+        start => {em_geocoder_google, start_link, []},
+        restart => permanent,
+        shutdown => 3000,
+        type => worker,
+        modules => dynamic
+    };
+init_geocoder(yandex) ->
+    #{
+        id => em_geocoder_yandex,
+        start => {em_geocoder_yandex, start_link, []},
+        restart => permanent,
+        shutdown => 3000,
+        type => worker,
+        modules => dynamic
+    };
+init_geocoder(nominatim) ->
+    #{
+        id => em_geocoder_nominatim,
+        start => {em_geocoder_nominatim, start_link, []},
+        restart => permanent,
+        shutdown => 3000,
+        type => worker,
+        modules => dynamic
+    }.
