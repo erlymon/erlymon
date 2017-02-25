@@ -43,7 +43,8 @@
 -define(SERVER, ?MODULE).
 
 -record(state, {
-          type :: atom()
+          type :: atom(),
+          cache
          }).
 
 %%%===================================================================
@@ -85,7 +86,8 @@ start_link(GeocoderType, GeocoderSettings) ->
              {stop, Reason :: term()} | ignore).
 init([GeocoderType, _GeocoderSettings]) ->
     em_logger:info("Init '~s' geocoder service", [GeocoderType]),
-    {ok, #state{type = GeocoderType}}.
+    Cache = ets:new(address, [set, private]),
+    {ok, #state{type = GeocoderType, cache = Cache}}.
 %%--------------------------------------------------------------------
 %% @private
 %% @doc
@@ -150,7 +152,8 @@ handle_info(_Info, State) ->
 %%--------------------------------------------------------------------
 -spec(terminate(Reason :: (normal | shutdown | {shutdown, term()} | term()),
                 State :: #state{}) -> term()).
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{cache = Cache}) ->
+    ets:delete(Cache),
     ok.
 
 %%--------------------------------------------------------------------
@@ -170,13 +173,23 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_reverse(State = #state{type = Type}, Latitude, Longitude, Language) ->
-    case do_reverse_provider(Type, Latitude, Longitude, Language) of
+do_reverse(State = #state{type = Type, cache = Cache}, Latitude, Longitude, Language) ->
+  case ets:lookup(Cache, {Latitude, Longitude}) of
+    [] ->
+      case do_reverse_provider(Type, Latitude, Longitude, Language) of
         {ok, Address} ->
-            {reply, {ok, do_address_format(Address)}, State};
+          case ets:insert_new(Cache, {{Latitude, Longitude}, Address}) of
+            true ->
+              {reply, {ok, do_address_format(Address)}, State};
+            false ->
+              {reply, {error, <<"Error sync in address cache">>}, State}
+          end;
         Reason ->
-            {reply, Reason, State}
-    end.
+          {reply, Reason, State}
+      end;
+    [{_, Address} | _] ->
+      {reply, {ok, do_address_format(Address)}, State}
+  end.
 
 do_reverse_provider(google, Latitude, Longitude, Language) ->
     em_geocoder_google:reverse(Latitude, Longitude, Language);
