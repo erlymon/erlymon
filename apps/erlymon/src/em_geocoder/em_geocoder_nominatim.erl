@@ -211,13 +211,13 @@ do_reverse(State = #state{conn = Conn}, Latitude, Longitude, Language) ->
             {reply, {error, Reason}, State}
     end.
 
-do_parse_body(State, #{<<"error">> := Error}) ->
+do_parse_body(_State, #{<<"error">> := Error}) ->
     {error, Error};
-do_parse_body(State, #{<<"address">> := Address}) ->
+do_parse_body(_State, #{<<"address">> := Address}) ->
     {ok, maps:fold(fun(K,V,A) ->
                            do_create_address(K,V,A)
                    end, #address{}, Address)};
-do_parse_body(State, _) ->
+do_parse_body(_State, _) ->
     {error, <<"Unknown error">>}.
 
 do_create_address(_, undefined, Address) ->
