@@ -148,6 +148,7 @@
 -define(KEY_OUTPUT, <<"output">>).
 -define(KEY_POWER, <<"power">>).
 -define(KEY_BATTERY, <<"battery">>).
+-define(KEY_DEVICE_TEMP, <<"deviceTemp">>).
 -define(KEY_MCC, <<"mcc">>).
 -define(KEY_MNC, <<"mnc">>).
 -define(KEY_LAC, <<"lac">>).
