@@ -83,6 +83,16 @@ Erlymon - эта бесплатная система спутникового м
 |TC68                |meitrack   |5020   |
 |TC68S               |meitrack   |5020   |
 |T322                |meitrack   |5020   |
+|FM1100              |teltonika  |5027   |
+|FM1010              |teltonika  |5027   |
+|FM1120              |teltonika  |5027   |
+|FM2100              |teltonika  |5027   |
+|FM2200              |teltonika  |5027   |
+|FM3200              |teltonika  |5027   |
+|FM4100              |teltonika  |5027   |
+|FM4200              |teltonika  |5027   |
+|FM5300              |teltonika  |5027   |
+|FM3300              |teltonika  |5027   |
 |OsmAnd              |osmand     |5055   |
 |SendLocation        |osmand     |5055   |
 |Locus Pro Android   |osmand     |5055   |
