@@ -32,7 +32,8 @@
   transport :: any(),
   socket :: any(),
   timeout :: integer() | atom(),
-  deviceId = 0 :: integer()
+  deviceId = 0 :: integer(),
+  lastPosition = undefined :: any()
 }).
 
 -endif. % HTTP_HRL

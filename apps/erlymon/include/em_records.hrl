@@ -113,15 +113,6 @@
   house :: string()
 }).
 
--record(device_state, {
-  deviceId = 0 :: integer(),
-  protocol :: any(),
-  socket :: any(),
-  transport :: any(),
-  timeout :: integer()|atom(),
-  pattern :: any()
-}).
-
 -record(statistics, {
   node :: atom(),
   usersCounter :: integer(),
@@ -134,43 +125,54 @@
 -define(STATUS_OFFLINE, <<"offline">>).
 
 %% Words separated by dashes (word-second-third)
+-define(KEY_ORIGINAL, <<"raw">>).
 -define(KEY_INDEX, <<"index">>).
 -define(KEY_HDOP, <<"hdop">>).
--define(KEY_SATELLITES, <<"sat">>).
--define(KEY_GSM, <<"gsm">>).
+-define(KEY_VDOP, <<"vdop">>).
+-define(KEY_PDOP, <<"pdop">>).
+-define(KEY_SATELLITES, <<"sat">>). %% in use
+-define(KEY_SATELLITES_VISIBLE, <<"satVisible">>).
+-define(KEY_RSSI, <<"rssi">>).
 -define(KEY_GPS, <<"gps">>).
 -define(KEY_EVENT, <<"event">>).
 -define(KEY_ALARM, <<"alarm">>).
 -define(KEY_STATUS, <<"status">>).
--define(KEY_ODOMETER, <<"odometer">>).
+-define(KEY_ODOMETER, <<"odometer">>). %% meters
+-define(KEY_TRIP_ODOMETER, <<"tripOdometer">>).
 -define(KEY_HOURS, <<"hours">>).
 -define(KEY_INPUT, <<"input">>).
 -define(KEY_OUTPUT, <<"output">>).
 -define(KEY_POWER, <<"power">>).
 -define(KEY_BATTERY, <<"battery">>).
--define(KEY_DEVICE_TEMP, <<"deviceTemp">>).
--define(KEY_MCC, <<"mcc">>).
--define(KEY_MNC, <<"mnc">>).
--define(KEY_LAC, <<"lac">>).
--define(KEY_CELL, <<"cell">>).
--define(KEY_CID, <<"cid">>).
 -define(KEY_FUEL, <<"fuel">>).
+-define(KEY_FUEL_CONSUMPTION, <<"fuelConsumption">>).
 -define(KEY_RFID, <<"rfid">>).
--define(KEY_VERSION, <<"version">>).
+-define(KEY_VERSION_FW, <<"versionFw">>).
+-define(KEY_VERSION_HW, <<"versionHw">>).
 -define(KEY_TYPE, <<"type">>).
 -define(KEY_IGNITION, <<"ignition">>).
 -define(KEY_FLAGS, <<"flags">>).
 -define(KEY_CHARGE, <<"charge">>).
 -define(KEY_IP, <<"ip">>).
 -define(KEY_ARCHIVE, <<"archive">>).
--define(KEY_DISTANCE, <<"distance">>).
+-define(KEY_DISTANCE, <<"distance">>). %% meters
+-define(KEY_TOTAL_DISTANCE, <<"totalDistance">>).
 -define(KEY_RPM, <<"rpm">>).
 -define(KEY_VIN, <<"vin">>).
 -define(KEY_APPROXIMATE, <<"approximate">>).
 -define(KEY_THROTTLE, <<"throttle">>).
+-define(KEY_MOTION, <<"motion">>).
+-define(KEY_ARMED, <<"armed">>).
+-define(KEY_ACCURACY, <<"accuracy">>).
+-define(KEY_GEOFENCE, <<"geofence">>).
+-define(KEY_ACCELERATION, <<"acceleration">>).
+-define(KEY_DEVICE_TEMP, <<"deviceTemp">>).
 
--define(KEY_OBD_SPEED, <<"obd-speed">>).
--define(KEY_OBD_ODOMETER, <<"obd-odometer">>).
+-define(KEY_DTCS, <<"dtcs">>).
+-define(KEY_OBD_SPEED, <<"obdSpeed">>).
+-define(KEY_OBD_ODOMETER, <<"obdOdometer">>).
+
+-define(KEY_RESULT, <<"result">>).
 
 %% Starts with 1 not 0
 -define(PREFIX_TEMP, <<"temp">>).
@@ -202,4 +204,35 @@
 -define(KEY_PHONE_NUMBER, <<"phoneNumber">>).
 -define(KEY_MESSAGE, <<"message">>).
 
+-define(ALARM_GENERAL, <<"general">>).
+-define(ALARM_SOS, <<"sos">>).
+-define(ALARM_VIBRATION, <<"vibration">>).
+-define(ALARM_MOVEMENT, <<"movement">>).
+-define(ALARM_LOW_SPEED, <<"lowspeed">>).
+-define(ALARM_OVERSPEED, <<"overspeed">>).
+-define(ALARM_FALL_DOWN, <<"fallDown">>).
+-define(ALARM_LOW_POWER, <<"lowPower">>).
+-define(ALARM_LOW_BATTERY, <<"lowBattery">>).
+-define(ALARM_FAULT, <<"fault">>).
+-define(ALARM_POWER_OFF, <<"powerOff">>).
+-define(ALARM_POWER_ON, <<"powerOn">>).
+-define(ALARM_DOOR, <<"door">>).
+-define(ALARM_GEOFENCE, <<"geofence">>).
+-define(ALARM_GEOFENCE_ENTER, <<"geofenceEnter">>).
+-define(ALARM_GEOFENCE_EXIT, <<"geofenceExit">>).
+-define(ALARM_GPS_ANTENNA_CUT, <<"gpsAntennaCut">>).
+-define(ALARM_ACCIDENT, <<"accident">>).
+-define(ALARM_TOW, <<"tow">>).
+-define(ALARM_ACCELERATION, <<"hardAcceleration">>).
+-define(ALARM_BREAKING, <<"hardBreaking">>).
+-define(ALARM_FATIGUE_DRIVING, <<"fatigueDriving">>).
+-define(ALARM_POWER_CUT, <<"powerCut">>).
+-define(ALARM_JAMMING, <<"jamming">>).
+-define(ALARM_TEMPERATURE, <<"temperature">>).
+-define(ALARM_PARKING, <<"parking">>).
+-define(ALARM_SHOCK, <<"shock">>).
+-define(ALARM_BONNET, <<"bonnet">>).
+-define(ALARM_FOOT_BRAKE, <<"footBrake">>).
+-define(ALARM_OIL_LEAK, <<"oilLeak">>).
+-define(ALARM_TAMPERING, <<"tampering">>).
 -endif. % RECORDS_HRL
