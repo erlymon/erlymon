@@ -443,7 +443,7 @@ do_save_position(State = #state{socket = Socket, protocol = Protocol}, DeviceId,
 
 parse(Data = <<"+RESP:GTFRI", _/binary>>) ->
   case em_regexp:match(Data, ?PATTERN_FRI) of
-    {ok, [_, Imei, Validity, Speed, Course, Altitude, Longitude, Latitude, Year, Month, Day, Hour, Minute, Second,  Mcc, Mnc, Lac, Cell | _]} ->
+    {ok, [_, Imei, Validity, Speed, Course, Altitude, Longitude, Latitude, Year, Month, Day, Hour, Minute, Second,  _Mcc, _Mnc, _Lac, _Cell | _]} ->
       Position = #position{
         deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
         latitude = parse_coord(Latitude),
@@ -453,10 +453,10 @@ parse(Data = <<"+RESP:GTFRI", _/binary>>) ->
         altitude = parse_altitude(Altitude),
         valid = parse_valid(Validity),
         attributes = #{
-          ?KEY_MCC => parse_mcc(Mcc),
-          ?KEY_MNC => parse_mnc(Mnc),
-          ?KEY_LAC => parse_lac(Lac),
-          ?KEY_CELL => parse_cell(Cell)
+          %%?KEY_MCC => parse_mcc(Mcc),
+          %%?KEY_MNC => parse_mnc(Mnc),
+          %%?KEY_LAC => parse_lac(Lac),
+          %%?KEY_CELL => parse_cell(Cell)
           %%<<"odometer">> => parse_odometer(Odometer),
           %%<<"battery">> => parse_battery(Battery)
         }
@@ -469,17 +469,17 @@ parse(_) ->
   {error, <<"Unknown packet">>}.
 
 
-parse_mcc(Mcc) ->
-  Mcc.
+%%parse_mcc(Mcc) ->
+%%  Mcc.
 
-parse_mnc(Mnc) ->
-  Mnc.
+%%parse_mnc(Mnc) ->
+%%  Mnc.
 
-parse_lac(Lac) ->
-  Lac.
+%%parse_lac(Lac) ->
+%%  Lac.
 
-parse_cell(Cell) ->
-  Cell.
+%%parse_cell(Cell) ->
+%%  Cell.
 
 %%parse_odometer(Odometer) ->
 %%    Odometer.
