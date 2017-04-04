@@ -306,18 +306,23 @@ decode_gps(undefined, <<
   LatitudeInt:32/unsigned-integer,
   LongitudeInt:32/unsigned-integer,
   Speed:8/unsigned-integer,
+
   _:3/bits,
   Valid:1,
   EW:1,
   SN:1,
-  Course:10/unsigned-integer,
+  CourseFirstPart:2/bits,
+  CourseSecPart:8/bits,
   _/binary
 >>) ->
-  em_logger:info("LatitudeInt: ~w, LongitudeInt: ~w", [LatitudeInt, LongitudeInt]),
+
+  em_logger:info("### !! CourseSecPart: ~w CourseFirstPart: ~w Valid: ~w EW:~w SN: ~w", [CourseSecPart, CourseFirstPart, Valid, EW, SN]),
+  <<Course:10/unsigned-integer>> = <<CourseFirstPart:2/bits, CourseSecPart:8/bits>>,
+  em_logger:info("### !! LatitudeInt: ~w, LongitudeInt: ~w Speed: ~w Valid: ~w EW:~w SN: ~w Course: ~w", [LatitudeInt, LongitudeInt, Speed, Valid, EW, SN, Course]),
   #position{
     deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
-    latitude = parse_coord(LatitudeInt, SN),
-    longitude = parse_coord(LongitudeInt, EW),
+    latitude = parse_latitude(LatitudeInt, SN),
+    longitude = parse_longitude(LongitudeInt, EW),
     speed = Speed,
     course = Course,
     valid = parse_valid(Valid),
@@ -337,18 +342,23 @@ decode_gps(Position, <<
   LatitudeInt:32/unsigned-integer,
   LongitudeInt:32/unsigned-integer,
   Speed:8/unsigned-integer,
+
   _:3/bits,
   Valid:1,
   EW:1,
   SN:1,
-  Course:10/unsigned-integer,
+  CourseFirstPart:2/bits,
+  CourseSecPart:8/bits,
   _/binary
 >>) ->
-  em_logger:info("LatitudeInt: ~w, LongitudeInt: ~w", [LatitudeInt, LongitudeInt]),
+
+  em_logger:info("### !! CourseSecPart: ~w CourseFirstPart: ~w Valid: ~w EW:~w SN: ~w", [CourseSecPart, CourseFirstPart, Valid, EW, SN]),
+  <<Course:10/unsigned-integer>> = <<CourseFirstPart:2/bits, CourseSecPart:8/bits>>,
+  em_logger:info("### !! LatitudeInt: ~w, LongitudeInt: ~w Speed: ~w Valid: ~w EW:~w SN: ~w Course: ~w", [LatitudeInt, LongitudeInt, Speed, Valid, EW, SN, Course]),
   Position#position{
     deviceTime = parse_date(Year, Month, Day, Hour, Minute, Second),
-    latitude = parse_coord(LatitudeInt, SN),
-    longitude = parse_coord(LongitudeInt, EW),
+    latitude = parse_latitude(LatitudeInt, SN),
+    longitude = parse_longitude(LongitudeInt, EW),
     speed = Speed,
     course = Course,
     valid = parse_valid(Valid),
@@ -405,9 +415,15 @@ decode_alarm(_) -> null.
 parse_valid(1) -> true;
 parse_valid(0) -> false.
 
-parse_coord(Val, 1) ->
+
+parse_latitude(Val, 0) ->
   -1 * (Val / 60.0 / 30000.0);
-parse_coord(Val, 0) ->
+parse_latitude(Val, 1) ->
+  Val / 60.0 / 30000.0.
+
+parse_longitude(Val, 1) ->
+  -1 * (Val / 60.0 / 30000.0);
+parse_longitude(Val, 0) ->
   Val / 60.0 / 30000.0.
 
 parse_imei(Bin) ->
