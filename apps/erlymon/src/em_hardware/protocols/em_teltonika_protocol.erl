@@ -319,7 +319,7 @@ decode_location(?CODEC_FM4X00, Body) ->
 
 
 parse_time(Time) ->
-    Time.
+    Time div 1000.
 
 parse_coord(Value) ->
     Value / 10000000.0.
