@@ -427,8 +427,11 @@ parse_longitude(Val, 0) ->
   Val / 60.0 / 30000.0.
 
 parse_imei(Bin) ->
-  list_to_binary(lists:flatten([io_lib:format("~.16.0B", [X]) ||
-    X <- binary_to_list(Bin)])).
+  fix_imei(list_to_binary(lists:flatten([io_lib:format("~2.16.0B", [X]) || X <- binary_to_list(Bin)]))).
+
+fix_imei(Bin) when byte_size(Bin) > 15 ->
+  binary:part(Bin, {byte_size(Bin) - 15, 15});
+fix_imei(Bin) -> Bin.
 
 parse_date(Year, Month, Day, Hour, Minute, Second) ->
   Date = {

@@ -24,6 +24,10 @@
 -module(em_converter).
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
+-ifdef(TEST).
+-compile(export_all).
+-endif. % EXPORT_ALL
+
 %% API
 -export([
   mpers_to_kn/1,
@@ -31,6 +35,8 @@
   kmperh_to_mpers/1,
   knots_to_mps/1
 ]).
+
+-export([bin_to_hexstr/1,hexstr_to_bin/1]).
 
 %%--------------------------------------------------------------------
 %% @doc Converted meters per secunds to knots.
@@ -62,9 +68,40 @@ kmperh_to_mpers(Value) when is_float(Value) ->
   Value * 1000 / 3600.
 
 
-%% parse knots and convert to mps
+%%--------------------------------------------------------------------
+%% @doc parse knots and convert to mps
 %% 1 knots = 0.514 m/s
+%% @spec knots_to_mps(Value :: float()) -> float().
+%% @end
+%%--------------------------------------------------------------------
 -spec knots_to_mps(Value :: float()) -> float().
 knots_to_mps(Value) when is_float(Value) ->
   Value * 0.514.
 
+
+%%--------------------------------------------------------------------
+%% @doc Converted binary to hex string
+%% @spec bin_to_hexstr(Bin :: binary()) -> list().
+%% @end
+%%--------------------------------------------------------------------
+-spec bin_to_hexstr(Bin :: binary()) -> list().
+bin_to_hexstr(Bin) ->
+  lists:flatten([io_lib:format("~2.16.0B", [X]) ||
+    X <- binary_to_list(Bin)]).
+
+%%--------------------------------------------------------------------
+%% @doc Converted hex string to binary
+%% @spec hexstr_to_bin(String :: list()) -> binary().
+%% @end
+%%--------------------------------------------------------------------
+-spec hexstr_to_bin(String :: list()) -> binary().
+hexstr_to_bin(S) ->
+  hexstr_to_bin(S, []).
+hexstr_to_bin([], Acc) ->
+  list_to_binary(lists:reverse(Acc));
+hexstr_to_bin([X,Y|T], Acc) ->
+  {ok, [V], []} = io_lib:fread("~16u", [X,Y]),
+  hexstr_to_bin(T, [V | Acc]);
+hexstr_to_bin([X|T], Acc) ->
+  {ok, [V], []} = io_lib:fread("~16u", lists:flatten([X,"0"])),
+  hexstr_to_bin(T, [V | Acc]).
