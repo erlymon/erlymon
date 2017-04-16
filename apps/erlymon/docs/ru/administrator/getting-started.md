@@ -5,96 +5,120 @@ Erlymon - эта бесплатная система спутникового м
 
 ## Список поддерживаемого оборудования
 
-|      Device        |  Protocol |  Port |
-|:-------------------|----------:|------:|
-|TK103-2B            |gps103     |5001   |
-|TK104               |gps103     |5001   |
-|TK106               |gps103     |5001   |
-|GPS-103             |gps103     |5001   |
-|GPS-103-A           |gps103     |5001   |
-|TW-MD1101           |gps103     |5001   |
-|GPS102B             |gps103     |5001   |
-|GPS104              |gps103     |5001   |
-|TK110               |gps103     |5001   |
-|306A                |gps103     |5001   |
-|303F                |gps103     |5001   |
-|TK-102B             |gps103     |5001   |
-|EC-546              |tk103      |5002   |
-|TT0024              |tk103      |5002   |
-|T1024               |tk103      |5002   |
-|T1080               |tk103      |5002   |
-|T2024               |tk103      |5002   |
-|T2124               |tk103      |5002   |
-|T12                 |tk103      |5002   |
-|T4400               |tk103      |5002   |
-|T8800               |tk103      |5002   |
-|T15400              |tk103      |5002   |
-|TK05                |tk103      |5002   |
-|TK10                |tk103      |5002   |
-|TK15                |tk103      |5002   |
-|TK20                |tk103      |5002   |
-|T18                 |tk103      |5002   |
-|T18H                |tk103      |5002   |
-|T16                 |tk103      |5002   |
-|GPS105              |tk103      |5002   |
-|GPS105B             |tk103      |5002   |
-|P168                |tk103      |5002   |
-|GL100               |gl100      |5003   |
-|GL100M              |gl200      |5004   |
-|Client for iOS      |t55        |5005   |
-|Gelix	             |t55        |5005   |
-|Gelix-2	         |t55        |5005   |
-|GPS-911(M)          |t55        |5005   |
-|AVL-900	         |t55        |5005   |
-|AVL-900(R)          |t55        |5005   |
-|AVL-900(M)          |t55        |5005   |
-|AVL-901(B)          |t55        |5005   |
-|AVL-901(C)          |t55        |5005   |
-|AVL-901(D)          |t55        |5005   |
-|AVL-921             |t55        |5005   |
-|CradlePoint IBR600  |t55        |5005   |
-|CradlePoint IBR1100 |t55        |5005   |
-|Aspicore            |t55        |5005   |
-|Tracker for Traccar |t55        |5005   |
-|MultiConnect rCell  |t55        |5005   |
-|M2M IP Modem F7114  |t55        |5005   |
-|TK101               |xexun2     |5006   |
-|TK102-2             |xexun2     |5006   |
-|TK103-2             |xexun2     |5006   |
-|XT009               |xexun2     |5006   |
-|XT011               |xexun2     |5006   |
-|TK201               |xexun2     |5006   |
-|TK201-2             |xexun2     |5006   |
-|TK202               |xexun2     |5006   |
-|TK203               |xexun2     |5006   |
-|XT107               |xexun2     |5006   |
-|MT80                |meitrack   |5020   |
-|MT88                |meitrack   |5020   |
-|MT80i               |meitrack   |5020   |
-|MT90                |meitrack   |5020   |
-|KT90                |meitrack   |5020   |
-|MVT100              |meitrack   |5020   |
-|MVT340              |meitrack   |5020   |
-|MVT380              |meitrack   |5020   |
-|MVT600              |meitrack   |5020   |
-|T1                  |meitrack   |5020   |
-|MVT800              |meitrack   |5020   |
-|T3                  |meitrack   |5020   |
-|TC68                |meitrack   |5020   |
-|TC68S               |meitrack   |5020   |
-|T322                |meitrack   |5020   |
-|FM1100              |teltonika  |5027   |
-|FM1010              |teltonika  |5027   |
-|FM1120              |teltonika  |5027   |
-|FM2100              |teltonika  |5027   |
-|FM2200              |teltonika  |5027   |
-|FM3200              |teltonika  |5027   |
-|FM4100              |teltonika  |5027   |
-|FM4200              |teltonika  |5027   |
-|FM5300              |teltonika  |5027   |
-|FM3300              |teltonika  |5027   |
-|OsmAnd              |osmand     |5055   |
-|SendLocation        |osmand     |5055   |
-|Locus Pro Android   |osmand     |5055   |
-|Custodium           |osmand     |5055   |
-|Traccar Client      |osmand     |5055   |
+|      Device        |  Protocol |  Port |  Version |
+|:-------------------|----------:|------:|---------:|
+|TK103-2B            |gps103     |5001   |3.4       |
+|TK104               |gps103     |5001   |3.4       |
+|TK106               |gps103     |5001   |3.4       |
+|GPS-103             |gps103     |5001   |3.4       |
+|GPS-103-A           |gps103     |5001   |3.4       |
+|TW-MD1101           |gps103     |5001   |3.4       |
+|GPS102B             |gps103     |5001   |3.4       |
+|GPS104              |gps103     |5001   |3.4       |
+|TK110               |gps103     |5001   |3.4       |
+|306A                |gps103     |5001   |3.4       |
+|303F                |gps103     |5001   |3.4       |
+|TK-102B             |gps103     |5001   |3.4       |
+|EC-546              |tk103      |5002   |3.4       |
+|TT0024              |tk103      |5002   |3.4       |
+|T1024               |tk103      |5002   |3.4       |
+|T1080               |tk103      |5002   |3.4       |
+|T2024               |tk103      |5002   |3.4       |
+|T2124               |tk103      |5002   |3.4       |
+|T12                 |tk103      |5002   |3.4       |
+|T4400               |tk103      |5002   |3.4       |
+|T8800               |tk103      |5002   |3.4       |
+|T15400              |tk103      |5002   |3.4       |
+|TK05                |tk103      |5002   |3.4       |
+|TK10                |tk103      |5002   |3.4       |
+|TK15                |tk103      |5002   |3.4       |
+|TK20                |tk103      |5002   |3.4       |
+|T18                 |tk103      |5002   |3.4       |
+|T18H                |tk103      |5002   |3.4       |
+|T16                 |tk103      |5002   |3.4       |
+|GPS105              |tk103      |5002   |3.4       |
+|GPS105B             |tk103      |5002   |3.4       |
+|P168                |tk103      |5002   |3.4       |
+|GL100               |gl100      |5003   |3.4       |
+|GL100M              |gl200      |5004   |3.4       |
+|Client for iOS      |t55        |5005   |3.4       |
+|Gelix	             |t55        |5005   |3.4       |
+|Gelix-2	         |t55        |5005   |3.4       |
+|GPS-911(M)          |t55        |5005   |3.4       |
+|AVL-900	         |t55        |5005   |3.4       |
+|AVL-900(R)          |t55        |5005   |3.4       |
+|AVL-900(M)          |t55        |5005   |3.4       |
+|AVL-901(B)          |t55        |5005   |3.4       |
+|AVL-901(C)          |t55        |5005   |3.4       |
+|AVL-901(D)          |t55        |5005   |3.4       |
+|AVL-921             |t55        |5005   |3.4       |
+|CradlePoint IBR600  |t55        |5005   |3.4       |
+|CradlePoint IBR1100 |t55        |5005   |3.4       |
+|Aspicore            |t55        |5005   |3.4       |
+|Tracker for Traccar |t55        |5005   |3.4       |
+|MultiConnect rCell  |t55        |5005   |3.4       |
+|M2M IP Modem F7114  |t55        |5005   |3.4       |
+|TK101               |xexun2     |5006   |3.4       |
+|TK102-2             |xexun2     |5006   |3.4       |
+|TK103-2             |xexun2     |5006   |3.4       |
+|XT009               |xexun2     |5006   |3.4       |
+|XT011               |xexun2     |5006   |3.4       |
+|TK201               |xexun2     |5006   |3.4       |
+|TK201-2             |xexun2     |5006   |3.4       |
+|TK202               |xexun2     |5006   |3.4       |
+|TK203               |xexun2     |5006   |3.4       |
+|XT107               |xexun2     |5006   |3.4       |
+|MT80                |meitrack   |5020   |3.4       |
+|MT88                |meitrack   |5020   |3.4       |
+|MT80i               |meitrack   |5020   |3.4       |
+|MT90                |meitrack   |5020   |3.4       |
+|KT90                |meitrack   |5020   |3.4       |
+|MVT100              |meitrack   |5020   |3.4       |
+|MVT340              |meitrack   |5020   |3.4       |
+|MVT380              |meitrack   |5020   |3.4       |
+|MVT600              |meitrack   |5020   |3.4       |
+|T1                  |meitrack   |5020   |3.4       |
+|MVT800              |meitrack   |5020   |3.4       |
+|T3                  |meitrack   |5020   |3.4       |
+|TC68                |meitrack   |5020   |3.4       |
+|TC68S               |meitrack   |5020   |3.4       |
+|T322                |meitrack   |5020   |3.4       |
+|GT06                |gt06       |5023   |3.4       |
+|GT06N               |gt06       |5023   |3.4       |
+|GT09                |gt06       |5023   |3.4       |
+|Heacent 908         |gt06       |5023   |3.4       |
+|GT03A               |gt06       |5023   |3.4       |
+|GT03B               |gt06       |5023   |3.4       |
+|GS503               |gt06       |5023   |3.4       |
+|ET100               |gt06       |5023   |3.4       |
+|GT100               |gt06       |5023   |3.4       |
+|GT06D               |gt06       |5023   |3.4       |
+|GK301               |gt06       |5023   |3.4       |
+|JM01                |gt06       |5023   |3.4       |
+|JM08                |gt06       |5023   |3.4       |
+|GT02D               |gt06       |5023   |3.4       |
+|IB-GT102            |gt06       |5023   |3.4       |
+|CRX1                |gt06       |5023   |3.4       |
+|JV20                |gt06       |5023   |3.4       |
+|TP06A               |gt06       |5023   |3.4       |
+|BW08                |gt06       |5023   |3.4       |
+|TR06                |gt06       |5023   |3.4       |
+|JI09                |gt06       |5023   |3.4       |
+|Concox GT300        |gt06       |5023   |3.4       |
+|WeTrack 2           |gt06       |5023   |3.4       |
+|GT230               |gt06       |5023   |3.4       |
+|FM1100              |teltonika  |5027   |3.4       |
+|FM1010              |teltonika  |5027   |3.4       |
+|FM1120              |teltonika  |5027   |3.4       |
+|FM2100              |teltonika  |5027   |3.4       |
+|FM2200              |teltonika  |5027   |3.4       |
+|FM3200              |teltonika  |5027   |3.4       |
+|FM4100              |teltonika  |5027   |3.4       |
+|FM4200              |teltonika  |5027   |3.4       |
+|FM5300              |teltonika  |5027   |3.4       |
+|FM3300              |teltonika  |5027   |3.4       |
+|OsmAnd              |osmand     |5055   |3.4       |
+|SendLocation        |osmand     |5055   |3.4       |
+|Locus Pro Android   |osmand     |5055   |3.4       |
+|Custodium           |osmand     |5055   |3.4       |
+|Traccar Client      |osmand     |5055   |3.4       |
