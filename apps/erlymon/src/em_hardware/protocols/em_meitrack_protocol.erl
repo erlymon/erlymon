@@ -248,7 +248,7 @@ do_encode_command(UniqueId, #command{type = ?TYPE_ALARM_DISARM}) ->
   {ok, do_format_command(UniqueId, <<"M">>, <<"C01,0,22022">>)};
 do_encode_command(UniqueId, #command{type = ?TYPE_REQUEST_PHOTO}) ->
   {ok, do_format_command(UniqueId, <<"D">>, <<"D03,1,camera_picture.jpg">>)};
-do_encode_command(UniqueId, #command{type = ?TYPE_SEND_SMS, attributes = #{?KEY_PHONE_NUMBER := PhoneNumber, ?KEY_MESSAGE := Message}}) ->
+do_encode_command(UniqueId, #command{type = ?TYPE_SEND_SMS, attributes = #{?KEY_PHONE := PhoneNumber, ?KEY_MESSAGE := Message}}) ->
   Content = list_to_binary(io_lib:format("C02,0,~s,~s", [PhoneNumber, Message])),
   {ok, do_format_command(UniqueId, <<"f">>, Content)};
 do_encode_command(_UniqueId, #command{type = _Type}) ->
