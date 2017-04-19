@@ -206,8 +206,47 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-do_execute_command(State = #state{transport = _Transport, socket = _Socket}, _Command) ->
-    {noreply, State, ?TIMEOUT}.
+do_execute_command(State = #state{transport = Transport, socket = Socket}, Command) ->
+  case em_manager_devices:get_by_id(Command#command.deviceId) of
+    {ok, Device} ->
+      case do_encode_command(Device#device.uniqueId, Command) of
+        {ok, CommandBin} ->
+          em_logger:info("CommandBin: ~s", [CommandBin]),
+          Transport:send(Socket, CommandBin),
+          {noreply, State, ?TIMEOUT};
+        {error, Reason} ->
+          em_logger:info("Error: ~s", [Reason]),
+          {noreply, State, ?TIMEOUT}
+      end;
+    {error, Reason} ->
+      em_logger:info("Error: ~s", [Reason]),
+      {noreply, State, ?TIMEOUT}
+  end.
+
+do_encode_command(_UniqueId, #command{type = ?TYPE_CUSTOM, attributes = #{?KEY_DATA := Data}}) ->
+  {ok, do_encode_content(Data)};
+do_encode_command(_UniqueId, #command{type = _Type}) ->
+  {error, <<"Unsupported command">>}.
+
+do_encode_content(Content) ->
+  ContentLength = byte_size(Content),
+  Body = <<
+    ?CODEC_12:8/unsigned-integer,
+    1:8/unsigned-integer,
+    5:8/unsigned-integer,
+    ContentLength:32/unsigned-integer,
+    Content/binary,
+    "\r",
+    "\n",
+    1:8/unsigned-integer
+  >>,
+  Crc = em_checksum:crc16(Body),
+  <<
+    0:32/unsigned-integer,
+    (ContentLength + 10):32/unsigned-integer,
+    Body/binary,
+    Crc:32/unsigned-integer
+    >>.
 
 do_process_frame(State = #state{socket = Socket, transport = Transport}, <<Length:16/unsigned-integer, Imei/binary>>) when Length > 0 ->
     case em_data_manager:get_device_by_uid(Imei) of
