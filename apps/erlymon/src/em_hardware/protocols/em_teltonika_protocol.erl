@@ -149,6 +149,9 @@ handle_info({command, Command}, State) ->
 handle_info({tcp, _, <<67, 78, 88, 78, 0, 0, 0, 1, 0, 0, 4, 0, 27, 0, 0, 0, 77, 10>>}, State = #state{socket = Socket, transport = Transport}) ->
     Transport:setopts(Socket, ?SOCKET_OPTS),
     {noreply, State, ?TIMEOUT};
+handle_info({tcp, Socket, Data}, State = #state{ transport =  Transport}) when byte_size(Data) < ?MESSAGE_MINIMUM_LENGTH ->
+    Transport:setopts(Socket, ?SOCKET_OPTS),
+    {noreply, State, ?TIMEOUT};
 handle_info({tcp, Socket, Data = <<Length:16/unsigned-integer, _/binary>>}, State = #state{socket = Socket, transport = Transport}) when Length > 0 ->
     Transport:setopts(Socket, ?SOCKET_OPTS),
     FrameSize = Length  + 2,
