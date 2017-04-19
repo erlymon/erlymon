@@ -183,6 +183,8 @@
 
 %% COMMANT TYPES AND ATTR FIELDS
 
+-define(TYPE_CUSTOM, <<"custom">>).
+-define(TYPE_IDENTIFICATION, <<"deviceIdentification">>).
 -define(TYPE_POSITION_SINGLE, <<"positionSingle">>).
 -define(TYPE_POSITION_PERIODIC, <<"positionPeriodic">>).
 -define(TYPE_POSITION_STOP, <<"positionStop">>).
@@ -193,16 +195,38 @@
 -define(TYPE_SET_TIMEZONE, <<"setTimezone">>).
 -define(TYPE_REQUEST_PHOTO, <<"requestPhoto">>).
 -define(TYPE_REBOOT_DEVICE, <<"rebootDevice">>).
--define(TYPE_MOVEMENT_ALARM, <<"movementAlarm">>).
 -define(TYPE_SEND_SMS, <<"sendSms">>).
+-define(TYPE_SEND_USSD, <<"sendUssd">>).
+-define(TYPE_SOS_NUMBER, <<"sosNumber">>).
+-define(TYPE_SILENCE_TIME, <<"silenceTime">>).
+-define(TYPE_SET_PHONEBOOK, <<"setPhonebook">>).
+-define(TYPE_VOICE_MESSAGE, <<"voiceMessage">>).
+-define(TYPE_OUTPUT_CONTROL, <<"outputControl">>).
+-define(TYPE_VOICE_MONITORING, <<"voiceMonitoring">>).
+-define(TYPE_SET_AGPS, <<"setAgps">>).
+-define(TYPE_SET_INDICATOR, <<"setIndicator">>).
+-define(TYPE_CONFIGURATION, <<"configuration">>).
+-define(TYPE_GET_VERSION, <<"getVersion">>).
+-define(TYPE_FIRMWARE_UPDATE, <<"firmwareUpdate">>).
+-define(TYPE_SET_CONNECTION, <<"setConnection">>).
+-define(TYPE_SET_ODOMETER, <<"setOdometer">>).
+
+-define(TYPE_MODE_POWER_SAVING, <<"modePowerSaving">>).
+-define(TYPE_MODE_DEEP_SLEEP, <<"modeDeepSleep">>).
 
 -define(KEY_UNIQUE_ID, <<"uniqueId">>).
 -define(KEY_FREQUENCY, <<"frequency">>).
 -define(KEY_TIMEZONE, <<"timezone">>).
 -define(KEY_DEVICE_PASSWORD, <<"devicePassword">>).
 -define(KEY_RADIUS, <<"radius">>).
--define(KEY_PHONE_NUMBER, <<"phoneNumber">>).
 -define(KEY_MESSAGE, <<"message">>).
+-define(KEY_ENABLE, <<"enable">>).
+-define(KEY_DATA, <<"data">>).
+%%-define(KEY_INDEX, <<"index">>).
+-define(KEY_PHONE, <<"phone">>).
+-define(KEY_SERVER, <<"server">>).
+-define(KEY_PORT, <<"port">>).
+
 
 -define(ALARM_GENERAL, <<"general">>).
 -define(ALARM_SOS, <<"sos">>).
@@ -235,4 +259,5 @@
 -define(ALARM_FOOT_BRAKE, <<"footBrake">>).
 -define(ALARM_OIL_LEAK, <<"oilLeak">>).
 -define(ALARM_TAMPERING, <<"tampering">>).
+
 -endif. % RECORDS_HRL
