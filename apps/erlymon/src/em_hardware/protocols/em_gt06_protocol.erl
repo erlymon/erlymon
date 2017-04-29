@@ -368,8 +368,9 @@ decode_gps(Position, <<
   }.
 
 decode_status(undefined, <<
+  _:6/bits,
   Ignition:1,
-  _:7/bits,
+  _:1/bits,
   Battery:8/unsigned-integer,
   RSSI:8/unsigned-integer,
   Alarm:8/unsigned-integer,
@@ -384,8 +385,9 @@ decode_status(undefined, <<
     }
   };
 decode_status(LastPosition, <<
+  _:6/bits,
   Ignition:1,
-  _:7/bits,
+  _:1/bits,
   Battery:8/unsigned-integer,
   RSSI:8/unsigned-integer,
   Alarm:8/unsigned-integer,
