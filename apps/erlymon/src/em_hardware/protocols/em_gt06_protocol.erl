@@ -53,6 +53,7 @@
 
 -define(MSG_LOGIN, 16#01).
 -define(MSG_GPS_LBS_1, 16#12).
+-define(MSG_GPS_LBS_2, 16#22).
 -define(MSG_STATUS,16#13).
 
 %%%===================================================================
@@ -261,9 +262,23 @@ do_process_frame(State = #state{socket = Socket, deviceId = DeviceId, protocol =
       em_data_manager:create_position(DeviceId, Position),
       do_send_response(State, ?MSG_GPS_LBS_1, Index),
       {noreply, State#state{lastPosition = Position}, ?TIMEOUT};
+    {ok, {?MSG_GPS_LBS_2, Index, PositionModel}} ->
+      em_logger:info("GPS DATA: ~w Index: ~w", [PositionModel, Index]),
+      %%em_logger:info("[packet] unit: ip = '~s' message: ~w", [em_inet:resolve(Socket), PositionModel]),
+      Position = PositionModel#position{
+        deviceId = DeviceId,
+        protocol = atom_to_binary(Protocol, utf8),
+        attributes = maps:merge(PositionModel#position.attributes, #{
+          ?KEY_IP => em_inet:resolve(Socket)
+        })
+      },
+      em_logger:info("save message => unit: ip = '~s' id = '~w' position: ~w", [em_inet:resolve(Socket), DeviceId, Position]),
+      em_data_manager:create_position(DeviceId, Position),
+      do_send_response(State, ?MSG_GPS_LBS_2, Index),
+      {noreply, State#state{lastPosition = Position}, ?TIMEOUT};
     {error, Reason} ->
       em_logger:info("[gt06:packet] unit ip: '~s' message: '~s'", [em_inet:resolve(Socket), Reason]),
-      {stop, normal, State}
+      {noreply, State, ?TIMEOUT}
   end.
 
 
@@ -287,12 +302,16 @@ do_send_response(#state{transport = Transport, socket = Socket}, Type, Index) ->
 
 decode(_, <<16#78, 16#78, _Length:8/unsigned-integer, ?MSG_LOGIN:8/unsigned-integer, ImeiBin:8/binary, Index:16/unsigned-integer, _Crc:16/unsigned-integer, 16#0D, 16#0A>>) ->
   {ok, {?MSG_LOGIN, Index, parse_imei(ImeiBin)}};
+decode(_, <<16#78, 16#78, _Length:8/unsigned-integer, ?MSG_LOGIN:8/unsigned-integer, ImeiBin:8/binary, _:2/binary, _:2/binary, Index:16/unsigned-integer, _Crc:16/unsigned-integer, 16#0D, 16#0A>>) ->
+  {ok, {?MSG_LOGIN, Index, parse_imei(ImeiBin)}};
 decode(Position, <<16#78, 16#78, _Length:8/unsigned-integer, ?MSG_STATUS:8/unsigned-integer, _StatusBody:5/binary, Index:16/unsigned-integer, _Crc:16/unsigned-integer, 16#0D, 16#0A>>) ->
   {ok, {?MSG_STATUS, Index, decode_status(Position, _StatusBody)}};
 decode(Position, <<16#78, 16#78, _Length:8/unsigned-integer, ?MSG_GPS_LBS_1:8/unsigned-integer, _GpsBody:18/binary, _LbsBody:8/binary, Index:16/unsigned-integer, _Crc:16/unsigned-integer, 16#0D, 16#0A>>) ->
   {ok, {?MSG_GPS_LBS_1, Index, decode_gps(Position, _GpsBody)}};
-decode(_, _) ->
-  {error, <<"Decoder error">>}.
+decode(Position, <<16#78, 16#78, _Length:8/unsigned-integer, ?MSG_GPS_LBS_2:8/unsigned-integer, _GpsBody:18/binary, _LbsBody:8/binary, Index:16/unsigned-integer, _Crc:16/unsigned-integer, 16#0D, 16#0A>>) ->
+  {ok, {?MSG_GPS_LBS_2, Index, decode_gps(Position, _GpsBody)}};
+decode(_, <<16#78, 16#78, _Length:8/unsigned-integer, PacketType:8/unsigned-integer, _/binary>>) ->
+  {error, io_lib:format("Warning: Unknown packet: ~w", [PacketType])}.
 
 decode_gps(undefined, <<
   Year:8/unsigned-integer,
