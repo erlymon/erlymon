@@ -33,11 +33,14 @@
 start(Args) ->
   em_logger:info("Start web server port: ~w", [proplists:get_value(port, Args)]),
   Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, Args)}])),
-  cowboy:start_http(web, 100, [
+  Options = [
     {port, proplists:get_value(port, Args)},
     {timeout, proplists:get_value(timeout, Args)}
-  ], [{env, [{dispatch, Dispatch}]}]).
+  ],
+  cowboy:start_clear(http, Options, #{
+		env => #{dispatch => Dispatch}
+	}).
 
 -spec stop(Args :: any()) -> any().
 stop(_Args) ->
-  cowboy:stop_listener(web).
+  cowboy:stop_listener(http).

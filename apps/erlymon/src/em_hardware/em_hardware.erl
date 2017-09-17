@@ -37,8 +37,12 @@ start(HwArgs) ->
     em_logger:info("Start hardware server  ~w port: ~w",[Protocol, proplists:get_value(port, Options)]),
     case Protocol of
       osmand ->
-        Dispatch = cowboy_router:compile([{'_', [{"/", em_osmand_protocol, []}]}]),
-        {ok, _} = cowboy:start_http(Protocol, 100, Options, [{env, [{dispatch, Dispatch}]}]);
+        Dispatch = cowboy_router:compile([
+      		{'_', [
+      			{"/", em_osmand_protocol, []}
+      		]}
+      	]),
+        {ok, _} = cowboy:start_clear(Protocol, Options, #{env => #{dispatch => Dispatch}});
       _ ->
         {ok, _} = ranch:start_listener(Protocol, ?ACCEPTORS, ranch_tcp, Options, make_module_name(Protocol), [{protocol, Protocol}, Args])
     end
