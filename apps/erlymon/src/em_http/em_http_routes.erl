@@ -25,23 +25,26 @@
 -author("Sergey Penkovsky <sergey.penkovsky@gmail.com>").
 
 %% API
--export([get/1]).
+-export([compile/1]).
 
--spec get(Opts :: list()) -> list().
-get(Opts) ->
-  [{'_', [
-    {"/api/server", em_http_api_server_handler, []},
-    {"/api/session", em_http_api_session_handler, []},
-    {"/api/devices[/:id]", em_http_api_devices_handler, []},
-    {"/api/users[/:id]", em_http_api_users_handler, []},
-    {"/api/positions", em_http_api_positions_handler, []},
-    {"/api/socket", em_http_api_socket_handler, []},
-    {"/api/permissions", em_http_api_permissions_handler, []},
-    {"/api/commands", em_http_api_commands_handler, []},
-    {"/api/statistics", em_http_api_statistics_handler, []},
-    {"/", cowboy_static, {priv_file, erlymon, io_lib:format("web/~s.html", [debug(proplists:get_value(debug, Opts))])}},
-    {"/[...]", cowboy_static, {priv_dir, erlymon, "web/", [{mimetypes, cow_mimetypes, all}]}}
-  ]}].
+-spec compile(Opts :: list()) -> any().
+compile(Opts) ->
+  cowboy_router:compile([
+  		{'_', [
+      {"/api/server", em_http_api_server_handler, []},
+      {"/api/session", em_http_api_session_handler, []},
+      {"/api/devices[/:id]", em_http_api_devices_handler, []},
+      {"/api/users[/:id]", em_http_api_users_handler, []},
+      {"/api/positions", em_http_api_positions_handler, []},
+      {"/api/socket", em_http_api_socket_handler, []},
+      {"/api/permissions", em_http_api_permissions_handler, []},
+      {"/api/commands", em_http_api_commands_handler, []},
+      {"/api/statistics", em_http_api_statistics_handler, []},
+      {"/", cowboy_static, {priv_file, erlymon, "web/" ++ debug(proplists:get_value(debug, Opts)) ++ ".html"}},
+      {"/[...]", cowboy_static, {priv_dir, erlymon, "web/", [{mimetypes, cow_mimetypes, all}]}}
+  		]}
+  	]).
+
 
 debug(true) -> "debug";
 debug(false) -> "release".

@@ -32,12 +32,15 @@
 -spec start(Args :: any()) -> any().
 start(Args) ->
   em_logger:info("Start web server port: ~w", [proplists:get_value(port, Args)]),
-  Dispatch = cowboy_router:compile(em_http_routes:get([{debug, proplists:get_value(debug, Args)}])),
+  ok = cowboy_session_config:set([
+  	{expire, 86400}
+  ]),
+  Dispatch = em_http_routes:compile([{debug, proplists:get_value(debug, Args)}]),
   Options = [
-    {port, proplists:get_value(port, Args)},
-    {timeout, proplists:get_value(timeout, Args)}
+    {port, proplists:get_value(port, Args)}
+    %%{timeout, proplists:get_value(timeout, Args)}
   ],
-  cowboy:start_clear(http, Options, #{
+  {ok, _} = cowboy:start_clear(http, Options, #{
 		env => #{dispatch => Dispatch}
 	}).
 

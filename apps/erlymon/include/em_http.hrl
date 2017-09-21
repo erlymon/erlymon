@@ -37,7 +37,7 @@
 -define(PUT, <<"PUT">>).
 -define(DELETE, <<"DELETE">>).
 
--define(HEADERS, [{<<"content-type">>, <<"application/json; charset=UTF-8">>}]).
+-define(HEADERS, #{<<"content-type">> => <<"application/json; charset=UTF-8">>}).
 
 
 -endif. % HTTP_HRL

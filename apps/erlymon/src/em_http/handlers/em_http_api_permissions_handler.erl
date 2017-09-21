@@ -52,7 +52,7 @@ request(_, Req, _) ->
 
 -spec add_permission(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
 add_permission(Req, User) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:read_urlencoded_body(Req),
   %% {userId: 1458137425, deviceId: 1458137433}
   %%PermissionModel = em_json:decode(JsonBin),
   em_logger:info("ADD PERMISSION JSON: ~s", [JsonBin]),
@@ -65,18 +65,18 @@ add_permission(Req, User) ->
     {ok, PermissionModel} ->
           case em_permissions_manager:check_admin(User#user.id) of
             false ->
-              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+              cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Admin access required">>, Req);
             _ ->
               em_data_manager:link_device(PermissionModel),
               cowboy_req:reply(?STATUS_OK, Req2)
           end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.
 
 -spec remove_permission(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
 remove_permission(Req, User) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:read_urlencoded_body(Req),
   %% {userId: 1458137425, deviceId: 1458137433}
   %%PermissionModel = em_json:decode(JsonBin),
   em_logger:info("REMOVE PERMISSION JSON: ~s", [JsonBin]),
@@ -89,11 +89,11 @@ remove_permission(Req, User) ->
     {ok, PermissionModel} ->
           case em_permissions_manager:check_admin(User#user.id) of
             false ->
-              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+              cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Admin access required">>, Req);
             _ ->
               em_data_manager:unlink_device(PermissionModel),
               cowboy_req:reply(?STATUS_OK, Req2)
           end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.

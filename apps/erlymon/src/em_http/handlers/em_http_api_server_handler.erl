@@ -57,10 +57,10 @@ get_server(Req) ->
   {ok, Server} = em_data_manager:get_server(),
   cowboy_req:reply(?STATUS_OK, ?HEADERS, str(Server), Req).
 
-    
+
 -spec update_server(Req :: cowboy_req:req()) -> cowboy_req:req().
 update_server(Req) ->
-  {ok, [{JsonBin, true}], Req1} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req1} = cowboy_req:read_urlencoded_body(Req),
   em_logger:info("SERVER JSON: ~s", [JsonBin]),
   Result = emodel:from_map(em_json:decode(JsonBin), #server{}, [
     {<<"id">>, required, integer, #server.id, []},
@@ -94,7 +94,7 @@ update_server(Req) ->
       end;
     {error, Reason} ->
       %% Encode end set error
-      cowboy_req:reply(?STATUS_UNKNOWN, [], em_json:encode(Reason), Req1)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, em_json:encode(Reason), Req1)
   end.
 
 

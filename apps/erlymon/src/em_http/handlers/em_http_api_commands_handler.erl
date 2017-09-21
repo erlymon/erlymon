@@ -50,7 +50,7 @@ request(_, Req, _) ->
 
 -spec add_command(Req::cowboy_req:req(), User::map()) -> cowboy_req:req().
 add_command(Req, User) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:read_urlencoded_body(Req),
   em_logger:info("ADD COMMAND JSON: ~s", [JsonBin]),
   Result = from_map(em_json:decode(JsonBin), #command{}, [
     {<<"deviceId">>, required, integer, #command.deviceId, []},
@@ -62,17 +62,17 @@ add_command(Req, User) ->
     {ok, CommandModel} ->
         case em_permissions_manager:check_device(User#user.id, CommandModel#command.deviceId) of
           false ->
-            cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+            cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Admin access required">>, Req2);
           _ ->
             case em_manager_commands:execute(CommandModel) of
               {ok, _} ->
-                cowboy_req:reply(?STATUS_OK, [], <<"">>, Req2);
+                cowboy_req:reply(?STATUS_OK, #{}, <<"">>, Req2);
               {error, _Reason} ->
-                cowboy_req:reply(?STATUS_BAD_REQUEST, [], em_json:encode(#{<<"details">> => <<"Error execute command">>, <<"message">> => null}), Req2)
+                cowboy_req:reply(?STATUS_BAD_REQUEST, #{}, em_json:encode(#{<<"details">> => <<"Error execute command">>, <<"message">> => null}), Req2)
             end
         end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.
 
 

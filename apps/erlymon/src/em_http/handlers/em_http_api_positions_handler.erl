@@ -66,7 +66,7 @@ get_positions(Req, User) ->
           %%Id = str_to_int(DeviceId),
           case em_permissions_manager:check_device(User#user.id, Params#qs_params.deviceId) of
             false ->
-              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Device access denied">>, Req);
+              cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Device access denied">>, Req);
             _ ->
               Language = cowboy_req:header(<<"Accept-Language">>, Req, <<"en_US">>),
               {ok, TimeFrom} = em_helper_time:parse(<<"%Y-%m-%dT%H:%M:%S.000Z">>, Params#qs_params.from),
@@ -83,7 +83,7 @@ get_positions(Req, User) ->
               cowboy_req:reply(?STATUS_OK, ?HEADERS, str(FixPositions), Req)
           end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.
 
 

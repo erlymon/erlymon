@@ -54,7 +54,7 @@ request(?DELETE, Req, User) ->
   remove_user(Req, User);
 request(_, Req, _) ->
   %% Method not allowed.
-  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, [], <<"Allowed GET,POST,PUT,DELETE requests.">>, Req).
+  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, #{}, <<"Allowed GET,POST,PUT,DELETE requests.">>, Req).
 
 
 -spec request(Method :: binary(), Req :: cowboy_req:req()) -> cowboy_req:req().
@@ -62,7 +62,7 @@ request(?POST, Req) ->
   add_user(Req);
 request(_, Req) ->
   %% Method not allowed.
-  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, [], <<"Allowed POST request.">>, Req).
+  cowboy_req:reply(?STATUS_METHOD_NOT_ALLOWED, #{}, <<"Allowed POST request.">>, Req).
 
 -spec get_users(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 get_users(Req, User) ->
@@ -77,7 +77,7 @@ get_users(Req, User) ->
 
 -spec add_user(Req :: cowboy_req:req()) -> cowboy_req:req().
 add_user(Req) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:read_urlencoded_body(Req),
   em_logger:info("REGISTRY USER JSON: ~s", [JsonBin]),
   Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
     {<<"name">>, required, string, #user.name, []},
@@ -88,7 +88,7 @@ add_user(Req) ->
     {ok, UserModel} ->
         case em_permissions_manager:check_registration() of
           false ->
-            cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+            cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Admin access required">>, Req2);
           _ ->
             case em_data_manager:create_user(UserModel) of
               {error, Reason} ->
@@ -98,12 +98,12 @@ add_user(Req) ->
             end
         end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.
 
 -spec add_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 add_user(Req, User) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:read_urlencoded_body(Req),
   em_logger:info("ADD USER JSON: ~s", [JsonBin]),
   Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
     {<<"id">>, required, integer, #user.id, []},
@@ -122,7 +122,7 @@ add_user(Req, User) ->
     {ok, UserModel} ->
           case em_permissions_manager:check_admin(User#user.id) of
             false ->
-              cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+              cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Admin access required">>, Req2);
             _ ->
               case em_data_manager:create_user(UserModel) of
                 {error, Reason} ->
@@ -132,12 +132,12 @@ add_user(Req, User) ->
               end
           end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.
 
 -spec remove_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 remove_user(Req, User) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:read_urlencoded_body(Req),
   %%UserModel = em_json:decode(JsonBin),
   em_logger:info("REMOVE USER JSON: ~s", [JsonBin]),
   Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
@@ -157,18 +157,18 @@ remove_user(Req, User) ->
     {ok, UserModel} ->
             case em_permissions_manager:check_admin(User#user.id) of
               false ->
-                cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req);
+                cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Admin access required">>, Req);
               _ ->
                 em_data_manager:delete_user(UserModel),
                 cowboy_req:reply(?STATUS_OK, ?HEADERS, str(UserModel), Req2)
             end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.
 
 -spec update_user(Req :: cowboy_req:req(), User :: map()) -> cowboy_req:req().
 update_user(Req, CurrUser) ->
-  {ok, [{JsonBin, true}], Req2} = cowboy_req:body_qs(Req),
+  {ok, [{JsonBin, true}], Req2} = cowboy_req:read_urlencoded_body(Req),
   em_logger:info("UPDATE USER JSON: ~s", [JsonBin]),
   Result = emodel:from_map(em_json:decode(JsonBin), #user{}, [
     {<<"id">>, required, integer, #user.id, []},
@@ -187,13 +187,13 @@ update_user(Req, CurrUser) ->
     {ok, UserModel} ->
       case check_permission(CurrUser#user.id, UserModel#user.id) of
         false ->
-          cowboy_req:reply(?STATUS_FORBIDDEN, [], <<"Admin access required">>, Req2);
+          cowboy_req:reply(?STATUS_FORBIDDEN, #{}, <<"Admin access required">>, Req2);
         _ ->
           em_data_manager:update_user(UserModel),
           cowboy_req:reply(?STATUS_OK, ?HEADERS, str(UserModel), Req2)
       end;
     _Reason ->
-      cowboy_req:reply(?STATUS_UNKNOWN, [], <<"Invalid format">>, Req)
+      cowboy_req:reply(?STATUS_UNKNOWN, #{}, <<"Invalid format">>, Req)
   end.
 
 

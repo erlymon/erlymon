@@ -70,7 +70,7 @@ get_session(Req) ->
 
 -spec add_session(Req::cowboy_req:req()) -> cowboy_req:req().
 add_session(Req) ->
-    {ok, PostVals, Req2} = cowboy_req:body_qs(Req),
+    {ok, PostVals, Req2} = cowboy_req:read_urlencoded_body(Req),
     Result = emodel:from_proplist(PostVals, #user{}, [
         {<<"email">>, required, string, #user.email, []},
         {<<"password">>, required, string, #user.password, []}
@@ -79,7 +79,7 @@ add_session(Req) ->
         {ok, #user{email =  Email, password = Password}} ->
                 case em_data_manager:check_user(Email, Password) of
                     {error, Reason} ->
-                        cowboy_req:reply(?STATUS_UNAUTHORIZED, [], Reason, Req2);
+                        cowboy_req:reply(?STATUS_UNAUTHORIZED, #{}, Reason, Req2);
                     {ok, User} ->
                         em_logger:info("SESSION SAVE: ~w", [User]),
                         {ok, Req3} = cowboy_session:set(user, User, Req2),
