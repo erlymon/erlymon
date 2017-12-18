@@ -29,5 +29,5 @@ Erlymon is an open source GPS tracking system for various GPS tracking devices.
 
 
 # Doc
-
-[Manual Rus](./apps/erlymon/docs/ru/index.md)
+[Documentation](./apps/erlymon/docs/en/index.md)
+[Документация](./apps/erlymon/docs/ru/index.md)
