@@ -44,10 +44,10 @@
 
 
 %% http://nominatim.openstreetmap.org/reverse?format=json&lat=52.5487429714954&lon=-1.81602098644987&zoom=18&addressdetails=1
-
+%% https://nominatim.openstreetmap.org/reverse?format=json&lat=52.5487429714954&lon=-1.81602098644987&zoom=18&addressdetails=1
 -define(NAME, "nominatim").
 -define(HOST, "nominatim.openstreetmap.org").
--define(PORT, 80).
+-define(PORT, 443).
 -define(REVERSE, <<"/reverse?format=json&lat={lat}&lon={lon}&zoom=18&addressdetails=1">>).
 -define(USER_AGENT, <<"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.87 Safari/537.36">>).
 
@@ -97,7 +97,7 @@ start_link() ->
              {stop, Reason :: term()} | ignore).
 init([]) ->
     em_logger:info("Init '~s' geocoder service", [?NAME]),
-    case shotgun:open(?HOST, ?PORT, http) of
+    case shotgun:open(?HOST, ?PORT, https) of
         {ok, Conn} ->
             {ok, #state{conn = Conn}};
         Reason ->
